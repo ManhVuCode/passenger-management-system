@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport'; // Lớp bảo vệ
 import { TripsService } from './trips.service';
 import { CreateTripDto } from './dto/create-trip.dto';
@@ -12,5 +12,12 @@ export class TripsController {
   create(@Body() createTripDto: CreateTripDto, @Req() req: any) {
     // req.user chính là thông tin User lấy từ Token (do JwtStrategy làm)
     return this.tripsService.create(createTripDto, req.user);
+  }
+
+  //Them endpoint Get:
+  @Get() // GET /trips
+  findAll(@Req() req: any) {
+    // Truyền user lấy từ Token xuống service
+    return this.tripsService.findAll(req.user);
   }
 }

@@ -37,4 +37,20 @@ export class TripsService {
   }
 
   // Các hàm findAll, findOne... để sau làm tiếp
+  async findAll(user: User) {
+    // 1. Xác định User thuộc công ty (Tenant) nào
+    const linkage = await this.utrRepo.findOne({
+      where: { userId: user.id, isActive: true },
+    });
+
+    if (!linkage) {
+      return []; // Nếu không thuộc cty nào thì trả về rỗng
+    }
+
+    // 2. Tìm tất cả Trip của Tenant đó
+    return await this.tripRepo.find({
+      where: { tenantId: linkage.tenantId },
+      order: { createdAt: 'DESC' }, // Sắp xếp mới nhất lên đầu
+    });
+  }
 }

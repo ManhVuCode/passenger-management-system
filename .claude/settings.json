@@ -1,0 +1,23 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "permissions": {
+    "allow": [
+      "read", "write",
+      "shell:rtk *",
+      "shell:pnpm *",
+      "shell:npx *",
+      "shell:git *",
+      "shell:node *",
+      "shell:prisma *",
+      "shell:docker *",
+      "shell:mkdir *",
+      "shell:cat *",
+      "shell:echo *",
+      "shell:find *",
+      "shell:ls *",
+      "shell:cp *",
+      "shell:mv *"
+    ],
+    "deny": ["shell:rm -rf /"]
+  }
+}

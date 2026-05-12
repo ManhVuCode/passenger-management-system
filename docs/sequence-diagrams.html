@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sequence Diagrams — GR2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#f8f6f1; font-family:'Inter',sans-serif; padding:48px 56px; }
+  h1 { font-size:28px; font-weight:300; color:#1a1814; letter-spacing:-0.02em; margin-bottom:6px; }
+  .sub { font-family:'JetBrains Mono',monospace; font-size:11px; color:#9c9690; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:32px; }
+  .sd-wrap { border:1px solid #d6d0c6; border-radius:16px; background:white; overflow-x:auto; box-shadow:0 4px 32px rgba(0,0,0,0.06); margin-bottom:48px; }
+  .sd-title { padding:22px 32px 0; font-size:18px; font-weight:600; color:#1a1814; }
+  .sd-desc  { padding:6px 32px 18px; font-size:13px; color:#78716c; line-height:1.6; }
+  svg text  { font-family:'Inter',sans-serif; }
+</style>
+</head>
+<body>
+
+<h1>Sequence Diagrams — GR2 Passenger Management System</h1>
+<p class="sub">v1 · May 2026 · SD-01 Login · SD-02 Allocation · SD-03 Attendance + Override</p>
+
+<!-- ═══════════════════════════════════════════════════════
+     SD-01: LOGIN + VALIDATE TENANT/ROLE
+═══════════════════════════════════════════════════════ -->
+<div class="sd-wrap">
+<div class="sd-title">SD-01 — Login &amp; Tenant/Role Validation</div>
+<div class="sd-desc">Actor: Any user (Admin or BusManager) · Covers: credential check, JWT issue, tenant guard, role guard</div>
+<svg viewBox="0 0 1600 680" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;min-width:1400px;height:auto;">
+<defs>
+  <marker id="a" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+    <path d="M1,2 L11,6 L1,10 Z" fill="#374151"/>
+  </marker>
+  <marker id="a-ret" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+    <path d="M1,2 L11,6 L1,10 Z" fill="#6b7280"/>
+  </marker>
+  <style>
+    .part { font-size:13px; font-weight:700; }
+    .msg  { font-size:12px; font-weight:500; }
+    .ret  { font-size:11px; fill:#6b7280; font-style:italic; }
+    .note-box { font-size:11px; fill:#44403c; }
+    .alt  { font-size:11px; font-weight:600; font-family:'JetBrains Mono',monospace; }
+  </style>
+</defs>
+
+<!-- participants: Client=160, AuthController=400, AuthService=640, UserRepo=880, JwtService=1120, TenantGuard=1360 -->
+<g>
+  <!-- boxes -->
+  <rect x="80"   y="30" width="160" height="44" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.8"/>
+  <text x="160"  y="57" text-anchor="middle" class="part" fill="#1e3a8a">Client (Browser/PWA)</text>
+
+  <rect x="320"  y="30" width="160" height="44" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="400"  y="57" text-anchor="middle" class="part" fill="#14532d">AuthController</text>
+
+  <rect x="560"  y="30" width="160" height="44" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="640"  y="57" text-anchor="middle" class="part" fill="#14532d">AuthService</text>
+
+  <rect x="800"  y="30" width="130" height="44" rx="10" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.8"/>
+  <text x="865"  y="57" text-anchor="middle" class="part" fill="#374151">UserRepository</text>
+
+  <rect x="1000" y="30" width="130" height="44" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.8"/>
+  <text x="1065" y="57" text-anchor="middle" class="part" fill="#92400e">JwtService</text>
+
+  <rect x="1200" y="30" width="150" height="44" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.8"/>
+  <text x="1275" y="57" text-anchor="middle" class="part" fill="#7c2d12">TenantGuard</text>
+
+  <!-- lifelines -->
+  <line x1="160"  y1="74" x2="160"  y2="650" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="400"  y1="74" x2="400"  y2="650" stroke="#86efac" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="640"  y1="74" x2="640"  y2="650" stroke="#86efac" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="865"  y1="74" x2="865"  y2="650" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="1065" y1="74" x2="1065" y2="650" stroke="#fcd34d" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="1275" y1="74" x2="1275" y2="650" stroke="#fdba74" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+  <!-- activation bars -->
+  <rect x="154"  y="140" width="12" height="400" rx="3" fill="#93c5fd" opacity="0.7"/>
+  <rect x="394"  y="160" width="12" height="180" rx="3" fill="#86efac" opacity="0.7"/>
+  <rect x="634"  y="180" width="12" height="140" rx="3" fill="#86efac" opacity="0.7"/>
+  <rect x="859"  y="200" width="12" height="60"  rx="3" fill="#d1d5db" opacity="0.7"/>
+  <rect x="1059" y="280" width="12" height="50"  rx="3" fill="#fcd34d" opacity="0.7"/>
+  <rect x="1269" y="370" width="12" height="60"  rx="3" fill="#fdba74" opacity="0.7"/>
+
+  <!-- ── MESSAGES ── -->
+  <!-- 1. POST /auth/login -->
+  <line x1="166" y1="150" x2="394" y2="150" stroke="#374151" stroke-width="2" marker-end="url(#a)"/>
+  <text x="280" y="142" text-anchor="middle" class="msg">① POST /auth/login {email, password}</text>
+
+  <!-- 2. findByEmail -->
+  <line x1="406" y1="190" x2="859" y2="190" stroke="#374151" stroke-width="2" marker-end="url(#a)"/>
+  <text x="632" y="182" text-anchor="middle" class="msg">② findByEmail(email, tenantId)</text>
+
+  <!-- 3. return User -->
+  <line x1="859" y1="230" x2="640" y2="230" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7,4" marker-end="url(#a-ret)"/>
+  <text x="750" y="222" text-anchor="middle" class="ret">User | null</text>
+
+  <!-- ALT: user not found -->
+  <rect x="140" y="245" width="1420" height="56" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.3"/>
+  <text x="160" y="262" class="alt" fill="#dc2626">ALT</text>
+  <text x="220" y="262" class="alt" fill="#dc2626">user not found or wrong password</text>
+  <line x1="640" y1="280" x2="160" y2="280" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="7,4" marker-end="url(#a-ret)"/>
+  <text x="400" y="272" text-anchor="middle" class="ret" fill="#dc2626">401 Unauthorized</text>
+
+  <!-- 4. verifyPassword -->
+  <line x1="646" y1="315" x2="640" y2="315" stroke="#374151" stroke-width="1"/><!-- self -->
+  <path d="M646,315 C 720,315 720,340 646,340" fill="none" stroke="#374151" stroke-width="1.8" marker-end="url(#a)"/>
+  <text x="760" y="332" class="msg">③ bcrypt.compare(password, hash)</text>
+
+  <!-- 5. sign JWT -->
+  <line x1="646" y1="360" x2="1059" y2="360" stroke="#374151" stroke-width="2" marker-end="url(#a)"/>
+  <text x="852" y="352" text-anchor="middle" class="msg">④ sign({userId, tenantId, role})</text>
+
+  <line x1="1059" y1="400" x2="646" y2="400" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7,4" marker-end="url(#a-ret)"/>
+  <text x="852" y="392" text-anchor="middle" class="ret">accessToken (JWT)</text>
+
+  <!-- 6. return token to client -->
+  <line x1="406" y1="430" x2="166" y2="430" stroke="#6b7280" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#a-ret)"/>
+  <text x="286" y="422" text-anchor="middle" class="ret">200 { accessToken, role, tenantId }</text>
+
+  <!-- 7. next request: Authorization header -->
+  <line x1="166" y1="470" x2="394" y2="470" stroke="#374151" stroke-width="2" marker-end="url(#a)"/>
+  <text x="280" y="462" text-anchor="middle" class="msg">⑤ GET /api/* { Authorization: Bearer token }</text>
+
+  <!-- 8. TenantGuard.canActivate -->
+  <line x1="406" y1="500" x2="1269" y2="500" stroke="#374151" stroke-width="2" marker-end="url(#a)"/>
+  <text x="837" y="492" text-anchor="middle" class="msg">⑥ TenantGuard.canActivate(token)</text>
+
+  <!-- 9. decode + check tenant scope -->
+  <line x1="1269" y1="530" x2="1269" y2="530"/>
+  <path d="M1281,530 C 1360,530 1360,555 1281,555" fill="none" stroke="#374151" stroke-width="1.8" marker-end="url(#a)"/>
+  <text x="1430" y="547" class="msg">⑦ decode + scope check</text>
+
+  <!-- ALT: wrong tenant / bad token -->
+  <rect x="140" y="566" width="1420" height="46" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.3"/>
+  <text x="160" y="583" class="alt" fill="#dc2626">ALT</text>
+  <text x="220" y="583" class="alt" fill="#dc2626">wrong tenant or expired token</text>
+  <line x1="1275" y1="598" x2="160" y2="598" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="7,4" marker-end="url(#a-ret)"/>
+  <text x="716" y="590" text-anchor="middle" class="ret" fill="#dc2626">403 Forbidden</text>
+
+  <!-- 10. allow through -->
+  <line x1="1275" y1="625" x2="406" y2="625" stroke="#6b7280" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#a-ret)"/>
+  <text x="840" y="617" text-anchor="middle" class="ret">request context { userId, tenantId, role } set</text>
+</g>
+</svg>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SD-02: ADMIN ASSIGNS PASSENGER TO ROUND
+═══════════════════════════════════════════════════════ -->
+<div class="sd-wrap">
+<div class="sd-title">SD-02 — Admin Assigns Passenger to Bus/Round (with Capacity Check)</div>
+<div class="sd-desc">Actor: Admin · Covers: RoundPassengerAssignment creation, capacity validation, warning response</div>
+<svg viewBox="0 0 1600 700" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;min-width:1400px;height:auto;">
+<defs>
+  <marker id="b" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+    <path d="M1,2 L11,6 L1,10 Z" fill="#374151"/>
+  </marker>
+  <marker id="b-ret" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+    <path d="M1,2 L11,6 L1,10 Z" fill="#6b7280"/>
+  </marker>
+</defs>
+
+<!-- participants: AdminUI=140, AllocationCtrl=360, AllocationSvc=600, RoundBusRepo=840, RoundPaxRepo=1100, DB=1360 -->
+<g>
+  <rect x="60"   y="30" width="160" height="44" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.8"/>
+  <text x="140"  y="57" text-anchor="middle" class="part" fill="#1e3a8a">Admin UI</text>
+
+  <rect x="280"  y="30" width="180" height="44" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="370"  y="57" text-anchor="middle" class="part" fill="#14532d">AllocationController</text>
+
+  <rect x="520"  y="30" width="180" height="44" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="610"  y="57" text-anchor="middle" class="part" fill="#14532d">AllocationService</text>
+
+  <rect x="760"  y="30" width="160" height="44" rx="10" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.8"/>
+  <text x="840"  y="57" text-anchor="middle" class="part" fill="#374151">RoundBusRepo</text>
+
+  <rect x="980"  y="30" width="160" height="44" rx="10" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.8"/>
+  <text x="1060" y="57" text-anchor="middle" class="part" fill="#374151">RoundPaxRepo</text>
+
+  <rect x="1200" y="30" width="120" height="44" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.8"/>
+  <text x="1260" y="57" text-anchor="middle" class="part" fill="#92400e">PostgreSQL</text>
+
+  <!-- lifelines -->
+  <line x1="140"  y1="74" x2="140"  y2="680" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="370"  y1="74" x2="370"  y2="680" stroke="#86efac" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="610"  y1="74" x2="610"  y2="680" stroke="#86efac" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="840"  y1="74" x2="840"  y2="680" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="1060" y1="74" x2="1060" y2="680" stroke="#d1d5db" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="1260" y1="74" x2="1260" y2="680" stroke="#fcd34d" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+  <!-- activation bars -->
+  <rect x="134"  y="130" width="12" height="470" rx="3" fill="#93c5fd" opacity="0.7"/>
+  <rect x="364"  y="150" width="12" height="420" rx="3" fill="#86efac" opacity="0.7"/>
+  <rect x="604"  y="170" width="12" height="380" rx="3" fill="#86efac" opacity="0.7"/>
+  <rect x="834"  y="200" width="12" height="70"  rx="3" fill="#d1d5db" opacity="0.7"/>
+  <rect x="1054" y="330" width="12" height="80"  rx="3" fill="#d1d5db" opacity="0.7"/>
+  <rect x="1254" y="200" width="12" height="250" rx="3" fill="#fcd34d" opacity="0.7"/>
+
+  <!-- 1. POST allocate passenger -->
+  <line x1="146" y1="140" x2="364" y2="140" stroke="#374151" stroke-width="2" marker-end="url(#b)"/>
+  <text x="255" y="132" text-anchor="middle" class="msg">① POST /rounds/{roundId}/passengers  {passengerIds[], busId}</text>
+
+  <!-- 2. validateRequest (RBAC + tenant) -->
+  <path d="M376,168 C 440,168 440,192 376,192" fill="none" stroke="#374151" stroke-width="1.8" marker-end="url(#b)"/>
+  <text x="480" y="185" class="msg">② RBAC guard — Admin only</text>
+
+  <!-- 3. fetch RoundBusAssignment -->
+  <line x1="616" y1="210" x2="834" y2="210" stroke="#374151" stroke-width="2" marker-end="url(#b)"/>
+  <text x="725" y="202" text-anchor="middle" class="msg">③ findRoundBusAssignment(tripId, roundId, busId)</text>
+
+  <!-- 3b. SELECT -->
+  <line x1="846" y1="238" x2="1254" y2="238" stroke="#374151" stroke-width="1.8" marker-end="url(#b)"/>
+  <text x="1050" y="230" text-anchor="middle" class="msg">③b SELECT RBA + current passenger count</text>
+
+  <line x1="1254" y1="266" x2="846" y2="266" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7,4" marker-end="url(#b-ret)"/>
+  <text x="1050" y="258" text-anchor="middle" class="ret">{ bus.capacity, currentCount }</text>
+
+  <line x1="834" y1="294" x2="616" y2="294" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7,4" marker-end="url(#b-ret)"/>
+
+  <!-- 4. capacity check -->
+  <path d="M616,322 C 680,322 680,346 616,346" fill="none" stroke="#374151" stroke-width="1.8" marker-end="url(#b)"/>
+  <text x="750" y="340" class="msg">④ checkCapacity(newCount, bus.capacity)</text>
+
+  <!-- ALT: over capacity -->
+  <rect x="124" y="356" width="1420" height="56" rx="6" fill="#fefce8" stroke="#fde047" stroke-width="1.3"/>
+  <text x="144" y="373" class="alt" fill="#854d0e">ALT</text>
+  <text x="204" y="373" class="alt" fill="#854d0e">newCount &gt; bus.capacity</text>
+  <line x1="616" y1="398" x2="140" y2="398" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#b-ret)"/>
+  <text x="378" y="390" text-anchor="middle" class="ret" fill="#92400e">⚠ 200 { warning: "exceeds capacity", proceed: true } — not blocked</text>
+
+  <!-- 5. INSERT RoundPassengerAssignment -->
+  <line x1="616" y1="428" x2="1054" y2="428" stroke="#374151" stroke-width="2" marker-end="url(#b)"/>
+  <text x="835" y="420" text-anchor="middle" class="msg">⑤ createRoundPassengerAssignment(data[])</text>
+
+  <!-- 5b. transaction INSERT -->
+  <line x1="1066" y1="456" x2="1254" y2="456" stroke="#374151" stroke-width="1.8" marker-end="url(#b)"/>
+  <text x="1160" y="448" text-anchor="middle" class="msg">⑤b INSERT RPA rows (transaction)</text>
+
+  <line x1="1254" y1="484" x2="1066" y2="484" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7,4" marker-end="url(#b-ret)"/>
+  <text x="1160" y="476" text-anchor="middle" class="ret">{ inserted: N rows }</text>
+
+  <!-- 6. return to controller -->
+  <line x1="616" y1="514" x2="376" y2="514" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7,4" marker-end="url(#b-ret)"/>
+  <text x="496" y="506" text-anchor="middle" class="ret">{ assignments[], capacityWarning? }</text>
+
+  <!-- 7. 201 Created -->
+  <line x1="376" y1="544" x2="146" y2="544" stroke="#6b7280" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#b-ret)"/>
+  <text x="261" y="536" text-anchor="middle" class="ret">201 { assignments[], warning? }</text>
+
+  <!-- 8. UI shows warning if present -->
+  <path d="M140,572 C 80,572 80,596 140,596" fill="none" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#b)"/>
+  <text x="36" y="590" text-anchor="end" class="msg" fill="#92400e">⑥ show capacity warning toast if present</text>
+</g>
+</svg>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SD-03: BUSMANAGER MARKS ATTENDANCE → MQTT → ADMIN OVERRIDE
+═══════════════════════════════════════════════════════ -->
+<div class="sd-wrap">
+<div class="sd-title">SD-03 — BusManager Marks Attendance → MQTT Broadcast → Admin Override</div>
+<div class="sd-desc">Actors: BusManager + Admin · Covers: attendance mark, save, real-time broadcast, Admin dashboard update, Admin override (extends)</div>
+<svg viewBox="0 0 2200 820" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;min-width:2000px;height:auto;">
+<defs>
+  <marker id="c" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+    <path d="M1,2 L11,6 L1,10 Z" fill="#374151"/>
+  </marker>
+  <marker id="c-ret" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+    <path d="M1,2 L11,6 L1,10 Z" fill="#6b7280"/>
+  </marker>
+  <marker id="c-mqtt" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+    <path d="M1,2 L11,6 L1,10 Z" fill="#7c3aed"/>
+  </marker>
+</defs>
+
+<!-- participants (7):
+  BM_PWA=120, AttCtrl=330, AttSvc=540, DB=730, MQTTBroker=940, AdminDash=1160, AdminCtrl=1390, AttSvcAdmin=1620 -->
+<g>
+  <rect x="40"   y="30" width="160" height="44" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.8"/>
+  <text x="120"  y="57" text-anchor="middle" class="part" fill="#7c2d12">BusManager PWA</text>
+
+  <rect x="250"  y="30" width="160" height="44" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="330"  y="57" text-anchor="middle" class="part" fill="#14532d">AttController</text>
+
+  <rect x="460"  y="30" width="160" height="44" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="540"  y="57" text-anchor="middle" class="part" fill="#14532d">AttService</text>
+
+  <rect x="660"  y="30" width="120" height="44" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.8"/>
+  <text x="720"  y="57" text-anchor="middle" class="part" fill="#92400e">PostgreSQL</text>
+
+  <rect x="860"  y="30" width="160" height="44" rx="10" fill="#faf5ff" stroke="#9333ea" stroke-width="1.8"/>
+  <text x="940"  y="57" text-anchor="middle" class="part" fill="#6b21a8">MQTT Broker</text>
+
+  <rect x="1080" y="30" width="160" height="44" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.8"/>
+  <text x="1160" y="57" text-anchor="middle" class="part" fill="#1e3a8a">Admin Dashboard</text>
+
+  <rect x="1310" y="30" width="160" height="44" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="1390" y="57" text-anchor="middle" class="part" fill="#14532d">AttController</text>
+
+  <rect x="1540" y="30" width="160" height="44" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="1620" y="57" text-anchor="middle" class="part" fill="#14532d">AttService</text>
+
+  <rect x="1760" y="30" width="120" height="44" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.8"/>
+  <text x="1820" y="57" text-anchor="middle" class="part" fill="#92400e">PostgreSQL</text>
+
+  <!-- lifelines -->
+  <line x1="120"  y1="74" x2="120"  y2="800" stroke="#fdba74" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="330"  y1="74" x2="330"  y2="800" stroke="#86efac" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="540"  y1="74" x2="540"  y2="800" stroke="#86efac" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="720"  y1="74" x2="720"  y2="800" stroke="#fcd34d" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="940"  y1="74" x2="940"  y2="800" stroke="#e9d5ff" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="1160" y1="74" x2="1160" y2="800" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="1390" y1="74" x2="1390" y2="800" stroke="#86efac" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="1620" y1="74" x2="1620" y2="800" stroke="#86efac" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <line x1="1820" y1="74" x2="1820" y2="800" stroke="#fcd34d" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+  <!-- activation bars -->
+  <rect x="114" y="130" width="12" height="280" rx="3" fill="#fdba74" opacity="0.7"/>
+  <rect x="324" y="150" width="12" height="220" rx="3" fill="#86efac" opacity="0.7"/>
+  <rect x="534" y="170" width="12" height="190" rx="3" fill="#86efac" opacity="0.7"/>
+  <rect x="714" y="190" width="12" height="60"  rx="3" fill="#fcd34d" opacity="0.7"/>
+  <rect x="934" y="260" width="12" height="60"  rx="3" fill="#e9d5ff" opacity="0.7"/>
+  <rect x="1154" y="310" width="12" height="50" rx="3" fill="#93c5fd" opacity="0.7"/>
+  <!-- Admin override activation -->
+  <rect x="1384" y="500" width="12" height="200" rx="3" fill="#86efac" opacity="0.7"/>
+  <rect x="1614" y="520" width="12" height="160" rx="3" fill="#86efac" opacity="0.7"/>
+  <rect x="1814" y="540" width="12" height="80"  rx="3" fill="#fcd34d" opacity="0.7"/>
+
+  <!-- ── BusManager marks attendance ── -->
+  <line x1="126" y1="140" x2="324" y2="140" stroke="#374151" stroke-width="2" marker-end="url(#c)"/>
+  <text x="225" y="132" text-anchor="middle" class="msg">① PATCH /attendance  {passengerIds, status: JOIN|ABSENT}</text>
+
+  <!-- scope check -->
+  <path d="M336,168 C 400,168 400,192 336,192" fill="none" stroke="#374151" stroke-width="1.8" marker-end="url(#c)"/>
+  <text x="500" y="185" class="msg">② BusManager scope guard (own bus only)</text>
+
+  <!-- save to DB -->
+  <line x1="546" y1="210" x2="714" y2="210" stroke="#374151" stroke-width="2" marker-end="url(#c)"/>
+  <text x="630" y="202" text-anchor="middle" class="msg">③ upsert AttendanceRecord(status, markedBy)</text>
+
+  <line x1="714" y1="250" x2="546" y2="250" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7,4" marker-end="url(#c-ret)"/>
+  <text x="630" y="242" text-anchor="middle" class="ret">{ id, status, markedAt }</text>
+
+  <!-- emit event -->
+  <path d="M546,278 C 610,278 610,302 546,302" fill="none" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#c-mqtt)"/>
+  <text x="680" y="295" class="msg" fill="#6d28d9">④ emit('attendance.updated', payload)</text>
+
+  <!-- publish to MQTT -->
+  <line x1="546" y1="318" x2="934" y2="318" stroke="#7c3aed" stroke-width="2" marker-end="url(#c-mqtt)"/>
+  <text x="740" y="310" text-anchor="middle" class="msg" fill="#6d28d9">⑤ MQTT publish(trip/{tripId}/attendance, payload)</text>
+
+  <!-- 200 back to BM -->
+  <line x1="330" y1="348" x2="126" y2="348" stroke="#6b7280" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#c-ret)"/>
+  <text x="228" y="340" text-anchor="middle" class="ret">200 { success, updatedAt }</text>
+
+  <!-- MQTT → Admin Dashboard (async) -->
+  <line x1="946" y1="372" x2="1154" y2="372" stroke="#7c3aed" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#c-mqtt)"/>
+  <text x="1050" y="364" text-anchor="middle" class="msg" fill="#6d28d9">⑥ WS push (async, real-time)</text>
+
+  <!-- Admin UI re-renders -->
+  <path d="M1166,400 C 1230,400 1230,424 1166,424" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#c)"/>
+  <text x="1290" y="417" class="msg" fill="#1d4ed8">⑦ updatePassengerStatus() → re-render</text>
+
+  <!-- separator: Admin Override section -->
+  <line x1="60" y1="460" x2="2140" y2="460" stroke="#d1d5db" stroke-width="1" stroke-dasharray="4,4"/>
+  <rect x="60" y="446" width="300" height="22" rx="5" fill="#fff7ed" stroke="#ea580c" stroke-width="1"/>
+  <text x="210" y="461" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#ea580c;font-family:'JetBrains Mono',monospace;">«extend» ADMIN OVERRIDE (optional)</text>
+
+  <!-- Admin sends override -->
+  <line x1="1160" y1="490" x2="1384" y2="490" stroke="#374151" stroke-width="2" marker-end="url(#c)"/>
+  <text x="1272" y="482" text-anchor="middle" class="msg">⑧ Admin: PATCH /attendance/{id}/override  {status, note}</text>
+
+  <!-- RBAC: Admin only -->
+  <path d="M1396,518 C 1460,518 1460,542 1396,542" fill="none" stroke="#374151" stroke-width="1.8" marker-end="url(#c)"/>
+  <text x="1550" y="535" class="msg">⑨ RBAC guard — Admin role required</text>
+
+  <!-- update DB -->
+  <line x1="1626" y1="558" x2="1814" y2="558" stroke="#374151" stroke-width="2" marker-end="url(#c)"/>
+  <text x="1720" y="550" text-anchor="middle" class="msg">⑩ UPDATE AttendanceRecord {status, markedBy=Admin, note}</text>
+
+  <line x1="1814" y1="586" x2="1626" y2="586" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="7,4" marker-end="url(#c-ret)"/>
+  <text x="1720" y="578" text-anchor="middle" class="ret">{ updated: 1 }</text>
+
+  <!-- emit override event -->
+  <path d="M1626,614 C 1690,614 1690,638 1626,638" fill="none" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#c-mqtt)"/>
+  <text x="1760" y="631" class="msg" fill="#6d28d9">⑪ emit('attendance.overridden', payload)</text>
+
+  <!-- return to Admin -->
+  <line x1="1390" y1="662" x2="1166" y2="662" stroke="#6b7280" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#c-ret)"/>
+  <text x="1278" y="654" text-anchor="middle" class="ret">200 { id, status: overridden, markedBy: Admin }</text>
+
+  <!-- note: BM sees updated status via MQTT -->
+  <rect x="800" y="680" width="480" height="34" rx="8" fill="#faf5ff" stroke="#c4b5fd" stroke-width="1.3"/>
+  <text x="1040" y="700" text-anchor="middle" style="font-size:11px;fill:#6b21a8;">Note: BusManager PWA receives override update via MQTT subscription</text>
+
+</g>
+</svg>
+</div>
+
+</body>
+</html>

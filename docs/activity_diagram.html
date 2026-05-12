@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Activity Diagram — GR2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#f8f6f1; font-family:'Inter',sans-serif; padding:48px 56px; }
+  h1 { font-size:28px; font-weight:300; color:#1a1814; letter-spacing:-0.02em; margin-bottom:6px; }
+  .sub { font-family:'JetBrains Mono',monospace; font-size:11px; color:#9c9690; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:12px; }
+  .desc { font-size:13px; line-height:1.8; color:#5d584f; max-width:1100px; margin-bottom:32px; }
+  .wrap { border:1px solid #d6d0c6; border-radius:16px; background:white; overflow-x:auto; box-shadow:0 4px 32px rgba(0,0,0,0.06); }
+  svg text { font-family:'Inter',sans-serif; }
+</style>
+</head>
+<body>
+<h1>Activity Diagram — GR2 Passenger Management System</h1>
+<p class="sub">v5 · May 2026 · 4 swimlanes · Full operational workflow</p>
+<p class="desc">
+  Covers the complete trip lifecycle across 4 actors: <strong>SystemAdmin</strong> (tenant setup) →
+  <strong>Admin</strong> (trip/round/bus/passenger/allocation) →
+  <strong>System</strong> (guards, cascade, MQTT) →
+  <strong>BusManager</strong> (round operations, attendance, notifications).
+  Passenger movement is Admin-only and occurs only between rounds at stops.
+</p>
+<div class="wrap">
+<svg viewBox="0 0 2800 3800" xmlns="http://www.w3.org/2000/svg"
+     style="display:block;width:100%;min-width:2600px;height:auto;">
+<defs>
+  <marker id="a" viewBox="0 0 14 14" refX="12" refY="7" markerWidth="9" markerHeight="9" orient="auto">
+    <path d="M1,2 L13,7 L1,12 Z" fill="#64748b"/>
+  </marker>
+  <marker id="a-grn" viewBox="0 0 14 14" refX="12" refY="7" markerWidth="9" markerHeight="9" orient="auto">
+    <path d="M1,2 L13,7 L1,12 Z" fill="#16a34a"/>
+  </marker>
+  <marker id="a-blue" viewBox="0 0 14 14" refX="12" refY="7" markerWidth="9" markerHeight="9" orient="auto">
+    <path d="M1,2 L13,7 L1,12 Z" fill="#2563eb"/>
+  </marker>
+  <marker id="a-org" viewBox="0 0 14 14" refX="12" refY="7" markerWidth="9" markerHeight="9" orient="auto">
+    <path d="M1,2 L13,7 L1,12 Z" fill="#ea580c"/>
+  </marker>
+  <filter id="sh">
+    <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000" flood-opacity="0.05"/>
+  </filter>
+</defs>
+
+<!-- ──────────────────────────────────────────
+     SWIMLANE STRUCTURE
+────────────────────────────────────────── -->
+<!-- Lane widths: SA=460, Admin=580, System=680, BM=880 -->
+<!-- x positions: SA=40, Admin=500, System=1080, BM=1760 -->
+
+<!-- Lane backgrounds -->
+<rect x="40"   y="140" width="460" height="3620" fill="#fbf8ff" stroke="none"/>
+<rect x="500"  y="140" width="580" height="3620" fill="#f0fdf8" stroke="none"/>
+<rect x="1080" y="140" width="680" height="3620" fill="#eff6ff" stroke="none"/>
+<rect x="1760" y="140" width="980" height="3620" fill="#fff8f3" stroke="none"/>
+
+<!-- Lane header boxes -->
+<rect x="40"   y="40"  width="460" height="100" rx="12 12 0 0" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1.5"/>
+<rect x="500"  y="40"  width="580" height="100" fill="#dcfce7" stroke="#86efac" stroke-width="1.5"/>
+<rect x="1080" y="40"  width="680" height="100" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+<rect x="1760" y="40"  width="980" height="100" rx="12 12 0 0" fill="#ffedd5" stroke="#fdba74" stroke-width="1.5"/>
+
+<text x="270"  y="85"  text-anchor="middle" font-size="22" font-weight="700" fill="#5b21b6">SystemAdmin</text>
+<text x="270"  y="112" text-anchor="middle" font-size="13" fill="#7c3aed">Tenant &amp; User Setup</text>
+<text x="790"  y="85"  text-anchor="middle" font-size="22" font-weight="700" fill="#15803d">Admin</text>
+<text x="790"  y="112" text-anchor="middle" font-size="13" fill="#16a34a">Trip · Round · Passenger · Allocation</text>
+<text x="1420" y="85"  text-anchor="middle" font-size="22" font-weight="700" fill="#1d4ed8">System</text>
+<text x="1420" y="112" text-anchor="middle" font-size="13" fill="#2563eb">Guards · DB · MQTT · Cascade</text>
+<text x="2250" y="85"  text-anchor="middle" font-size="22" font-weight="700" fill="#c2410c">BusManager</text>
+<text x="2250" y="112" text-anchor="middle" font-size="13" fill="#ea580c">Round Operations · Attendance · Notifications</text>
+
+<!-- Lane vertical separators -->
+<line x1="500"  y1="40" x2="500"  y2="3760" stroke="#d1ccc3" stroke-width="1.5"/>
+<line x1="1080" y1="40" x2="1080" y2="3760" stroke="#d1ccc3" stroke-width="1.5"/>
+<line x1="1760" y1="40" x2="1760" y2="3760" stroke="#d1ccc3" stroke-width="1.5"/>
+<!-- Outer border -->
+<rect x="40" y="40" width="2700" height="3720" rx="16" fill="none" stroke="#c8c2b8" stroke-width="2"/>
+
+<!-- ──────────────────────────────────────────
+     HELPERS: reusable shapes via text
+────────────────────────────────────────── -->
+
+<!-- ── START ── -->
+<circle cx="1420" cy="220" r="16" fill="#1e293b"/>
+<line x1="1420" y1="236" x2="1420" y2="276" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+
+<!-- ── LOGIN ── -->
+<rect x="1270" y="276" width="300" height="72" rx="12" fill="white" stroke="#2563eb" stroke-width="2" filter="url(#sh)"/>
+<text x="1420" y="308" text-anchor="middle" font-size="16" font-weight="600" fill="#1e3a8a">Login</text>
+<text x="1420" y="330" text-anchor="middle" font-size="12" fill="#2563eb">enter credentials</text>
+<line x1="1420" y1="348" x2="1420" y2="390" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+
+<!-- ── VALIDATE TENANT + ROLE ── -->
+<rect x="1230" y="390" width="380" height="72" rx="12" fill="white" stroke="#2563eb" stroke-width="2" filter="url(#sh)"/>
+<text x="1420" y="422" text-anchor="middle" font-size="16" font-weight="600" fill="#1e3a8a">Validate JWT + Tenant + Role</text>
+<text x="1420" y="444" text-anchor="middle" font-size="12" fill="#2563eb">guard on every request</text>
+<line x1="1420" y1="462" x2="1420" y2="506" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+
+<!-- ── ROLE DECISION ── -->
+<polygon points="1420,506 1560,556 1420,606 1280,556" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+<text x="1420" y="550" text-anchor="middle" font-size="16" font-weight="600" fill="#1e3a8a">Role?</text>
+<text x="1420" y="574" text-anchor="middle" font-size="12" fill="#3b82f6">dispatch by role</text>
+
+<!-- role labels -->
+<text x="340"  y="548" text-anchor="middle" font-size="13" font-weight="600" fill="#5b21b6">SystemAdmin</text>
+<text x="790"  y="548" text-anchor="middle" font-size="13" font-weight="600" fill="#15803d">Admin</text>
+<text x="2200" y="548" text-anchor="middle" font-size="13" font-weight="600" fill="#c2410c">BusManager</text>
+
+<!-- branch lines from diamond -->
+<line x1="1280" y1="556" x2="340"  y2="556" stroke="#64748b" stroke-width="2"/>
+<line x1="340"  y1="556" x2="340"  y2="630" stroke="#64748b" stroke-width="2.5" marker-end="url(#a)"/>
+
+<line x1="1280" y1="556" x2="790"  y2="556" stroke="#64748b" stroke-width="2"/>
+<line x1="790"  y1="556" x2="790"  y2="630" stroke="#64748b" stroke-width="2.5" marker-end="url(#a-grn)"/>
+
+<line x1="1560" y1="556" x2="2250" y2="556" stroke="#64748b" stroke-width="2"/>
+<line x1="2250" y1="556" x2="2250" y2="630" stroke="#64748b" stroke-width="2.5" marker-end="url(#a-org)"/>
+
+<!-- ═══════════════════════════════════════
+     SYSTEMADMIN LANE
+═══════════════════════════════════════ -->
+
+<!-- band label -->
+<rect x="56" y="618" width="428" height="26" rx="6" fill="#ede9fe"/>
+<text x="270" y="636" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="600" fill="#5b21b6" letter-spacing="1">TENANT SETUP</text>
+
+<rect x="100" y="654" width="340" height="72" rx="12" fill="white" stroke="#7c3aed" stroke-width="2" filter="url(#sh)"/>
+<text x="270" y="686" text-anchor="middle" font-size="16" font-weight="600" fill="#3b0764">Manage Tenants</text>
+<text x="270" y="708" text-anchor="middle" font-size="12" fill="#7c3aed">create · configure · suspend</text>
+<line x1="270" y1="726" x2="270" y2="768" stroke="#7c3aed" stroke-width="2" marker-end="url(#a)"/>
+
+<rect x="100" y="768" width="340" height="72" rx="12" fill="white" stroke="#7c3aed" stroke-width="2" filter="url(#sh)"/>
+<text x="270" y="800" text-anchor="middle" font-size="16" font-weight="600" fill="#3b0764">Create Users in Tenant</text>
+<text x="270" y="822" text-anchor="middle" font-size="12" fill="#7c3aed">Admin / BusManager roles</text>
+
+<!-- system: save user-tenant-role -->
+<rect x="1100" y="778" width="340" height="56" rx="10" fill="white" stroke="#2563eb" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1270" y="802" text-anchor="middle" font-size="14" font-weight="600" fill="#1e3a8a">Save UserTenantRole</text>
+<text x="1270" y="820" text-anchor="middle" font-size="11" fill="#2563eb">link user ↔ tenant ↔ role</text>
+<line x1="440" y1="804" x2="1100" y2="804" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#a-blue)"/>
+
+<!-- SA end -->
+<line x1="270" y1="840" x2="270" y2="910" stroke="#a89fc0" stroke-width="1.5" stroke-dasharray="8,6"/>
+<circle cx="270" cy="932" r="14" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+<circle cx="270" cy="932" r="6" fill="#7c3aed"/>
+<text x="270" y="960" text-anchor="middle" font-size="12" fill="#7c3aed">End SystemAdmin</text>
+
+<!-- ═══════════════════════════════════════
+     ADMIN LANE
+═══════════════════════════════════════ -->
+
+<!-- ── BAND A: TRIP & ROUND ── -->
+<rect x="516" y="618" width="548" height="26" rx="6" fill="#dcfce7"/>
+<text x="790" y="636" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="600" fill="#15803d" letter-spacing="1">A  ·  TRIP &amp; ROUND SETUP</text>
+
+<rect x="580" y="654" width="420" height="72" rx="12" fill="white" stroke="#16a34a" stroke-width="2" filter="url(#sh)"/>
+<text x="790" y="686" text-anchor="middle" font-size="16" font-weight="600" fill="#14532d">Create / Edit Trip</text>
+<text x="790" y="708" text-anchor="middle" font-size="12" fill="#16a34a">name (no "/") · start/end dates</text>
+<line x1="790" y1="726" x2="790" y2="768" stroke="#16a34a" stroke-width="2.5" marker-end="url(#a-grn)"/>
+
+<rect x="580" y="768" width="420" height="72" rx="12" fill="white" stroke="#16a34a" stroke-width="2" filter="url(#sh)"/>
+<text x="790" y="800" text-anchor="middle" font-size="16" font-weight="600" fill="#14532d">Create Rounds</text>
+<text x="790" y="822" text-anchor="middle" font-size="12" fill="#16a34a">define legs · set sequence</text>
+<line x1="790" y1="840" x2="790" y2="882" stroke="#16a34a" stroke-width="2.5" marker-end="url(#a-grn)"/>
+
+<!-- ── BAND B: BUS & DRIVER ── -->
+<rect x="516" y="882" width="548" height="26" rx="6" fill="#dcfce7"/>
+<text x="790" y="900" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="600" fill="#15803d" letter-spacing="1">B  ·  BUS &amp; DRIVER ASSIGNMENT</text>
+
+<rect x="580" y="918" width="420" height="72" rx="12" fill="white" stroke="#16a34a" stroke-width="2" filter="url(#sh)"/>
+<text x="790" y="950" text-anchor="middle" font-size="16" font-weight="600" fill="#14532d">Register Bus</text>
+<text x="790" y="972" text-anchor="middle" font-size="12" fill="#16a34a">capacity · 3 photos (front/side/rear)</text>
+<line x1="790" y1="990" x2="790" y2="1032" stroke="#16a34a" stroke-width="2.5" marker-end="url(#a-grn)"/>
+
+<rect x="580" y="1032" width="420" height="72" rx="12" fill="white" stroke="#16a34a" stroke-width="2" filter="url(#sh)"/>
+<text x="790" y="1064" text-anchor="middle" font-size="16" font-weight="600" fill="#14532d">Assign Bus to Round</text>
+<text x="790" y="1086" text-anchor="middle" font-size="12" fill="#16a34a">RoundBusAssignment</text>
+<line x1="790" y1="1104" x2="790" y2="1146" stroke="#16a34a" stroke-width="2.5" marker-end="url(#a-grn)"/>
+
+<rect x="580" y="1146" width="420" height="72" rx="12" fill="white" stroke="#16a34a" stroke-width="2" filter="url(#sh)"/>
+<text x="790" y="1178" text-anchor="middle" font-size="16" font-weight="600" fill="#14532d">Assign BusManager to Bus</text>
+<text x="790" y="1200" text-anchor="middle" font-size="12" fill="#16a34a">1 driver per bus per round</text>
+<line x1="790" y1="1218" x2="790" y2="1260" stroke="#16a34a" stroke-width="2.5" marker-end="url(#a-grn)"/>
+
+<!-- ── BAND C: PASSENGER REGISTRATION ── -->
+<rect x="516" y="1260" width="548" height="26" rx="6" fill="#dcfce7"/>
+<text x="790" y="1278" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="600" fill="#15803d" letter-spacing="1">C  ·  PASSENGER REGISTRATION</text>
+
+<!-- decision: import mode -->
+<polygon points="790,1296 920,1346 790,1396 660,1346" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="790" y="1340" text-anchor="middle" font-size="15" font-weight="600" fill="#14532d">Import mode?</text>
+<text x="790" y="1362" text-anchor="middle" font-size="12" fill="#16a34a"></text>
+
+<!-- standalone branch (left) -->
+<text x="628" y="1338" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">Standalone</text>
+<line x1="660" y1="1346" x2="580" y2="1346" stroke="#16a34a" stroke-width="2"/>
+<line x1="580" y1="1346" x2="580" y2="1420" stroke="#16a34a" stroke-width="2" marker-end="url(#a-grn)"/>
+<rect x="514" y="1420" width="260" height="68" rx="10" fill="white" stroke="#16a34a" stroke-width="1.8" filter="url(#sh)"/>
+<text x="644" y="1451" text-anchor="middle" font-size="15" font-weight="600" fill="#14532d">Manual Entry</text>
+<text x="644" y="1472" text-anchor="middle" font-size="11" fill="#16a34a">name · phone · ID · type · note</text>
+<line x1="644" y1="1488" x2="644" y2="1530" stroke="#16a34a" stroke-width="2"/>
+<line x1="644" y1="1530" x2="790" y2="1530" stroke="#16a34a" stroke-width="2"/>
+
+<!-- sheet branch (right) -->
+<text x="950" y="1338" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">Sheet Sync</text>
+<line x1="920" y1="1346" x2="1000" y2="1346" stroke="#16a34a" stroke-width="2"/>
+<line x1="1000" y1="1346" x2="1000" y2="1420" stroke="#16a34a" stroke-width="2" marker-end="url(#a-grn)"/>
+<rect x="886" y="1420" width="260" height="68" rx="10" fill="white" stroke="#16a34a" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1016" y="1451" text-anchor="middle" font-size="15" font-weight="600" fill="#14532d">Google Sheet Sync</text>
+<text x="1016" y="1472" text-anchor="middle" font-size="11" fill="#16a34a">Mode A: gen · Mode B: paste link</text>
+<line x1="1016" y1="1488" x2="1016" y2="1530" stroke="#16a34a" stroke-width="2"/>
+<line x1="1016" y1="1530" x2="790"  y2="1530" stroke="#16a34a" stroke-width="2"/>
+
+<!-- merge point -->
+<line x1="790" y1="1530" x2="790" y2="1570" stroke="#16a34a" stroke-width="2.5" marker-end="url(#a-grn)"/>
+
+<!-- ── BAND D: ROUND ALLOCATION ── -->
+<rect x="516" y="1570" width="548" height="26" rx="6" fill="#dcfce7"/>
+<text x="790" y="1588" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="600" fill="#15803d" letter-spacing="1">D  ·  ROUND PASSENGER ALLOCATION</text>
+
+<rect x="580" y="1606" width="420" height="72" rx="12" fill="white" stroke="#16a34a" stroke-width="2" filter="url(#sh)"/>
+<text x="790" y="1638" text-anchor="middle" font-size="16" font-weight="600" fill="#14532d">Assign Passengers to Bus</text>
+<text x="790" y="1660" text-anchor="middle" font-size="12" fill="#16a34a">RoundPassengerAssignment</text>
+
+<!-- system: capacity check -->
+<rect x="1110" y="1614" width="320" height="56" rx="10" fill="white" stroke="#2563eb" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1270" y="1638" text-anchor="middle" font-size="14" font-weight="600" fill="#1e3a8a">Check Bus Capacity</text>
+<text x="1270" y="1656" text-anchor="middle" font-size="11" fill="#2563eb">warn if over-assigned</text>
+<line x1="1000" y1="1642" x2="1110" y2="1642" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#a-blue)"/>
+
+<line x1="790" y1="1678" x2="790" y2="1720" stroke="#16a34a" stroke-width="2.5" marker-end="url(#a-grn)"/>
+
+<!-- decision: move passenger? -->
+<polygon points="790,1720 940,1780 790,1840 640,1780" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="790" y="1773" text-anchor="middle" font-size="15" font-weight="600" fill="#14532d">Move passenger</text>
+<text x="790" y="1797" text-anchor="middle" font-size="12" fill="#16a34a">between buses?</text>
+
+<!-- yes branch -->
+<text x="990" y="1773" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">Yes (Admin only)</text>
+<line x1="940" y1="1780" x2="1060" y2="1780" stroke="#16a34a" stroke-width="2"/>
+<line x1="1060" y1="1780" x2="1060" y2="1840" stroke="#16a34a" stroke-width="2" marker-end="url(#a-grn)"/>
+<rect x="940" y="1840" width="300" height="68" rx="10" fill="white" stroke="#16a34a" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1090" y="1871" text-anchor="middle" font-size="14" font-weight="600" fill="#14532d">Update</text>
+<text x="1090" y="1893" text-anchor="middle" font-size="11" fill="#16a34a">RoundPassengerAssignment</text>
+<line x1="1090" y1="1908" x2="1090" y2="1950" stroke="#16a34a" stroke-width="2"/>
+<line x1="1090" y1="1950" x2="790"  y2="1950" stroke="#16a34a" stroke-width="2"/>
+
+<!-- system: validate boundary -->
+<rect x="1110" y="1848" width="300" height="52" rx="10" fill="white" stroke="#2563eb" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1260" y="1870" text-anchor="middle" font-size="13" font-weight="600" fill="#1e3a8a">Validate Round Boundary</text>
+<text x="1260" y="1886" text-anchor="middle" font-size="11" fill="#2563eb">only before round starts</text>
+
+<!-- no branch -->
+<text x="600" y="1773" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">No</text>
+<line x1="640" y1="1780" x2="560" y2="1780" stroke="#16a34a" stroke-width="2"/>
+<line x1="560" y1="1780" x2="560" y2="1950" stroke="#16a34a" stroke-width="2"/>
+<line x1="560" y1="1950" x2="790" y2="1950" stroke="#16a34a" stroke-width="2"/>
+
+<!-- merge → signal system -->
+<line x1="790" y1="1950" x2="790" y2="1990" stroke="#16a34a" stroke-width="2.5" marker-end="url(#a-grn)"/>
+
+<!-- system: data ready -->
+<rect x="1110" y="1960" width="300" height="56" rx="10" fill="white" stroke="#2563eb" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1260" y="1984" text-anchor="middle" font-size="14" font-weight="600" fill="#1e3a8a">Round Data Ready</text>
+<text x="1260" y="2002" text-anchor="middle" font-size="11" fill="#2563eb">BusManager can access round</text>
+<line x1="1000" y1="1990" x2="1110" y2="1988" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="6,4" marker-end="url(#a-blue)"/>
+
+<!-- signal to BM lane (dashed horizontal) -->
+<path d="M1410 1988 C 1600 1988 1700 1988 2250 1988 L 2250 2060" fill="none" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="6,4" marker-end="url(#a)"/>
+<text x="1750" y="1978" font-size="11" fill="#94a3b8" font-style="italic">data prepared</text>
+
+<!-- Admin end -->
+<line x1="790" y1="1990" x2="790" y2="2080" stroke="#86efac" stroke-width="1.5" stroke-dasharray="8,6"/>
+<circle cx="790" cy="2100" r="14" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+<circle cx="790" cy="2100" r="6" fill="#16a34a"/>
+<text x="790" y="2128" text-anchor="middle" font-size="12" fill="#16a34a">End Admin branch</text>
+
+<!-- ═══════════════════════════════════════
+     BUS MANAGER LANE
+═══════════════════════════════════════ -->
+
+<!-- ── BAND E: ROUND OPERATIONS ── -->
+<rect x="1776" y="618" width="948" height="26" rx="6" fill="#ffedd5"/>
+<text x="2250" y="636" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="600" fill="#c2410c" letter-spacing="1">E  ·  ROUND OPERATIONS</text>
+
+<rect x="1900" y="654" width="700" height="72" rx="12" fill="white" stroke="#ea580c" stroke-width="2" filter="url(#sh)"/>
+<text x="2250" y="686" text-anchor="middle" font-size="16" font-weight="600" fill="#7c2d12">View Assigned Round &amp; Bus</text>
+<text x="2250" y="708" text-anchor="middle" font-size="12" fill="#ea580c">scoped to own assignment only</text>
+<line x1="2250" y1="726" x2="2250" y2="768" stroke="#ea580c" stroke-width="2.5" marker-end="url(#a-org)"/>
+
+<rect x="1900" y="768" width="700" height="72" rx="12" fill="white" stroke="#ea580c" stroke-width="2" filter="url(#sh)"/>
+<text x="2250" y="800" text-anchor="middle" font-size="16" font-weight="600" fill="#7c2d12">View Passenger List</text>
+<text x="2250" y="822" text-anchor="middle" font-size="12" fill="#ea580c">for assigned bus / current round</text>
+<line x1="2250" y1="840" x2="2250" y2="882" stroke="#ea580c" stroke-width="2.5" marker-end="url(#a-org)"/>
+
+<rect x="1900" y="882" width="700" height="72" rx="12" fill="white" stroke="#ea580c" stroke-width="2" filter="url(#sh)"/>
+<text x="2250" y="914" text-anchor="middle" font-size="16" font-weight="600" fill="#7c2d12">Start Round</text>
+<text x="2250" y="936" text-anchor="middle" font-size="12" fill="#ea580c">status → IN_PROGRESS</text>
+<line x1="2250" y1="954" x2="2250" y2="996" stroke="#ea580c" stroke-width="2.5" marker-end="url(#a-org)"/>
+
+<!-- system: trip IN_PROGRESS -->
+<rect x="1110" y="900" width="320" height="56" rx="10" fill="white" stroke="#2563eb" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1270" y="922" text-anchor="middle" font-size="14" font-weight="600" fill="#1e3a8a">Trip → IN_PROGRESS</text>
+<text x="1270" y="940" text-anchor="middle" font-size="11" fill="#2563eb">if first round starting</text>
+<line x1="1900" y1="928" x2="1430" y2="928" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#a-blue)"/>
+
+<!-- ── BAND F: ATTENDANCE ── -->
+<rect x="1776" y="996" width="948" height="26" rx="6" fill="#ffedd5"/>
+<text x="2250" y="1014" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="600" fill="#c2410c" letter-spacing="1">F  ·  ATTENDANCE WORKFLOW</text>
+
+<!-- for each passenger loop label -->
+<text x="1800" y="1046" font-size="12" fill="#ea580c" font-style="italic">[ for each passenger ]</text>
+
+<rect x="1900" y="1056" width="700" height="72" rx="12" fill="white" stroke="#ea580c" stroke-width="2" filter="url(#sh)"/>
+<text x="2250" y="1088" text-anchor="middle" font-size="16" font-weight="600" fill="#7c2d12">Mark Attendance</text>
+<text x="2250" y="1110" text-anchor="middle" font-size="12" fill="#ea580c">JOIN  or  ABSENT</text>
+<line x1="2250" y1="1128" x2="2250" y2="1170" stroke="#ea580c" stroke-width="2.5" marker-end="url(#a-org)"/>
+
+<!-- system: save record + broadcast -->
+<rect x="1110" y="1080" width="320" height="56" rx="10" fill="white" stroke="#2563eb" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1270" y="1102" text-anchor="middle" font-size="14" font-weight="600" fill="#1e3a8a">Save AttendanceRecord</text>
+<text x="1270" y="1120" text-anchor="middle" font-size="11" fill="#2563eb">JOIN / ABSENT / CANCELLED</text>
+<line x1="1900" y1="1108" x2="1430" y2="1108" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#a-blue)"/>
+
+<rect x="1110" y="1156" width="320" height="56" rx="10" fill="white" stroke="#2563eb" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1270" y="1178" text-anchor="middle" font-size="14" font-weight="600" fill="#1e3a8a">Broadcast via MQTT</text>
+<text x="1270" y="1196" text-anchor="middle" font-size="11" fill="#2563eb">→ Admin dashboard + peer BMs</text>
+<line x1="1270" y1="1136" x2="1270" y2="1156" stroke="#64748b" stroke-width="2" marker-end="url(#a-blue)"/>
+
+<!-- Admin override branch (Admin lane) -->
+<rect x="516" y="1100" width="548" height="26" rx="6" fill="#dcfce7"/>
+<text x="790" y="1118" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="600" fill="#15803d" letter-spacing="1">F.1  ·  ADMIN OVERRIDE (optional)</text>
+
+<polygon points="790,1138 900,1178 790,1218 680,1178" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+<text x="790" y="1172" text-anchor="middle" font-size="14" font-weight="600" fill="#14532d">Override needed?</text>
+<text x="790" y="1192" text-anchor="middle" font-size="11" fill="#16a34a">(Admin only)</text>
+
+<!-- yes override -->
+<text x="948" y="1172" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">Yes</text>
+<line x1="900" y1="1178" x2="1000" y2="1178" stroke="#16a34a" stroke-width="2"/>
+<line x1="1000" y1="1178" x2="1000" y2="1230" stroke="#16a34a" stroke-width="2" marker-end="url(#a-grn)"/>
+<rect x="886" y="1230" width="300" height="60" rx="10" fill="white" stroke="#16a34a" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1036" y="1256" text-anchor="middle" font-size="14" font-weight="600" fill="#14532d">Override AttendanceRecord</text>
+<text x="1036" y="1276" text-anchor="middle" font-size="11" fill="#16a34a">correct JOIN / ABSENT · any record</text>
+<!-- system saves override -->
+<line x1="1186" y1="1260" x2="1250" y2="1212" stroke="#64748b" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#a-blue)"/>
+<text x="1250" y="1248" font-size="11" fill="#2563eb" font-style="italic">save</text>
+<line x1="1036" y1="1290" x2="1036" y2="1330" stroke="#16a34a" stroke-width="2"/>
+<line x1="1036" y1="1330" x2="790"  y2="1330" stroke="#16a34a" stroke-width="2"/>
+
+<!-- no override -->
+<text x="648" y="1172" text-anchor="middle" font-size="12" font-weight="600" fill="#15803d">No</text>
+<line x1="680" y1="1178" x2="620" y2="1178" stroke="#16a34a" stroke-width="2"/>
+<line x1="620" y1="1178" x2="620" y2="1330" stroke="#16a34a" stroke-width="2"/>
+<line x1="620" y1="1330" x2="790" y2="1330" stroke="#16a34a" stroke-width="2"/>
+
+<line x1="790" y1="1330" x2="790" y2="1360" stroke="#16a34a" stroke-width="2.5" marker-end="url(#a-grn)"/>
+<!-- signal flows to "done?" decision below -->
+<line x1="790" y1="1360" x2="790" y2="1390" stroke="#9ca3af" stroke-width="1.6" stroke-dasharray="6,4"/>
+<text x="820" y="1378" font-size="11" fill="#94a3b8" font-style="italic">continue</text>
+
+<!-- admin: live dashboard update -->
+<rect x="1110" y="1310" width="320" height="56" rx="10" fill="white" stroke="#2563eb" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1270" y="1332" text-anchor="middle" font-size="14" font-weight="600" fill="#1e3a8a">Update Live Dashboard</text>
+<text x="1270" y="1350" text-anchor="middle" font-size="11" fill="#2563eb">Admin sees per-bus progress</text>
+<line x1="1270" y1="1212" x2="1270" y2="1310" stroke="#64748b" stroke-width="2" marker-end="url(#a-blue)"/>
+
+<!-- BM: real-time updates -->
+<rect x="1900" y="1170" width="700" height="72" rx="12" fill="white" stroke="#ea580c" stroke-width="2" filter="url(#sh)"/>
+<text x="2250" y="1202" text-anchor="middle" font-size="16" font-weight="600" fill="#7c2d12">View Real-Time Progress</text>
+<text x="2250" y="1224" text-anchor="middle" font-size="12" fill="#ea580c">other buses via MQTT</text>
+<!-- MQTT arrow to BM -->
+<line x1="1430" y1="1184" x2="1900" y2="1206" stroke="#64748b" stroke-width="1.6" stroke-dasharray="6,4" marker-end="url(#a)"/>
+
+<line x1="2250" y1="1242" x2="2250" y2="1420" stroke="#ea580c" stroke-width="2.5" marker-end="url(#a-org)"/>
+
+<!-- decision: all marked? — y=1420, clear of override branch -->
+<polygon points="2250,1420 2400,1480 2250,1540 2100,1480" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+<text x="2250" y="1474" text-anchor="middle" font-size="15" font-weight="600" fill="#7c2d12">All marked?</text>
+<text x="2250" y="1494" text-anchor="middle" font-size="12" fill="#ea580c"></text>
+
+<!-- no → loop back -->
+<text x="2560" y="1474" text-anchor="middle" font-size="13" font-weight="600" fill="#ea580c">No</text>
+<line x1="2400" y1="1480" x2="2620" y2="1480" stroke="#ea580c" stroke-width="2"/>
+<line x1="2620" y1="1480" x2="2620" y2="1056" stroke="#ea580c" stroke-width="2"/>
+<line x1="2620" y1="1056" x2="2600" y2="1056" stroke="#ea580c" stroke-width="2" marker-end="url(#a-org)"/>
+<text x="2660" y="1270" text-anchor="middle" font-size="12" fill="#ea580c" font-style="italic" transform="rotate(90,2660,1270)">loop: next passenger</text>
+
+<!-- yes → complete round -->
+<text x="2230" y="1554" text-anchor="middle" font-size="13" font-weight="600" fill="#ea580c">Yes (all marked)</text>
+<line x1="2250" y1="1540" x2="2250" y2="1590" stroke="#ea580c" stroke-width="2.5" marker-end="url(#a-org)"/>
+
+<rect x="1900" y="1590" width="700" height="72" rx="12" fill="white" stroke="#ea580c" stroke-width="2" filter="url(#sh)"/>
+<text x="2250" y="1622" text-anchor="middle" font-size="16" font-weight="600" fill="#7c2d12">Complete Round</text>
+<text x="2250" y="1644" text-anchor="middle" font-size="12" fill="#ea580c">status → DONE</text>
+<line x1="2250" y1="1662" x2="2250" y2="1705" stroke="#ea580c" stroke-width="2.5" marker-end="url(#a-org)"/>
+
+<!-- system: check trip done? -->
+<rect x="1110" y="1610" width="320" height="56" rx="10" fill="white" stroke="#2563eb" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1270" y="1632" text-anchor="middle" font-size="14" font-weight="600" fill="#1e3a8a">Check Trip Completion</text>
+<text x="1270" y="1650" text-anchor="middle" font-size="11" fill="#2563eb">all rounds DONE → Trip DONE</text>
+<line x1="1900" y1="1638" x2="1430" y2="1638" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#a-blue)"/>
+
+<!-- decision: more rounds? -->
+<polygon points="2250,1705 2400,1765 2250,1825 2100,1765" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+<text x="2250" y="1759" text-anchor="middle" font-size="15" font-weight="600" fill="#7c2d12">More rounds?</text>
+
+<!-- yes → await next round window -->
+<text x="2480" y="1759" text-anchor="middle" font-size="13" font-weight="600" fill="#ea580c">Yes</text>
+<line x1="2400" y1="1765" x2="2500" y2="1765" stroke="#ea580c" stroke-width="2"/>
+<line x1="2500" y1="1765" x2="2500" y2="1850" stroke="#ea580c" stroke-width="2" marker-end="url(#a-org)"/>
+
+<rect x="2350" y="1850" width="360" height="80" rx="12" fill="#fff7ed" stroke="#ea580c" stroke-width="1.8" stroke-dasharray="8,4" filter="url(#sh)"/>
+<text x="2530" y="1884" text-anchor="middle" font-size="15" font-weight="600" fill="#7c2d12">Await Next Round</text>
+<text x="2530" y="1906" text-anchor="middle" font-size="11" fill="#ea580c">Admin may move passengers here</text>
+
+<!-- loop back arrow to top of BM section -->
+<line x1="2530" y1="1930" x2="2530" y2="1970" stroke="#ea580c" stroke-width="2"/>
+<line x1="2530" y1="1970" x2="2670" y2="1970" stroke="#ea580c" stroke-width="2"/>
+<line x1="2670" y1="1970" x2="2670" y2="630" stroke="#ea580c" stroke-width="2"/>
+<line x1="2670" y1="630"  x2="2600" y2="630" stroke="#ea580c" stroke-width="2" marker-end="url(#a-org)"/>
+<text x="2700" y="1270" text-anchor="middle" font-size="12" fill="#ea580c" font-style="italic" transform="rotate(90,2700,1270)">loop: next round</text>
+
+<!-- no (last round) → notifications -->
+<text x="2100" y="1810" text-anchor="middle" font-size="13" font-weight="600" fill="#ea580c">No (last round)</text>
+<line x1="2100" y1="1765" x2="2020" y2="1765" stroke="#ea580c" stroke-width="2"/>
+<line x1="2020" y1="1765" x2="2020" y2="1990" stroke="#ea580c" stroke-width="2" marker-end="url(#a-org)"/>
+
+<!-- ── BAND G: NOTIFICATIONS ── -->
+<rect x="1776" y="1990" width="948" height="26" rx="6" fill="#ffedd5"/>
+<text x="2250" y="2008" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="600" fill="#c2410c" letter-spacing="1">G  ·  PASSENGER NOTIFICATIONS  (optional)</text>
+
+<!-- decision: notify? -->
+<polygon points="2020,2030 2160,2080 2020,2130 1880,2080" fill="#fff7ed" stroke="#ea580c" stroke-width="2"/>
+<text x="2020" y="2074" text-anchor="middle" font-size="15" font-weight="600" fill="#7c2d12">Send notification?</text>
+
+<!-- yes notify branch -->
+<text x="2220" y="2074" text-anchor="middle" font-size="12" font-weight="600" fill="#ea580c">Yes</text>
+<line x1="2160" y1="2080" x2="2280" y2="2080" stroke="#ea580c" stroke-width="2"/>
+<line x1="2280" y1="2080" x2="2280" y2="2150" stroke="#ea580c" stroke-width="2" marker-end="url(#a-org)"/>
+
+<rect x="2140" y="2150" width="440" height="72" rx="12" fill="white" stroke="#ea580c" stroke-width="2" filter="url(#sh)"/>
+<text x="2360" y="2182" text-anchor="middle" font-size="16" font-weight="600" fill="#7c2d12">Trigger Notification</text>
+<text x="2360" y="2204" text-anchor="middle" font-size="12" fill="#ea580c">SMS · Teams · Zalo · Broadcast Call</text>
+
+<!-- system dispatches -->
+<rect x="1110" y="2158" width="320" height="56" rx="10" fill="white" stroke="#2563eb" stroke-width="1.8" filter="url(#sh)"/>
+<text x="1270" y="2180" text-anchor="middle" font-size="14" font-weight="600" fill="#1e3a8a">Dispatch Notification</text>
+<text x="1270" y="2198" text-anchor="middle" font-size="11" fill="#2563eb">via selected channel</text>
+<line x1="2140" y1="2186" x2="1430" y2="2186" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#a-blue)"/>
+
+<line x1="2360" y1="2222" x2="2360" y2="2270" stroke="#ea580c" stroke-width="2"/>
+<line x1="2360" y1="2270" x2="2020" y2="2270" stroke="#ea580c" stroke-width="2"/>
+
+<!-- skip notify branch -->
+<text x="1870" y="2074" text-anchor="middle" font-size="12" font-weight="600" fill="#ea580c">No</text>
+<line x1="1880" y1="2080" x2="1800" y2="2080" stroke="#ea580c" stroke-width="2"/>
+<line x1="1800" y1="2080" x2="1800" y2="2270" stroke="#ea580c" stroke-width="2"/>
+<line x1="1800" y1="2270" x2="2020" y2="2270" stroke="#ea580c" stroke-width="2"/>
+
+<line x1="2020" y1="2270" x2="2020" y2="2310" stroke="#ea580c" stroke-width="2.5" marker-end="url(#a-org)"/>
+
+<!-- BM end -->
+<line x1="2020" y1="2310" x2="2020" y2="2380" stroke="#fdba74" stroke-width="1.5" stroke-dasharray="8,6"/>
+<circle cx="2020" cy="2402" r="14" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/>
+<circle cx="2020" cy="2402" r="6" fill="#ea580c"/>
+<text x="2020" y="2430" text-anchor="middle" font-size="12" fill="#ea580c">End BusManager branch</text>
+
+<!-- ══════════════════════════════════════
+     FOOTER
+══════════════════════════════════════ -->
+<rect x="56" y="2470" width="2680" height="110" rx="12" fill="#fafaf8" stroke="#e2ddd6" stroke-width="1.5"/>
+<text x="90" y="2504" font-size="14" font-weight="700" fill="#44403c">Domain rules embedded in this diagram</text>
+<text x="90" y="2528" font-size="12" fill="#78716c">•  Bus assigns to Round (not Trip)   ·   Passenger movement = Admin only, between rounds only (at stops)</text>
+<text x="90" y="2548" font-size="12" fill="#78716c">•  Override Attendance = Admin «extends» BusManager's Mark Attendance   ·   Status: JOIN / ABSENT / CANCELLED (cascade when round cancelled)   ·   Trip status derived from rounds</text>
+
+</svg>
+</div>
+</body>
+</html>

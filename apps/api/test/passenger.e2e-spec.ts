@@ -180,14 +180,16 @@ describe('Passengers (e2e)', () => {
     })
   })
 
-  describe('CSV export', () => {
-    it('GET export/csv → Content-Type text/csv', async () => {
+  describe('Xlsx export', () => {
+    it('GET export/xlsx → Content-Type xlsx', async () => {
       const res = await request(app.getHttpServer())
-        .get(`/trips/${tripId}/passengers/export/csv`)
+        .get(`/trips/${tripId}/passengers/export/xlsx`)
         .set('Authorization', `Bearer ${adminToken}`)
+        .buffer(true)
       expect(res.status).toBe(200)
-      expect(res.headers['content-type']).toContain('text/csv')
-      expect(res.text).toContain('name,phone')
+      expect(res.headers['content-type']).toContain(
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      )
     })
   })
 })

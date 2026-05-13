@@ -4,6 +4,7 @@ import LoginPage from './features/auth/LoginPage'
 import DashboardLayout from './layouts/DashboardLayout'
 import TripListPage from './features/trips/TripListPage'
 import BusListPage from './features/buses/BusListPage'
+import PassengerListPage from './features/passengers/PassengerListPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useAppSelector((s) => s.auth.accessToken)
@@ -25,6 +26,7 @@ export default function App() {
       >
         <Route index element={<Navigate to="/trips" replace />} />
         <Route path="trips" element={<TripListPage />} />
+        <Route path="trips/:tripId/passengers" element={<PassengerListPage />} />
         <Route path="buses" element={<BusListPage />} />
       </Route>
     </Routes>

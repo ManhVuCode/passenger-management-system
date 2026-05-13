@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'motion/react'
 import { useGetTripQuery } from './tripsApi'
 import { useGetPassengersQuery } from '../passengers/passengerApi'
 import {
@@ -11,90 +12,210 @@ import {
 } from '../allocation/allocationApi'
 import { useAppSelector } from '../../store/hooks'
 import NotificationPanel from '../notifications/NotificationPanel'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
-import { ChevronRight, Users, Bus, ArrowRight, Activity } from 'lucide-react'
-import { TripStatus, RoundStatus, type Round } from '@pms/shared'
-
-const STATUS_BADGE: Record<string, 'default' | 'warning' | 'success' | 'destructive' | 'secondary'> = {
-  PLANNED: 'secondary',
-  IN_PROGRESS: 'warning',
-  DONE: 'success',
-  CANCELLED: 'destructive',
-}
+import {
+  ArrowLeft,
+  ChevronRight,
+  Users,
+  Bus as BusIcon,
+  MapPin,
+  Clock,
+  Activity,
+  AlertCircle,
+  Share2,
+  X,
+} from 'lucide-react'
+import { RoundStatus, type Round } from '@pms/shared'
+import type { BadgeVariant } from '../../components/ui/badge'
+import { cn } from '../../lib/utils'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
   const { data: trip, isLoading } = useGetTripQuery(tripId!)
-  const [selectedRound, setSelectedRound] = useState<string | null>(null)
+  const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null)
 
-  if (isLoading) return <div className="p-8 text-slate-400">Loading trip…</div>
-  if (!trip) return <div className="p-8 text-red-400">Trip not found</div>
+  if (isLoading) return <div className="p-8 text-gray-400">Loading trip…</div>
+  if (!trip) return <div className="p-8 text-danger-600">Trip not found</div>
 
-  const rounds = trip.rounds ?? []
-  const selected = rounds.find((r) => r.id === selectedRound)
+  const rounds = (trip.rounds ?? []) as Round[]
+  const selected = rounds.find((r) => r.id === selectedRoundId) ?? null
 
   return (
-    <div className="p-8 max-w-6xl space-y-6">
-      <div className="flex items-center gap-2 text-sm text-slate-400">
-        <Link to="/trips" className="hover:text-primary">Trips</Link>
-        <ChevronRight size={14} />
-        <span className="text-slate-700 font-medium">{trip.name}</span>
+    <div className="p-8">
+      <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">
+        <Link to="/trips" className="hover:text-gray-950 transition-colors">Trips</Link>
+        <ChevronRight size={12} className="text-gray-300" />
+        <span className="text-gray-950">{trip.name}</span>
+        <ChevronRight size={12} className="text-gray-300" />
+        <span>Detail</span>
       </div>
 
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold">{trip.name}</h2>
-          <p className="text-sm text-slate-500 mt-1">
-            {new Date(trip.startDate).toLocaleDateString()} →{' '}
-            {new Date(trip.endDate).toLocaleDateString()}
-          </p>
+      <header className="flex items-center gap-4 mb-8">
+        <Link
+          to="/trips"
+          className="p-2 -ml-2 text-gray-400 hover:text-gray-950 hover:bg-white rounded-full transition-all"
+        >
+          <ArrowLeft size={20} />
+        </Link>
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-gray-950">{trip.name}</h1>
+          <div className="flex items-center gap-2 mt-0.5">
+            <Badge variant={trip.status as BadgeVariant} label={trip.status} />
+            <span className="text-xs text-gray-400 font-medium">
+              • {new Date(trip.startDate).toLocaleDateString()} —{' '}
+              {new Date(trip.endDate).toLocaleDateString()}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge variant={STATUS_BADGE[trip.status as TripStatus] ?? 'secondary'}>
-            {trip.status}
-          </Badge>
-          <Link to={`/trips/${tripId}/dashboard`}>
-            <Button variant="outline" size="sm">
-              <Activity size={14} className="mr-1.5" /> Live Dashboard
-            </Button>
-          </Link>
-          <Link to={`/trips/${tripId}/passengers`}>
-            <Button variant="outline" size="sm">
-              <Users size={14} className="mr-1.5" /> Manage Passengers
-            </Button>
-          </Link>
-        </div>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-3 gap-4">
-        {rounds.map((round) => (
-          <Card
-            key={round.id}
-            className={`cursor-pointer transition-all hover:shadow-md ${
-              selectedRound === round.id ? 'ring-2 ring-primary' : ''
-            }`}
-            onClick={() => setSelectedRound(round.id === selectedRound ? null : round.id)}
-          >
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">
-                  Round {round.sequence}: {round.name}
-                </CardTitle>
-                <Badge variant={STATUS_BADGE[round.status] ?? 'secondary'}>
-                  {round.status}
-                </Badge>
+      <div className="flex gap-8 flex-1 min-h-0">
+        {/* Left column: trip info */}
+        <div className="w-[240px] space-y-6 shrink-0">
+          <div className="bg-white p-5 rounded-2xl shadow-card border border-gray-100">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+              Quick Actions
+            </p>
+            <div className="flex flex-col gap-2">
+              <Link to={`/trips/${tripId}/passengers`}>
+                <Button variant="outline" className="w-full justify-start gap-2 h-9 text-xs">
+                  <Users size={14} /> Manage Passengers
+                </Button>
+              </Link>
+              <Link to={`/trips/${tripId}/dashboard`}>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2 h-9 text-xs text-success-600 hover:text-success-600 hover:bg-success-50"
+                >
+                  <Activity size={14} /> Live Dashboard
+                </Button>
+              </Link>
+              <Button variant="outline" className="w-full justify-start gap-2 h-9 text-xs">
+                <Share2 size={14} /> Share Link
+              </Button>
+            </div>
+
+            {trip.description && (
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                  Trip Note
+                </p>
+                <p className="text-xs text-gray-600 leading-relaxed italic">
+                  &ldquo;{trip.description}&rdquo;
+                </p>
               </div>
-              <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
-                {round.departurePoint} <ArrowRight size={10} /> {round.arrivalPoint}
-              </p>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
+            )}
+          </div>
+        </div>
 
-      {selected && <AllocationPanel tripId={tripId!} round={selected} />}
+        {/* Center column: rounds timeline */}
+        <div className="flex-1 space-y-4 min-w-0">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-bold text-gray-950">Journey Rounds</h2>
+          </div>
+
+          {rounds.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8 text-center text-gray-400 text-sm">
+              No rounds yet for this trip.
+            </div>
+          ) : (
+            <div className="relative pl-10 space-y-12 pb-20">
+              <div className="absolute left-4 top-2 bottom-2 w-0.5 bg-gray-200" />
+              {rounds.map((round, idx) => (
+                <div key={round.id} className="relative">
+                  <div
+                    className={cn(
+                      'absolute -left-10 top-0 w-8 h-8 rounded-full flex items-center justify-center border-4 border-gray-50 z-10 transition-all',
+                      round.status === RoundStatus.DONE && 'bg-success-600 text-white',
+                      round.status === RoundStatus.IN_PROGRESS &&
+                        'bg-warning-500 scale-110 shadow-lg shadow-warning-500/20 text-white',
+                      round.status === RoundStatus.CANCELLED && 'bg-danger-600 text-white',
+                      round.status === RoundStatus.PLANNED && 'bg-gray-200 text-gray-500',
+                    )}
+                  >
+                    <span className="text-[10px] font-bold">{round.sequence ?? idx + 1}</span>
+                  </div>
+
+                  <motion.div
+                    whileHover={{ x: 4 }}
+                    onClick={() =>
+                      setSelectedRoundId(round.id === selectedRoundId ? null : round.id)
+                    }
+                    className={cn(
+                      'p-5 rounded-2xl cursor-pointer transition-all border-2',
+                      selectedRoundId === round.id
+                        ? 'bg-white shadow-xl border-primary-600 translate-x-2'
+                        : 'bg-white/60 border-transparent hover:bg-white hover:shadow-md',
+                    )}
+                  >
+                    <div className="flex justify-between items-start mb-3 gap-3">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-gray-950 truncate">
+                          Round {round.sequence}: {round.name}
+                        </h4>
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                          <MapPin size={12} strokeWidth={3} />
+                          <span className="truncate">
+                            {round.departurePoint} → {round.arrivalPoint}
+                          </span>
+                        </div>
+                      </div>
+                      <Badge variant={round.status as BadgeVariant} label={round.status} />
+                    </div>
+                    <div className="flex items-center gap-4 mt-4">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400 font-medium">
+                        <Clock size={12} />
+                        {new Date(round.scheduledDep).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}{' '}
+                        —{' '}
+                        {new Date(round.scheduledArr).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right column: allocation panel — animated */}
+        <AnimatePresence mode="wait">
+          {selected && (
+            <motion.div
+              key={selected.id}
+              layoutId="roundPanel"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="w-[420px] bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col h-min sticky top-8 shrink-0"
+            >
+              <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
+                <div>
+                  <h3 className="font-bold text-gray-950">Bus Allocation</h3>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    {selected.name}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedRoundId(null)}
+                  className="text-gray-400 hover:text-gray-950"
+                  aria-label="Close panel"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <AllocationPanel tripId={tripId!} round={selected} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   )
 }
@@ -121,7 +242,12 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
 
   async function handleAllocate() {
     if (!selectedPassengers.length || !targetBusId) return
-    const res = await allocate({ tripId, roundId, busId: targetBusId, passengerIds: selectedPassengers }).unwrap()
+    const res = await allocate({
+      tripId,
+      roundId,
+      busId: targetBusId,
+      passengerIds: selectedPassengers,
+    }).unwrap()
     setSelectedPassengers([])
     setTargetBusId('')
     if (res.capacityWarning) setWarning(res.capacityWarning.message)
@@ -141,54 +267,72 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
     return acc
   }, {})
 
-  if (isLoading) return <div className="text-slate-400 py-4">Loading allocations…</div>
+  if (isLoading) {
+    return <div className="p-5 text-gray-400 text-sm">Loading allocations…</div>
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          Passenger Allocation — Round {round.name}
-          <span className="ml-2 text-sm font-normal text-slate-400">
-            ({allocations.length} allocated, {unallocated.length} unallocated)
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="flex flex-col">
+      <div className="p-5 space-y-6 max-h-[60vh] overflow-y-auto">
+        {warning && (
+          <div className="p-3 bg-danger-50 rounded-xl border border-danger-100 flex items-start gap-3">
+            <AlertCircle className="text-danger-600 shrink-0 mt-0.5" size={16} />
+            <div className="flex-1">
+              <p className="text-[11px] text-danger-600 leading-tight">{warning}</p>
+              <button
+                onClick={() => setWarning(null)}
+                className="text-[10px] text-danger-600 underline mt-1"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
         {isPlanned && (
-          <div className="bg-slate-50 rounded-lg p-4 space-y-3">
-            <p className="text-sm font-medium">Assign passengers to bus</p>
-            {warning && (
-              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-                ⚠️ {warning}
-                <button className="ml-2 text-xs underline" onClick={() => setWarning(null)}>dismiss</button>
-              </div>
-            )}
-            <div className="flex gap-3 flex-wrap">
+          <div className="space-y-3">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              Assign Unallocated
+            </p>
+            <div className="flex gap-2">
               <input
-                className="flex-1 min-w-40 h-9 border border-border rounded-md px-3 text-sm"
+                className="flex-1 h-9 px-3 bg-gray-50 border border-gray-100 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600"
                 placeholder="Target Bus ID"
                 value={targetBusId}
                 onChange={(e) => setTargetBusId(e.target.value)}
               />
-              <Button size="sm" onClick={handleAllocate} disabled={allocating || !selectedPassengers.length || !targetBusId}>
-                <Bus size={13} className="mr-1.5" />
-                Assign {selectedPassengers.length > 0 ? `(${selectedPassengers.length})` : ''}
+              <Button
+                size="sm"
+                onClick={handleAllocate}
+                disabled={allocating || !selectedPassengers.length || !targetBusId}
+              >
+                <BusIcon size={13} className="mr-1.5" />
+                Assign {selectedPassengers.length ? `(${selectedPassengers.length})` : ''}
               </Button>
             </div>
             {unallocated.length > 0 && (
-              <div className="grid grid-cols-2 gap-1 max-h-48 overflow-auto">
+              <div className="max-h-48 overflow-y-auto space-y-1 bg-gray-50/50 rounded-xl p-2">
                 {unallocated.map((p) => (
-                  <label key={p.id} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded hover:bg-slate-100 cursor-pointer">
+                  <label
+                    key={p.id}
+                    className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-lg hover:bg-white cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={selectedPassengers.includes(p.id)}
                       onChange={(e) => {
-                        if (e.target.checked) setSelectedPassengers([...selectedPassengers, p.id])
-                        else setSelectedPassengers(selectedPassengers.filter((id) => id !== p.id))
+                        if (e.target.checked)
+                          setSelectedPassengers([...selectedPassengers, p.id])
+                        else
+                          setSelectedPassengers(
+                            selectedPassengers.filter((id) => id !== p.id),
+                          )
                       }}
                     />
-                    <span className="font-medium truncate">{p.name}</span>
-                    {p.type && <Badge variant="secondary" className="text-xs">{p.type}</Badge>}
+                    <span className="font-bold text-gray-950 truncate flex-1">{p.name}</span>
+                    {p.type && (
+                      <Badge variant={`TYPE_${p.type}` as BadgeVariant} label={p.type} />
+                    )}
                   </label>
                 ))}
               </div>
@@ -196,83 +340,123 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
           </div>
         )}
 
-        {Object.keys(byBus).length === 0 && (
-          <p className="text-slate-400 text-sm text-center py-4">No passengers allocated yet.</p>
-        )}
-        {Object.entries(byBus).map(([bid, busAllocs]) => (
-          <div key={bid}>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-              <Bus size={11} />
-              {busAllocs[0]?.roundBusAssignment?.bus?.name ?? `Bus ${bid.slice(0, 8)}`}
-              <Badge variant="secondary">{busAllocs.length} pax</Badge>
-            </p>
-            <div className="space-y-1">
-              {busAllocs.map((a) => (
-                <div key={a.id} className="flex items-center justify-between px-3 py-2 rounded-md bg-slate-50 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{a.tripPassengerAssignment.name}</span>
-                    {a.tripPassengerAssignment.type && (
-                      <Badge variant="secondary" className="text-xs">{a.tripPassengerAssignment.type}</Badge>
-                    )}
-                    {a.attendanceRecord && (
-                      <Badge
-                        variant={a.attendanceRecord.status === 'JOIN' ? 'success' : a.attendanceRecord.status === 'ABSENT' ? 'warning' : 'destructive'}
-                        className="text-xs"
-                      >
-                        {a.attendanceRecord.status}
-                      </Badge>
-                    )}
-                    {isAdmin && a.attendanceRecord && a.attendanceRecord.status !== 'CANCELLED' && (
-                      <Button
-                        size="sm" variant="ghost" className="h-6 px-2 text-xs text-slate-400"
-                        onClick={() => overrideAttendance({
-                          tripId, roundId,
-                          recordId: a.attendanceRecord!.id,
-                          status: a.attendanceRecord!.status === 'JOIN' ? 'ABSENT' : 'JOIN',
-                        })}
-                      >
-                        Override
-                      </Button>
-                    )}
-                  </div>
-                  {isPlanned && (
-                    <div className="flex items-center gap-1">
-                      {movingId === a.id ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            className="h-7 w-40 border border-border rounded px-2 text-xs"
-                            placeholder="New Bus ID"
-                            value={moveToBusId}
-                            onChange={(e) => setMoveToBusId(e.target.value)}
-                          />
-                          <Button size="sm" className="h-7 text-xs" onClick={() => handleMove(a.id)}>Move</Button>
-                          <Button size="sm" variant="ghost" className="h-7" onClick={() => setMovingId(null)}>✕</Button>
-                        </div>
-                      ) : (
-                        <>
-                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setMovingId(a.id)}>
-                            Move
-                          </Button>
-                          <Button
-                            size="sm" variant="ghost" className="h-7 text-xs text-red-400 hover:text-red-600"
-                            onClick={() => removeAllocation({ tripId, roundId, assignmentId: a.id })}
-                          >
-                            Remove
-                          </Button>
-                        </>
+        {Object.keys(byBus).length === 0 ? (
+          <p className="text-xs text-gray-400 text-center py-4">No passengers allocated yet.</p>
+        ) : (
+          Object.entries(byBus).map(([bid, busAllocs]) => (
+            <div key={bid} className="space-y-2">
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    {busAllocs[0]?.roundBusAssignment?.bus?.name ?? `Bus`}
+                  </p>
+                  <h4 className="text-sm font-bold text-gray-950">
+                    {busAllocs[0]?.roundBusAssignment?.bus?.licensePlate ?? bid.slice(0, 8)}
+                  </h4>
+                </div>
+                <p className="text-sm font-bold text-gray-950">
+                  {busAllocs.length}
+                  <span className="text-gray-400"> pax</span>
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                {busAllocs.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <p className="text-xs font-bold text-gray-950 truncate">
+                        {a.tripPassengerAssignment.name}
+                      </p>
+                      {a.tripPassengerAssignment.type && (
+                        <Badge
+                          variant={`TYPE_${a.tripPassengerAssignment.type}` as BadgeVariant}
+                          label={a.tripPassengerAssignment.type}
+                        />
                       )}
                     </div>
-                  )}
-                </div>
-              ))}
+                    {a.attendanceRecord ? (
+                      <Badge
+                        variant={a.attendanceRecord.status as BadgeVariant}
+                        label={a.attendanceRecord.status}
+                      />
+                    ) : (
+                      <Badge variant="PLANNED" label="PENDING" />
+                    )}
+                    {isAdmin &&
+                      a.attendanceRecord &&
+                      a.attendanceRecord.status !== 'CANCELLED' && (
+                        <button
+                          onClick={() =>
+                            overrideAttendance({
+                              tripId,
+                              roundId,
+                              recordId: a.attendanceRecord!.id,
+                              status:
+                                a.attendanceRecord!.status === 'JOIN' ? 'ABSENT' : 'JOIN',
+                            })
+                          }
+                          className="text-[10px] font-bold text-primary-600 hover:underline ml-2"
+                        >
+                          Override
+                        </button>
+                      )}
+                    {isPlanned && (
+                      <div className="ml-2 flex items-center gap-1">
+                        {movingId === a.id ? (
+                          <>
+                            <input
+                              className="h-7 w-28 border border-gray-200 rounded px-2 text-[10px]"
+                              placeholder="New Bus ID"
+                              value={moveToBusId}
+                              onChange={(e) => setMoveToBusId(e.target.value)}
+                            />
+                            <button
+                              onClick={() => handleMove(a.id)}
+                              className="text-[10px] font-bold text-success-600 hover:underline"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setMovingId(null)}
+                              className="text-[10px] text-gray-400 hover:underline"
+                            >
+                              ✕
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => setMovingId(a.id)}
+                              className="text-[10px] font-bold text-gray-500 hover:text-primary-600"
+                            >
+                              Move
+                            </button>
+                            <button
+                              onClick={() =>
+                                removeAllocation({ tripId, roundId, assignmentId: a.id })
+                              }
+                              className="text-[10px] font-bold text-gray-400 hover:text-danger-600"
+                            >
+                              Remove
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
+      </div>
 
-        <div className="border-t border-border pt-4 mt-4">
-          <NotificationPanel tripId={tripId} roundId={roundId} />
-        </div>
-      </CardContent>
-    </Card>
+      <div className="p-5 border-t border-gray-100">
+        <NotificationPanel tripId={tripId} roundId={roundId} />
+      </div>
+    </div>
   )
 }

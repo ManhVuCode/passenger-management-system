@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'motion/react'
 import { useGetTripQuery } from '../trips/tripsApi'
 import { useGetAllocationsByRoundQuery } from '../allocation/allocationApi'
 import {
@@ -7,25 +8,24 @@ import {
   type AttendanceUpdate,
   type RoundStatusUpdate,
 } from '../../hooks/useAttendanceSocket'
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
-import { Badge } from '../../components/ui/badge'
-import { Activity, UserCheck, UserX, Clock, ChevronRight } from 'lucide-react'
+import { Badge, type BadgeVariant } from '../../components/ui/badge'
+import { Button } from '../../components/ui/button'
+import {
+  ArrowLeft,
+  CheckCircle2,
+  XCircle,
+  Bus as BusIcon,
+  MessageSquare,
+} from 'lucide-react'
+import { cn } from '../../lib/utils'
+import { RoundStatus } from '@pms/shared'
 
 interface LiveRecord {
-  passengerId: string
+  id: number
   passengerName: string
   status: string
   markedAt: string
   busId: string
-}
-
-const STATUS_BADGE: Record<string, 'success' | 'warning' | 'destructive' | 'secondary'> = {
-  JOIN: 'success',
-  ABSENT: 'warning',
-  CANCELLED: 'destructive',
-  PLANNED: 'secondary',
-  IN_PROGRESS: 'warning',
-  DONE: 'success',
 }
 
 export default function LiveDashboardPage() {
@@ -41,7 +41,7 @@ export default function LiveDashboardPage() {
       setLiveUpdates((prev) =>
         [
           {
-            passengerId: data.passengerId,
+            id: Date.now() + Math.random(),
             passengerName: data.passengerName,
             status: data.status,
             markedAt: data.markedAt,
@@ -56,91 +56,220 @@ export default function LiveDashboardPage() {
     }, []),
   })
 
-  return (
-    <div className="p-6 max-w-6xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-slate-400 mb-1">
-            <Link to="/trips" className="hover:text-primary">Trips</Link>
-            <ChevronRight size={12} />
-            <Link to={`/trips/${tripId}`} className="hover:text-primary">{trip?.name}</Link>
-            <ChevronRight size={12} />
-            <span>Live Dashboard</span>
-          </div>
-          <h2 className="text-2xl font-semibold flex items-center gap-2">
-            <Activity size={22} className="text-green-500" />
-            Live Attendance Dashboard
-          </h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={`flex items-center gap-1.5 text-sm ${isConnected ? 'text-green-600' : 'text-slate-400'}`}>
-            <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
-            {isConnected ? 'Live' : 'Connecting…'}
-          </span>
-        </div>
-      </div>
+  const rounds = trip?.rounds ?? []
+  const activeRoundId = selectedRound ?? rounds[0]?.id ?? null
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-1 space-y-3">
-          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Rounds</h3>
-          {(trip?.rounds ?? []).map((round) => {
-            const liveStatus = roundStatuses[round.id] ?? round.status
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <header className="h-14 px-6 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm relative z-30 sticky top-0">
+        <div className="flex items-center gap-4">
+          <Link
+            to={`/trips/${tripId}`}
+            className="p-1.5 text-gray-400 hover:text-gray-950 transition-colors"
+          >
+            <ArrowLeft size={20} />
+          </Link>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Trips
+              </span>
+              <span className="text-gray-300">/</span>
+              <span className="text-xs font-bold text-gray-950 truncate max-w-[260px]">
+                {trip?.name ?? '…'} — Live
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <div
+                  className={cn(
+                    'w-1.5 h-1.5 rounded-full',
+                    isConnected ? 'bg-success-600 animate-pulse' : 'bg-gray-300',
+                  )}
+                />
+                <span
+                  className={cn(
+                    'text-[10px] font-bold uppercase tracking-widest',
+                    isConnected ? 'text-success-600' : 'text-gray-400',
+                  )}
+                >
+                  {isConnected ? 'Live Dashboard' : 'Connecting…'}
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                • {isConnected ? 'Connected' : 'Disconnected'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {rounds.slice(0, 5).map((round) => {
+            const isActive = activeRoundId === round.id
             return (
-              <Card
+              <button
                 key={round.id}
-                className={`cursor-pointer transition-all hover:shadow-md ${
-                  selectedRound === round.id ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => setSelectedRound(round.id === selectedRound ? null : round.id)}
+                onClick={() => setSelectedRound(round.id)}
+                className={cn(
+                  'h-8 px-4 text-xs font-bold rounded-lg transition-all border',
+                  isActive
+                    ? 'bg-primary-600 border-primary-600 text-white shadow-md shadow-primary-600/20'
+                    : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600',
+                )}
               >
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">Round {round.sequence}: {round.name}</p>
-                  </div>
-                  <Badge variant={STATUS_BADGE[liveStatus] ?? 'secondary'}>{liveStatus}</Badge>
-                </CardContent>
-              </Card>
+                Round {round.sequence}
+              </button>
             )
           })}
         </div>
+      </header>
 
-        <div className="col-span-1">
-          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
-            {selectedRound ? 'Allocation' : 'Select a round'}
-          </h3>
-          {selectedRound && <RoundBreakdown tripId={tripId!} roundId={selectedRound} />}
-        </div>
-
-        <div className="col-span-1">
-          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
-            Live Feed
-          </h3>
-          <Card>
-            <CardContent className="p-3 space-y-2 max-h-96 overflow-auto">
-              {liveUpdates.length === 0 && (
-                <p className="text-xs text-slate-400 text-center py-8">
-                  Waiting for attendance updates…
-                </p>
-              )}
-              {liveUpdates.map((u, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0"
-                >
-                  <span className="font-medium truncate">{u.passengerName}</span>
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <Badge variant={STATUS_BADGE[u.status] ?? 'secondary'} className="text-xs">
-                      {u.status}
-                    </Badge>
-                    <span className="text-xs text-slate-400">
-                      {new Date(u.markedAt).toLocaleTimeString()}
-                    </span>
-                  </div>
+      <div className="flex-1 flex overflow-hidden">
+        <aside className="w-[260px] bg-white border-r border-gray-100 p-4 space-y-2 overflow-y-auto">
+          <p className="px-2 mb-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            Rounds Progress
+          </p>
+          {rounds.length === 0 && (
+            <p className="px-2 text-xs text-gray-400">No rounds yet.</p>
+          )}
+          {rounds.map((round) => {
+            const isActive = activeRoundId === round.id
+            const status = (roundStatuses[round.id] ?? round.status) as RoundStatus
+            return (
+              <button
+                key={round.id}
+                onClick={() => setSelectedRound(round.id)}
+                className={cn(
+                  'w-full p-4 rounded-xl text-left border transition-all',
+                  isActive
+                    ? 'bg-primary-50 border-primary-200 shadow-sm'
+                    : 'border-transparent hover:bg-gray-50',
+                )}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span
+                    className={cn(
+                      'text-sm font-bold truncate',
+                      isActive ? 'text-primary-600' : 'text-gray-950',
+                    )}
+                  >
+                    Round {round.sequence}: {round.name}
+                  </span>
                 </div>
+                <div className="flex items-center justify-between gap-2">
+                  <p
+                    className={cn(
+                      'text-xs truncate',
+                      isActive ? 'text-primary-600/70' : 'text-gray-500',
+                    )}
+                  >
+                    {round.departurePoint} → {round.arrivalPoint}
+                  </p>
+                  <Badge variant={status as BadgeVariant} label={status} />
+                </div>
+              </button>
+            )
+          })}
+        </aside>
+
+        <main className="flex-1 p-6 overflow-y-auto bg-gray-50 space-y-6">
+          {activeRoundId ? (
+            <RoundBreakdown tripId={tripId!} roundId={activeRoundId} />
+          ) : (
+            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-12 text-center text-gray-400">
+              Select a round to see live attendance.
+            </div>
+          )}
+        </main>
+
+        <aside className="w-[300px] bg-white border-l border-gray-100 flex flex-col">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              Live Activity
+            </h4>
+            <div
+              className={cn(
+                'w-1.5 h-1.5 rounded-full',
+                isConnected ? 'bg-success-600 animate-pulse' : 'bg-gray-300',
+              )}
+            />
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <AnimatePresence initial={false}>
+              {liveUpdates.map((log) => (
+                <motion.div
+                  key={log.id}
+                  initial={{ opacity: 0, x: -10, height: 0 }}
+                  animate={{ opacity: 1, x: 0, height: 'auto' }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="flex gap-3 relative pb-4 group"
+                >
+                  <div className="absolute left-[13px] top-7 bottom-0 w-px bg-gray-100 group-last:hidden" />
+                  <div
+                    className={cn(
+                      'w-7 h-7 rounded-full flex items-center justify-center shrink-0 border-4 border-white shadow-sm mt-0.5',
+                      log.status === 'JOIN'
+                        ? 'bg-success-600 text-white'
+                        : log.status === 'ABSENT'
+                          ? 'bg-warning-500 text-white'
+                          : 'bg-danger-600 text-white',
+                    )}
+                  >
+                    {log.status === 'JOIN' ? (
+                      <CheckCircle2 size={12} />
+                    ) : (
+                      <XCircle size={12} />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <p className="text-xs font-bold text-gray-950 truncate">
+                        {log.passengerName}
+                      </p>
+                      <span className="text-[10px] font-medium text-gray-400 ml-2 shrink-0">
+                        {new Date(log.markedAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-medium text-gray-500 mt-0.5">
+                      Marked {log.status}
+                    </p>
+                    <p className="text-[9px] font-bold text-primary-600 uppercase tracking-widest mt-1">
+                      Bus {log.busId.slice(0, 6)}
+                    </p>
+                  </div>
+                </motion.div>
               ))}
-            </CardContent>
-          </Card>
-        </div>
+            </AnimatePresence>
+
+            {liveUpdates.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-8 opacity-40">
+                <div className="flex gap-1 mb-2">
+                  {[1, 2, 3].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ scale: [1, 1.5, 1] }}
+                      transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.2 }}
+                      className="w-1 h-1 rounded-full bg-gray-400"
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  Waiting for updates
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 border-t border-gray-100">
+            <Button variant="outline" className="w-full text-xs gap-2">
+              <MessageSquare size={14} /> Send Broadcast
+            </Button>
+          </div>
+        </aside>
       </div>
     </div>
   )
@@ -156,48 +285,131 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
     return acc
   }, {})
 
+  if (Object.keys(byBus).length === 0) {
+    return (
+      <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-12 text-center text-gray-400 text-sm">
+        No passengers allocated yet.
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-3">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       {Object.entries(byBus).map(([busId, rows]) => {
         const joined = rows.filter((r) => r.attendanceRecord?.status === 'JOIN').length
         const absent = rows.filter((r) => r.attendanceRecord?.status === 'ABSENT').length
         const pending = rows.filter((r) => !r.attendanceRecord).length
         const total = rows.length
-        const pct = total > 0 ? Math.round((joined / total) * 100) : 0
+        const marked = joined + absent
+        const pct = total > 0 ? Math.round((marked / total) * 100) : 0
+        const color = absent > 0 ? 'warning' : 'success'
+        const busInfo = rows[0]?.roundBusAssignment?.bus
 
         return (
-          <Card key={busId}>
-            <CardHeader className="pb-2 pt-3 px-3">
-              <CardTitle className="text-sm flex items-center justify-between">
-                <span>{rows[0]?.roundBusAssignment?.bus?.name ?? `Bus`}</span>
-                <span className="text-xs font-normal text-slate-400">{joined}/{total}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-3 pb-3 space-y-2">
-              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            key={busId}
+            className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden flex flex-col"
+          >
+            <div className="p-5 border-b border-gray-100 bg-gray-50/30 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-primary-600">
+                  <BusIcon size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-950">
+                    {busInfo?.name ?? `Bus ${busId.slice(0, 8)}`}
+                  </h3>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    {busInfo?.licensePlate ?? busId.slice(0, 8)}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-bold text-gray-950">
+                  {marked}
+                  <span className="text-gray-400">/{total}</span>
+                </p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  Attendance
+                </p>
+              </div>
+            </div>
+
+            <div className="p-5 flex-1 space-y-4">
+              <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-green-500 transition-all duration-500"
+                  className={cn(
+                    'h-full rounded-full transition-all duration-700',
+                    color === 'success' ? 'bg-success-600' : 'bg-warning-500',
+                  )}
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <div className="flex gap-3 text-xs">
-                <span className="text-green-600 flex items-center gap-1">
-                  <UserCheck size={10} /> {joined}
-                </span>
-                <span className="text-amber-600 flex items-center gap-1">
-                  <UserX size={10} /> {absent}
-                </span>
-                <span className="text-slate-400 flex items-center gap-1">
-                  <Clock size={10} /> {pending} pending
-                </span>
+
+              <div className="flex justify-between px-1">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    Joined
+                  </span>
+                  <span className="text-sm font-bold text-success-600">✓ {joined}</span>
+                </div>
+                <div className="flex flex-col text-center">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    Absent
+                  </span>
+                  <span className="text-sm font-bold text-danger-600">✗ {absent}</span>
+                </div>
+                <div className="flex flex-col text-right">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    Pending
+                  </span>
+                  <span className="text-sm font-bold text-gray-400">? {pending}</span>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+
+              <div className="pt-4 border-t border-gray-50 space-y-1">
+                {rows.slice(0, 4).map((r) => {
+                  const st = r.attendanceRecord?.status
+                  return (
+                    <div
+                      key={r.id}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={cn(
+                            'w-1.5 h-1.5 rounded-full shrink-0',
+                            st === 'JOIN'
+                              ? 'bg-success-600'
+                              : st === 'ABSENT'
+                                ? 'bg-warning-500'
+                                : 'bg-gray-300',
+                          )}
+                        />
+                        <span className="text-xs font-bold text-gray-950 truncate">
+                          {r.tripPassengerAssignment.name}
+                        </span>
+                      </div>
+                      {st ? (
+                        <Badge variant={st as BadgeVariant} label={st} />
+                      ) : (
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                          pending
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+                {rows.length > 4 && (
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pt-2">
+                    + {rows.length - 4} more
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         )
       })}
-      {Object.keys(byBus).length === 0 && (
-        <p className="text-sm text-slate-400 text-center py-8">No passengers allocated yet.</p>
-      )}
     </div>
   )
 }

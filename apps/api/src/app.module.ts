@@ -10,6 +10,8 @@ import { RolesGuard } from './common/guards/roles.guard'
 import { TenantGuard } from './common/guards/tenant.guard'
 import { TripModule } from './modules/trip/trip.module';
 import { RoundModule } from './modules/round/round.module';
+import { BusModule } from './modules/bus/bus.module';
+import { AssignmentModule } from './modules/assignment/assignment.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { RoundModule } from './modules/round/round.module';
     AuthModule,
     TripModule,
     RoundModule,
+    BusModule,
+    AssignmentModule,
   ],
   controllers: [AppController],
   providers: [

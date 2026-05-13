@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useGetMyAssignmentsQuery } from '../attendance/attendanceApi'
+import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { Card, CardContent } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import { ArrowRight, Bus } from 'lucide-react'
@@ -13,6 +14,7 @@ const STATUS_BADGE: Record<string, 'secondary' | 'warning' | 'success' | 'destru
 
 export default function HomePage() {
   const { data: assignments = [], isLoading } = useGetMyAssignmentsQuery()
+  const isOnline = useOnlineStatus()
 
   if (isLoading) {
     return (
@@ -24,6 +26,12 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {!isOnline && (
+        <div className="bg-amber-500 text-white text-xs text-center py-1.5 font-medium">
+          ⚡ Offline mode — showing cached data
+        </div>
+      )}
+
       <div className="bg-white border-b border-border px-4 py-4">
         <h1 className="font-bold text-lg">My Rounds</h1>
         <p className="text-sm text-slate-400">{assignments.length} assigned</p>

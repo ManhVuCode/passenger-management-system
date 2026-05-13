@@ -18,6 +18,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { MeModule } from './modules/me/me.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     MeModule,
     GatewayModule,
     NotificationModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [

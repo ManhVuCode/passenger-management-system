@@ -12,6 +12,7 @@ import { TripModule } from './modules/trip/trip.module';
 import { RoundModule } from './modules/round/round.module';
 import { BusModule } from './modules/bus/bus.module';
 import { AssignmentModule } from './modules/assignment/assignment.module';
+import { PassengerModule } from './modules/passenger/passenger.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AssignmentModule } from './modules/assignment/assignment.module';
     RoundModule,
     BusModule,
     AssignmentModule,
+    PassengerModule,
   ],
   controllers: [AppController],
   providers: [

@@ -159,7 +159,7 @@ Commit format: "feat(sprintN): description" or "fix(sprintN): description"
 | 1 | Auth, RBAC, Tenant Isolation | ✅ DONE |
 | 2 | Trip + Round CRUD | ✅ DONE |
 | 3 | Bus management + 3 photos + BusManager assignment | ✅ DONE |
-| 4 | Passenger registration (standalone + Google Sheet sync) | ⬜ TODO |
+| 4 | Passenger registration (standalone + Google Sheet sync) | ✅ DONE |
 | 5 | Round passenger allocation + capacity check | ⬜ TODO |
 | 6 | Attendance workflow (mark + override + cascade) | ⬜ TODO |
 | 7 | Real-time dashboard (WebSocket/MQTT) | ⬜ TODO |

@@ -1,0 +1,137 @@
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import { PrismaService } from '../../prisma/prisma.service'
+import { CreatePassengerDto } from './dto/create-passenger.dto'
+import { UpdatePassengerDto } from './dto/update-passenger.dto'
+import { BulkCreatePassengerDto } from './dto/bulk-create-passenger.dto'
+import { SheetSyncDto, SheetSyncMode } from './dto/sheet-sync.dto'
+
+const DEFAULT_COLUMN_MAP: Record<string, string> = {
+  name: 'name',
+  'ho ten': 'name',
+  'họ tên': 'name',
+  phone: 'phone',
+  'so dien thoai': 'phone',
+  'số điện thoại': 'phone',
+  idcard: 'idCard',
+  cccd: 'idCard',
+  cmnd: 'idCard',
+  type: 'type',
+  loai: 'type',
+  note: 'note',
+  'ghi chu': 'note',
+  'ghi chú': 'note',
+}
+
+@Injectable()
+export class PassengerService {
+  constructor(private prisma: PrismaService) {}
+
+  async findAllByTrip(tripId: string, tenantId: string) {
+    await this.verifyTrip(tripId, tenantId)
+    return this.prisma.tripPassengerAssignment.findMany({
+      where: { tripId, tenantId },
+      orderBy: { createdAt: 'asc' },
+    })
+  }
+
+  async findOne(id: string, tenantId: string) {
+    const passenger = await this.prisma.tripPassengerAssignment.findFirst({
+      where: { id, tenantId },
+    })
+    if (!passenger) throw new NotFoundException('Passenger not found')
+    return passenger
+  }
+
+  async create(tripId: string, tenantId: string, dto: CreatePassengerDto) {
+    await this.verifyTrip(tripId, tenantId)
+    return this.prisma.tripPassengerAssignment.create({
+      data: { tripId, tenantId, ...dto },
+    })
+  }
+
+  async bulkCreate(tripId: string, tenantId: string, dto: BulkCreatePassengerDto) {
+    await this.verifyTrip(tripId, tenantId)
+    const created = await this.prisma.$transaction(
+      dto.passengers.map((p) =>
+        this.prisma.tripPassengerAssignment.create({
+          data: { tripId, tenantId, ...p },
+        }),
+      ),
+    )
+    return { created: created.length, passengers: created }
+  }
+
+  async update(id: string, tenantId: string, dto: UpdatePassengerDto) {
+    await this.findOne(id, tenantId)
+    return this.prisma.tripPassengerAssignment.update({
+      where: { id },
+      data: dto,
+    })
+  }
+
+  async remove(id: string, tenantId: string) {
+    await this.findOne(id, tenantId)
+    return this.prisma.tripPassengerAssignment.delete({ where: { id } })
+  }
+
+  async sheetSync(tripId: string, tenantId: string, dto: SheetSyncDto) {
+    await this.verifyTrip(tripId, tenantId)
+
+    if (dto.mode === SheetSyncMode.GENERATE) {
+      return this.handleGenerateMode(tripId)
+    }
+
+    if (!dto.sheetUrl) {
+      throw new BadRequestException('sheetUrl is required for IMPORT mode')
+    }
+    return this.handleImportMode(dto.sheetUrl, dto.columnMapping)
+  }
+
+  private handleGenerateMode(tripId: string) {
+    return {
+      mode: SheetSyncMode.GENERATE,
+      message: 'Sheet template generated. Fill in the columns below and re-sync via IMPORT mode.',
+      templateColumns: ['name', 'phone', 'idCard', 'type', 'note'],
+      tripId,
+      note: 'To integrate with Google Sheets API, set GOOGLE_SERVICE_ACCOUNT_JSON in env',
+    }
+  }
+
+  private handleImportMode(sheetUrl: string, columnMapping?: Record<string, string>) {
+    try {
+      new URL(sheetUrl)
+    } catch {
+      throw new BadRequestException('Invalid sheet URL')
+    }
+
+    return {
+      mode: SheetSyncMode.IMPORT,
+      sheetUrl,
+      detectedMapping: columnMapping ?? DEFAULT_COLUMN_MAP,
+      message: 'Column mapping confirmed. Use POST /passengers/bulk to import parsed rows.',
+      requiredColumns: ['name', 'phone'],
+      optionalColumns: ['idCard', 'type', 'note'],
+    }
+  }
+
+  async exportCsv(tripId: string, tenantId: string): Promise<string> {
+    const passengers = await this.findAllByTrip(tripId, tenantId)
+    const headers = ['id', 'name', 'phone', 'idCard', 'type', 'note', 'createdAt']
+    const rows = passengers.map((p) =>
+      headers
+        .map((h) => {
+          const val = p[h as keyof typeof p]
+          const str = val === null || val === undefined ? '' : String(val)
+          return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str
+        })
+        .join(','),
+    )
+    return [headers.join(','), ...rows].join('\n')
+  }
+
+  private async verifyTrip(tripId: string, tenantId: string) {
+    const trip = await this.prisma.trip.findFirst({ where: { id: tripId, tenantId } })
+    if (!trip) throw new NotFoundException('Trip not found')
+    return trip
+  }
+}

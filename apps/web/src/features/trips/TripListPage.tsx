@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useGetTripsQuery, useCreateTripMutation, useDeleteTripMutation } from './tripsApi'
 import { getTripHighlight, TRIP_HIGHLIGHT_CLASSES } from './tripUtils'
 import { TripStatus } from '@pms/shared'
@@ -106,7 +107,12 @@ export default function TripListPage() {
             >
               <div className="flex items-center gap-4">
                 <div>
-                  <p className="font-medium">{trip.name}</p>
+                  <Link
+                    to={`/trips/${trip.id}/passengers`}
+                    className="font-medium hover:text-primary transition-colors"
+                  >
+                    {trip.name}
+                  </Link>
                   <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-400">
                     <Calendar size={12} />
                     {new Date(trip.startDate).toLocaleDateString()} →{' '}

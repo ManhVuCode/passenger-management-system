@@ -84,18 +84,19 @@ model Trip {
 }
 
 model Round {
-  id             String      @id @default(uuid())
-  tripId         String
-  tenantId       String
-  name           String
-  sequence       Int
-  departurePoint String
-  arrivalPoint   String
-  scheduledDep   DateTime
-  scheduledArr   DateTime
-  status         RoundStatus @default(PLANNED)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  id              String      @id @default(uuid())
+  tripId          String
+  tenantId        String
+  name            String
+  sequence        Int
+  departurePoint  String
+  arrivalPoint    String
+  scheduledDep    DateTime
+  scheduledArr    DateTime
+  status          RoundStatus @default(PLANNED)
+  operationalNote String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   trip                Trip                 @relation(fields: [tripId], references: [id])
   roundBusAssignments RoundBusAssignment[]

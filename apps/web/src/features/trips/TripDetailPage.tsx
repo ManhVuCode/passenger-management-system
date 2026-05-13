@@ -7,7 +7,9 @@ import {
   useAllocatePassengersMutation,
   useMovePassengerMutation,
   useRemoveAllocationMutation,
+  useOverrideAttendanceMutation,
 } from '../allocation/allocationApi'
+import { useAppSelector } from '../../store/hooks'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
@@ -98,6 +100,8 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
   const [allocate, { isLoading: allocating }] = useAllocatePassengersMutation()
   const [movePassenger] = useMovePassengerMutation()
   const [removeAllocation] = useRemoveAllocationMutation()
+  const [overrideAttendance] = useOverrideAttendanceMutation()
+  const isAdmin = useAppSelector((s) => s.auth.role) === 'ADMIN'
 
   const [selectedPassengers, setSelectedPassengers] = useState<string[]>([])
   const [targetBusId, setTargetBusId] = useState('')
@@ -211,6 +215,18 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
                       >
                         {a.attendanceRecord.status}
                       </Badge>
+                    )}
+                    {isAdmin && a.attendanceRecord && a.attendanceRecord.status !== 'CANCELLED' && (
+                      <Button
+                        size="sm" variant="ghost" className="h-6 px-2 text-xs text-slate-400"
+                        onClick={() => overrideAttendance({
+                          tripId, roundId,
+                          recordId: a.attendanceRecord!.id,
+                          status: a.attendanceRecord!.status === 'JOIN' ? 'ABSENT' : 'JOIN',
+                        })}
+                      >
+                        Override
+                      </Button>
                     )}
                   </div>
                   {isPlanned && (

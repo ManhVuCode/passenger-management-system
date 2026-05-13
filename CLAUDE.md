@@ -156,7 +156,7 @@ Commit format: "feat(sprintN): description" or "fix(sprintN): description"
 
 | Sprint | Scope | Status |
 |--------|-------|--------|
-| 1 | Auth, RBAC, Tenant Isolation | ⬜ TODO |
+| 1 | Auth, RBAC, Tenant Isolation | ✅ DONE |
 | 2 | Trip + Round CRUD | ⬜ TODO |
 | 3 | Bus management + 3 photos + BusManager assignment | ⬜ TODO |
 | 4 | Passenger registration (standalone + Google Sheet sync) | ⬜ TODO |

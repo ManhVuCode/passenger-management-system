@@ -161,7 +161,7 @@ Commit format: "feat(sprintN): description" or "fix(sprintN): description"
 | 3 | Bus management + 3 photos + BusManager assignment | ✅ DONE |
 | 4 | Passenger registration (standalone + Google Sheet sync) | ✅ DONE |
 | 5 | Round passenger allocation + capacity check | ✅ DONE |
-| 6 | Attendance workflow (mark + override + cascade) | ⬜ TODO |
+| 6 | Attendance workflow (mark + override + cascade) | ✅ DONE |
 | 7 | Real-time dashboard (WebSocket/MQTT) | ⬜ TODO |
 | 8 | Notifications (SMS/Teams/Zalo/Broadcast) | ⬜ TODO |
 | 9 | PWA offline-first + testing + deployment prep | ⬜ TODO |

@@ -6,7 +6,7 @@ export interface RoundPassengerAllocation {
   busId: string
   tripPassengerAssignment: { id: string; name: string; phone: string; type?: string; note?: string }
   roundBusAssignment?: { busId: string; bus: { name: string; licensePlate: string } }
-  attendanceRecord?: { status: string } | null
+  attendanceRecord?: { id: string; status: string } | null
 }
 
 interface AllocateResult {
@@ -56,6 +56,17 @@ export const allocationApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_r, _e, { roundId }) => [{ type: 'Allocation', id: roundId }],
     }),
+    overrideAttendance: builder.mutation<
+      unknown,
+      { tripId: string; roundId: string; recordId: string; status: string; note?: string }
+    >({
+      query: ({ tripId, roundId, recordId, status, note }) => ({
+        url: `/trips/${tripId}/rounds/${roundId}/attendance/${recordId}/override`,
+        method: 'PATCH',
+        body: { status, ...(note && { note }) },
+      }),
+      invalidatesTags: (_r, _e, { roundId }) => [{ type: 'Allocation', id: roundId }],
+    }),
   }),
 })
 
@@ -64,4 +75,5 @@ export const {
   useAllocatePassengersMutation,
   useMovePassengerMutation,
   useRemoveAllocationMutation,
+  useOverrideAttendanceMutation,
 } = allocationApi

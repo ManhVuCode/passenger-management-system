@@ -8,10 +8,14 @@ import { PrismaService } from '../../prisma/prisma.service'
 import { CreateRoundDto } from './dto/create-round.dto'
 import { UpdateRoundStatusDto } from './dto/update-round-status.dto'
 import { RoundStatus, Role, JwtPayload } from '@pms/shared'
+import { AttendanceGateway } from '../../gateway/attendance.gateway'
 
 @Injectable()
 export class RoundService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private gateway: AttendanceGateway,
+  ) {}
 
   async findAllByTrip(tripId: string, tenantId: string) {
     const trip = await this.prisma.trip.findFirst({ where: { id: tripId, tenantId } })
@@ -77,6 +81,12 @@ export class RoundService {
     if (dto.status === RoundStatus.CANCELLED) {
       await this.cascadeCancelAttendance(id)
     }
+
+    this.gateway.broadcastRoundStatusUpdate({
+      tripId: round.tripId,
+      roundId: id,
+      status: dto.status,
+    })
 
     return updated
   }

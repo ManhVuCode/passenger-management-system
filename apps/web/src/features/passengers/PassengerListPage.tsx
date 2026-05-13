@@ -74,15 +74,15 @@ export default function PassengerListPage() {
     setTab('list')
   }
 
-  async function handleCsvExport() {
-    const r = await fetch(`${apiUrl}/trips/${tripId}/passengers/export/csv`, {
+  async function handleXlsxExport() {
+    const r = await fetch(`${apiUrl}/trips/${tripId}/passengers/export/xlsx`, {
       headers: { Authorization: `Bearer ${token}` },
     })
     const blob = await r.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `passengers-${tripId}.csv`
+    a.download = `passengers-${tripId}.xlsx`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -97,8 +97,8 @@ export default function PassengerListPage() {
           <p className="text-sm text-slate-500 mt-0.5">{passengers.length} registered for this trip</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleCsvExport}>
-            <Download size={14} className="mr-1.5" /> Export CSV
+          <Button variant="outline" size="sm" onClick={handleXlsxExport}>
+            <Download size={14} className="mr-1.5" /> Export xlsx
           </Button>
           <Button variant="outline" size="sm" onClick={() => setTab('sheet')}>
             <FileSpreadsheet size={14} className="mr-1.5" /> Sheet Sync

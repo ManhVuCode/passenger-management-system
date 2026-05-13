@@ -144,7 +144,7 @@ export class AttendanceService {
       throw new NotFoundException('Attendance record not found')
     }
 
-    return this.prisma.attendanceRecord.update({
+    const updated = await this.prisma.attendanceRecord.update({
       where: { id: attendanceRecordId },
       data: {
         status: dto.status,
@@ -153,6 +153,28 @@ export class AttendanceService {
         ...(dto.note !== undefined && { note: dto.note }),
       },
     })
+
+    const rpa = await this.prisma.roundPassengerAssignment.findUnique({
+      where: { id: record.roundPassengerAssignmentId },
+      include: {
+        tripPassengerAssignment: { select: { id: true, name: true } },
+        roundBusAssignment: { select: { tripId: true, roundId: true, busId: true } },
+      },
+    })
+    if (rpa) {
+      this.gateway.broadcastAttendanceUpdate({
+        tripId: rpa.roundBusAssignment.tripId,
+        roundId: rpa.roundBusAssignment.roundId,
+        busId: rpa.roundBusAssignment.busId,
+        passengerId: rpa.tripPassengerAssignment.id,
+        passengerName: rpa.tripPassengerAssignment.name,
+        status: dto.status,
+        markedBy: user.userId,
+        markedAt: new Date().toISOString(),
+      })
+    }
+
+    return updated
   }
 
   async setRoundNote(

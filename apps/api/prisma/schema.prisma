@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SYSTEM_ADMIN
+  ADMIN
+  BUS_MANAGER
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum TripStatus {
+  PLANNED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum RoundStatus {
+  PLANNED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  JOIN
+  ABSENT
+  CANCELLED
+}
+
+model Tenant {
+  id        String       @id @default(uuid())
+  name      String
+  slug      String       @unique
+  status    TenantStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  users                    User[]
+  trips                    Trip[]
+  buses                    Bus[]
+  tripPassengerAssignments TripPassengerAssignment[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role
+  createdAt    DateTime @default(now())
+
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id])
+  busManagerAssignments BusManagerAssignment[]
+  attendanceRecords     AttendanceRecord[]
+}
+
+model Trip {
+  id          String     @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  status      TripStatus @default(PLANNED)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  tenant                   Tenant                    @relation(fields: [tenantId], references: [id])
+  rounds                   Round[]
+  tripPassengerAssignments TripPassengerAssignment[]
+  roundBusAssignments      RoundBusAssignment[]
+}
+
+model Round {
+  id             String      @id @default(uuid())
+  tripId         String
+  tenantId       String
+  name           String
+  sequence       Int
+  departurePoint String
+  arrivalPoint   String
+  scheduledDep   DateTime
+  scheduledArr   DateTime
+  status         RoundStatus @default(PLANNED)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  trip                Trip                 @relation(fields: [tripId], references: [id])
+  roundBusAssignments RoundBusAssignment[]
+
+  @@unique([tripId, sequence])
+}
+
+model Bus {
+  id           String   @id @default(uuid())
+  tenantId     String
+  licensePlate String   @unique
+  name         String
+  capacity     Int
+  photoFront   String
+  photoSide    String
+  photoRear    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  roundBusAssignments RoundBusAssignment[]
+}
+
+model RoundBusAssignment {
+  tripId            String
+  roundId           String
+  busId             String
+  tenantId          String
+  operationalStatus String?
+  createdAt         DateTime @default(now())
+
+  trip                      Trip                       @relation(fields: [tripId], references: [id])
+  round                     Round                      @relation(fields: [roundId], references: [id])
+  bus                       Bus                        @relation(fields: [busId], references: [id])
+  busManagerAssignment      BusManagerAssignment?
+  roundPassengerAssignments RoundPassengerAssignment[]
+
+  @@id([tripId, roundId, busId])
+}
+
+model BusManagerAssignment {
+  id         String   @id @default(uuid())
+  tripId     String
+  roundId    String
+  busId      String
+  userId     String
+  assignedAt DateTime @default(now())
+
+  roundBusAssignment RoundBusAssignment @relation(fields: [tripId, roundId, busId], references: [tripId, roundId, busId])
+  user               User               @relation(fields: [userId], references: [id])
+
+  @@unique([tripId, roundId, busId])
+}
+
+model TripPassengerAssignment {
+  id        String   @id @default(uuid())
+  tripId    String
+  tenantId  String
+  name      String
+  phone     String
+  idCard    String?
+  type      String?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trip                      Trip                       @relation(fields: [tripId], references: [id])
+  tenant                    Tenant                     @relation(fields: [tenantId], references: [id])
+  roundPassengerAssignments RoundPassengerAssignment[]
+}
+
+model RoundPassengerAssignment {
+  id                        String   @id @default(uuid())
+  tripPassengerAssignmentId String
+  tripId                    String
+  roundId                   String
+  busId                     String
+  createdAt                 DateTime @default(now())
+
+  tripPassengerAssignment TripPassengerAssignment @relation(fields: [tripPassengerAssignmentId], references: [id])
+  roundBusAssignment      RoundBusAssignment      @relation(fields: [tripId, roundId, busId], references: [tripId, roundId, busId])
+  attendanceRecord        AttendanceRecord?
+}
+
+model AttendanceRecord {
+  id                        String           @id @default(uuid())
+  roundPassengerAssignmentId String           @unique
+  status                    AttendanceStatus
+  markedBy                  String
+  markedAt                  DateTime         @default(now())
+  note                      String?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+
+  roundPassengerAssignment RoundPassengerAssignment @relation(fields: [roundPassengerAssignmentId], references: [id])
+  markedByUser             User                     @relation(fields: [markedBy], references: [id])
+}

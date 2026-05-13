@@ -16,6 +16,7 @@ import { PassengerModule } from './modules/passenger/passenger.module';
 import { AllocationModule } from './modules/allocation/allocation.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { MeModule } from './modules/me/me.module';
+import { GatewayModule } from './gateway/gateway.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { MeModule } from './modules/me/me.module';
     AllocationModule,
     AttendanceModule,
     MeModule,
+    GatewayModule,
   ],
   controllers: [AppController],
   providers: [

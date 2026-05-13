@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   useGetPassengersForBusQuery,
@@ -6,6 +6,7 @@ import {
   useGetAttendanceSummaryQuery,
   useUpdateRoundStatusMutation,
 } from './attendanceApi'
+import { useAttendanceSocket, type AttendanceUpdate } from '../../hooks/useAttendanceSocket'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
 import { Card, CardContent } from '../../components/ui/card'
@@ -32,6 +33,21 @@ export default function AttendancePage() {
   const [updateRoundStatus] = useUpdateRoundStatusMutation()
 
   const [expandedNote, setExpandedNote] = useState<string | null>(null)
+  const [peerUpdates, setPeerUpdates] = useState<{ name: string; status: string }[]>([])
+
+  useAttendanceSocket({
+    tripId,
+    onAttendanceUpdate: useCallback(
+      (data: AttendanceUpdate) => {
+        if (data.busId !== busId) {
+          setPeerUpdates((prev) =>
+            [{ name: data.passengerName, status: data.status }, ...prev].slice(0, 5),
+          )
+        }
+      },
+      [busId],
+    ),
+  })
 
   async function handleMark(rpaId: string, status: 'JOIN' | 'ABSENT') {
     await markAttendance({
@@ -72,6 +88,17 @@ export default function AttendancePage() {
           </div>
         )}
       </div>
+
+      {peerUpdates.length > 0 && (
+        <div className="mx-4 mt-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-xs text-blue-700 font-medium mb-1">Other buses updated:</p>
+          {peerUpdates.slice(0, 3).map((u, i) => (
+            <p key={i} className="text-xs text-blue-600">
+              {u.name} → {u.status}
+            </p>
+          ))}
+        </div>
+      )}
 
       <div className="px-4 py-3 flex gap-2">
         <Button

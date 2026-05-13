@@ -8,10 +8,14 @@ import { MarkAttendanceDto } from './dto/mark-attendance.dto'
 import { OverrideAttendanceDto } from './dto/override-attendance.dto'
 import { RoundNoteDto } from './dto/round-note.dto'
 import { AttendanceStatus, Role, JwtPayload } from '@pms/shared'
+import { AttendanceGateway } from '../../gateway/attendance.gateway'
 
 @Injectable()
 export class AttendanceService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private gateway: AttendanceGateway,
+  ) {}
 
   async getAttendanceByRoundBus(
     tripId: string,
@@ -97,6 +101,24 @@ export class AttendanceService {
         }),
       ),
     )
+
+    const rpaDetails = await this.prisma.roundPassengerAssignment.findMany({
+      where: { id: { in: dto.roundPassengerAssignmentIds } },
+      include: { tripPassengerAssignment: { select: { id: true, name: true } } },
+    })
+    const markedAtIso = new Date().toISOString()
+    for (const rpa of rpaDetails) {
+      this.gateway.broadcastAttendanceUpdate({
+        tripId,
+        roundId,
+        busId,
+        passengerId: rpa.tripPassengerAssignment.id,
+        passengerName: rpa.tripPassengerAssignment.name,
+        status: dto.status,
+        markedBy: user.userId,
+        markedAt: markedAtIso,
+      })
+    }
 
     return { marked: records.length, status: dto.status, records }
   }

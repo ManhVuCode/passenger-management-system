@@ -8,12 +8,16 @@ import { AppService } from './app.service'
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard'
 import { RolesGuard } from './common/guards/roles.guard'
 import { TenantGuard } from './common/guards/tenant.guard'
+import { TripModule } from './modules/trip/trip.module';
+import { RoundModule } from './modules/round/round.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     AuthModule,
+    TripModule,
+    RoundModule,
   ],
   controllers: [AppController],
   providers: [

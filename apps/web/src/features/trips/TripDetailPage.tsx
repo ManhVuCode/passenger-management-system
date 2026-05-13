@@ -10,6 +10,7 @@ import {
   useOverrideAttendanceMutation,
 } from '../allocation/allocationApi'
 import { useAppSelector } from '../../store/hooks'
+import NotificationPanel from '../notifications/NotificationPanel'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
@@ -267,6 +268,10 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
             </div>
           </div>
         ))}
+
+        <div className="border-t border-border pt-4 mt-4">
+          <NotificationPanel tripId={tripId} roundId={roundId} />
+        </div>
       </CardContent>
     </Card>
   )

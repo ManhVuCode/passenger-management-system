@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import * as XLSX from 'xlsx'
 import { PrismaService } from '../../prisma/prisma.service'
 import { CreatePassengerDto } from './dto/create-passenger.dto'
 import { UpdatePassengerDto } from './dto/update-passenger.dto'
@@ -114,19 +115,22 @@ export class PassengerService {
     }
   }
 
-  async exportCsv(tripId: string, tenantId: string): Promise<string> {
+  async exportXlsx(tripId: string, tenantId: string): Promise<Buffer> {
     const passengers = await this.findAllByTrip(tripId, tenantId)
-    const headers = ['id', 'name', 'phone', 'idCard', 'type', 'note', 'createdAt']
-    const rows = passengers.map((p) =>
-      headers
-        .map((h) => {
-          const val = p[h as keyof typeof p]
-          const str = val === null || val === undefined ? '' : String(val)
-          return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str
-        })
-        .join(','),
-    )
-    return [headers.join(','), ...rows].join('\n')
+
+    const rows = passengers.map((p) => ({
+      Name: p.name,
+      Phone: p.phone,
+      'ID Card': p.idCard ?? '',
+      Type: p.type ?? '',
+      Note: p.note ?? '',
+      Created: new Date(p.createdAt).toLocaleDateString(),
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Passengers')
+    return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }))
   }
 
   private async verifyTrip(tripId: string, tenantId: string) {

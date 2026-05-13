@@ -14,6 +14,8 @@ import { BusModule } from './modules/bus/bus.module';
 import { AssignmentModule } from './modules/assignment/assignment.module';
 import { PassengerModule } from './modules/passenger/passenger.module';
 import { AllocationModule } from './modules/allocation/allocation.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
+import { MeModule } from './modules/me/me.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { AllocationModule } from './modules/allocation/allocation.module';
     AssignmentModule,
     PassengerModule,
     AllocationModule,
+    AttendanceModule,
+    MeModule,
   ],
   controllers: [AppController],
   providers: [

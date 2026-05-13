@@ -56,7 +56,7 @@ export class AllocationService {
           select: { busId: true, bus: { select: { name: true, licensePlate: true } } },
         },
         attendanceRecord: {
-          select: { status: true },
+          select: { id: true, status: true },
         },
       },
     })

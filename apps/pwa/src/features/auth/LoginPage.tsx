@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'motion/react'
 import { useAppDispatch } from '../../store/hooks'
 import { setCredentials } from './authSlice'
 import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card'
+import { Bus } from 'lucide-react'
 
 export default function LoginPage() {
   const dispatch = useAppDispatch()
@@ -39,42 +39,60 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
-      <Card className="w-full max-w-sm mx-auto">
-        <CardHeader>
-          <CardTitle className="text-xl">BusManager</CardTitle>
-          <p className="text-sm text-slate-500">Sign in to start your shift</p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Email</label>
-              <Input
-                type="email"
-                inputMode="email"
-                placeholder="driver@demo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Password</label>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in…' : 'Sign in'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-gray-50 to-primary-50">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-[340px] bg-white rounded-3xl p-8 shadow-xl border border-gray-100 flex flex-col items-center"
+      >
+        <div className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center text-white mb-6 shadow-lg shadow-primary-600/20">
+          <Bus size={32} />
+        </div>
+        <h1 className="text-xl font-bold text-gray-950 text-center leading-tight">VinaTour Ops</h1>
+        <p className="text-gray-500 text-sm mb-8 text-center">BusManager App</p>
+
+        <form onSubmit={handleSubmit} className="w-full space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+              Email
+            </label>
+            <input
+              type="email"
+              inputMode="email"
+              placeholder="driver@demo.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full h-12 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+              Password
+            </label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full h-12 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+            />
+          </div>
+          {error && (
+            <p className="text-sm text-danger-600 bg-danger-50 border border-danger-100 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
+          <Button type="submit" className="w-full h-12 rounded-xl text-md" disabled={loading}>
+            {loading ? 'Signing in…' : 'Sign In'}
+          </Button>
+        </form>
+
+        <p className="mt-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          Demo Tours · v1.0
+        </p>
+      </motion.div>
     </div>
   )
 }

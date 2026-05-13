@@ -1,4 +1,19 @@
-export * from './enums'
-export * from './types'
-export * from './api'
-export * from './dtos'
+export { Role, TripStatus, RoundStatus, AttendanceStatus, TenantStatus } from './enums'
+export type {
+  Tenant,
+  User,
+  Trip,
+  Round,
+  Bus,
+  TripPassengerAssignment,
+  AttendanceRecord,
+} from './types'
+export type { ApiResponse, PaginatedResponse, JwtPayload } from './api'
+export type {
+  LoginDto,
+  LoginResponseDto,
+  CreateTripDto,
+  UpdateTripDto,
+  CreateRoundDto,
+  CreateBusDto,
+} from './dtos'

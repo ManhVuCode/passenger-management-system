@@ -13,7 +13,7 @@ import { useAppSelector } from '../../store/hooks'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
-import { ChevronRight, Users, Bus, ArrowRight } from 'lucide-react'
+import { ChevronRight, Users, Bus, ArrowRight, Activity } from 'lucide-react'
 import { TripStatus, RoundStatus, type Round } from '@pms/shared'
 
 const STATUS_BADGE: Record<string, 'default' | 'warning' | 'success' | 'destructive' | 'secondary'> = {
@@ -54,6 +54,11 @@ export default function TripDetailPage() {
           <Badge variant={STATUS_BADGE[trip.status as TripStatus] ?? 'secondary'}>
             {trip.status}
           </Badge>
+          <Link to={`/trips/${tripId}/dashboard`}>
+            <Button variant="outline" size="sm">
+              <Activity size={14} className="mr-1.5" /> Live Dashboard
+            </Button>
+          </Link>
           <Link to={`/trips/${tripId}/passengers`}>
             <Button variant="outline" size="sm">
               <Users size={14} className="mr-1.5" /> Manage Passengers

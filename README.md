@@ -349,12 +349,72 @@ Open any `.html` file directly in a browser — no build step needed.
 | 1 | Auth, RBAC, Tenant Isolation | ✅ Done |
 | 2 | Trip + Round CRUD (with derived status) | ✅ Done |
 | 3 | Bus management + 3 mandatory photos + Driver assignment | ✅ Done |
-| 4 | Passenger registration + Google Sheet sync (modes A & B) + CSV export | ✅ Done |
+| 4 | Passenger registration + Google Sheet sync (modes A & B) + xlsx export | ✅ Done |
 | 5 | Round passenger allocation + capacity warning + Admin-only move | ✅ Done |
 | 6 | Attendance workflow — mark, override, cascade, summary, round note | ✅ Done |
 | 7 | Real-time WebSocket dashboard (Admin live feed + PWA peer banner) | ✅ Done |
-| 8 | Notifications (SMS / Teams / Zalo / Broadcast Call) | 🔜 Next |
-| 9 | PWA offline-first (Service Worker + Background Sync) · Testing · Deployment | 🔜 Planned |
+| 8 | Notifications (SMS / Teams / Zalo / Broadcast Call) | ✅ Done |
+| 9 | PWA offline-first (Service Worker + Background Sync) · Testing · Deployment | ✅ Done |
+
+---
+
+## 16. Production Deployment
+
+The repository ships a production stack via `docker-compose.prod.yml` — Nginx reverse proxy + NestJS API (Dockerised) + PostgreSQL + EMQX, with healthchecks and restart policies.
+
+### Prerequisites
+
+- Docker + Docker Compose on the target server
+- Domain pointing at the server (optional but recommended)
+- TLS certificates if you want HTTPS (Let's Encrypt fits the `nginx/certs/` volume)
+
+### Deploy
+
+```bash
+# 1. Copy the production env template and fill in real values
+cp apps/api/.env.production.example apps/api/.env.production
+# Edit DATABASE_URL, JWT_SECRET, POSTGRES_PASSWORD, EMQX_DASHBOARD_PASSWORD
+
+# 2. Bring up the stack (rebuilds the API image from source)
+docker compose --env-file apps/api/.env.production -f docker-compose.prod.yml up -d --build
+
+# 3. Run migrations on first deploy
+docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
+
+# 4. Seed demo data (optional)
+docker compose -f docker-compose.prod.yml exec api node -e "require('./prisma/seed')"
+
+# 5. Verify
+curl http://your-domain/health
+# → { "status": "ok", "timestamp": "...", "uptime": ... }
+```
+
+### Topology
+
+- **nginx** — terminates TLS, proxies `/api/*` and `/socket.io/` to the API. Drop certs into `nginx/certs/` and uncomment the `return 301` redirect for HTTPS-only.
+- **api** — multi-stage Node 22 alpine build (`apps/api/Dockerfile`). Healthcheck hits `GET /health`. Restarts unless explicitly stopped.
+- **postgres** — alpine image, named volume `pg_data_prod`. Healthcheck via `pg_isready`.
+- **emqx** — same image as dev, used by the WebSocket gateway when MQTT support is wired in.
+
+---
+
+## 17. BusManager PWA — Offline Behaviour
+
+The PWA caches at runtime via Workbox (`apps/pwa/src/service-worker/sw.ts`):
+
+| Resource | Strategy | Cache name |
+|---|---|---|
+| App shell (JS/CSS/HTML/icons) | precache (`injectManifest`) | workbox precache |
+| `GET /me/assignments` | NetworkFirst (5 s timeout) | `assignments-cache` |
+| `GET .../rounds/:roundId/.../attendance` and `/allocations` | StaleWhileRevalidate | `attendance-cache` |
+| `GET /trips/:tripId/passengers` | StaleWhileRevalidate | `passengers-cache` |
+
+When offline:
+
+- `POST .../attendance` is captured by a Workbox **BackgroundSync** queue (`attendance-sync` tag, 24-hour retention) and replayed automatically on reconnect.
+- Both `HomePage` and `AttendancePage` show an amber banner — `useOnlineStatus()` listens to `window` `online`/`offline` events.
+
+Production users can install the PWA from Chrome's address-bar prompt; the manifest is at `dist/manifest.webmanifest` after build.
 
 ---
 

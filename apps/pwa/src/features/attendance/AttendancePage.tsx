@@ -7,6 +7,7 @@ import {
   useUpdateRoundStatusMutation,
 } from './attendanceApi'
 import { useAttendanceSocket, type AttendanceUpdate } from '../../hooks/useAttendanceSocket'
+import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
 import { Card, CardContent } from '../../components/ui/card'
@@ -35,6 +36,7 @@ export default function AttendancePage() {
   const [expandedNote, setExpandedNote] = useState<string | null>(null)
   const [peerUpdates, setPeerUpdates] = useState<{ name: string; status: string }[]>([])
   const [broadcastAlert, setBroadcastAlert] = useState<string | null>(null)
+  const isOnline = useOnlineStatus()
 
   useAttendanceSocket({
     tripId,
@@ -89,6 +91,12 @@ export default function AttendancePage() {
               Dismiss
             </Button>
           </div>
+        </div>
+      )}
+
+      {!isOnline && (
+        <div className="bg-amber-500 text-white text-xs text-center py-1.5 font-medium sticky top-0 z-20">
+          ⚡ Offline — attendance marks queued, will sync on reconnect
         </div>
       )}
 

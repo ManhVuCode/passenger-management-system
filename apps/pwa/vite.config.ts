@@ -7,22 +7,24 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      manifest: {
-        name: 'BusManager PWA',
-        short_name: 'BusMgr',
-        theme_color: '#ffffff',
-        icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-        ],
+      strategies: 'injectManifest',
+      srcDir: 'src/service-worker',
+      filename: 'sw.ts',
+      devOptions: { enabled: false },
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
       },
-      workbox: {
-        runtimeCaching: [
-          {
-            urlPattern: /\/api\/rounds\/.*/,
-            handler: 'CacheFirst',
-            options: { cacheName: 'rounds-cache' },
-          },
+      manifest: {
+        name: 'BusManager — Passenger Attendance',
+        short_name: 'BusMgr',
+        description: 'Mark passenger attendance for your assigned round',
+        theme_color: '#2563eb',
+        background_color: '#f8f6f1',
+        display: 'standalone',
+        orientation: 'portrait',
+        icons: [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
         ],
       },
     }),

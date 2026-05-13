@@ -13,6 +13,7 @@ import { RoundModule } from './modules/round/round.module';
 import { BusModule } from './modules/bus/bus.module';
 import { AssignmentModule } from './modules/assignment/assignment.module';
 import { PassengerModule } from './modules/passenger/passenger.module';
+import { AllocationModule } from './modules/allocation/allocation.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PassengerModule } from './modules/passenger/passenger.module';
     BusModule,
     AssignmentModule,
     PassengerModule,
+    AllocationModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,5 +1,7 @@
 import { baseApi } from '../../store/baseApi'
-import type { Trip } from '@pms/shared'
+import type { Trip, Round } from '@pms/shared'
+
+export type TripWithRounds = Trip & { rounds: Round[] }
 
 interface CreateTripPayload {
   name: string
@@ -14,7 +16,7 @@ export const tripsApi = baseApi.injectEndpoints({
       query: () => '/trips',
       providesTags: ['Trip'],
     }),
-    getTrip: builder.query<Trip, string>({
+    getTrip: builder.query<TripWithRounds, string>({
       query: (id) => `/trips/${id}`,
       providesTags: (_result, _err, id) => [{ type: 'Trip', id }],
     }),

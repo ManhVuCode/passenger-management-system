@@ -108,7 +108,7 @@ export default function TripListPage() {
               <div className="flex items-center gap-4">
                 <div>
                   <Link
-                    to={`/trips/${trip.id}/passengers`}
+                    to={`/trips/${trip.id}`}
                     className="font-medium hover:text-primary transition-colors"
                   >
                     {trip.name}

@@ -19,6 +19,15 @@ describe('App (e2e)', () => {
     return request(app.getHttpServer()).get('/').expect(401)
   })
 
+  it('GET /health → 200 { status: ok }', async () => {
+    const res = await request(app.getHttpServer()).get('/health')
+    expect(res.status).toBe(200)
+    expect(res.body.status).toBe('ok')
+    expect(res.body.timestamp).toBeDefined()
+    expect(typeof res.body.uptime).toBe('number')
+    expect(res.body.uptime).toBeGreaterThanOrEqual(0)
+  })
+
   afterEach(async () => {
     await app.close()
   })

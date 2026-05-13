@@ -22,17 +22,23 @@ export class PassengerController {
     return this.passengerService.findAllByTrip(tripId, user.tenantId)
   }
 
-  @Get('export/csv')
+  @Get('export/xlsx')
   @Roles(Role.ADMIN)
-  async exportCsv(
+  async exportXlsx(
     @Param('tripId') tripId: string,
     @CurrentUser() user: JwtPayload,
     @Res() res: Response,
   ) {
-    const csv = await this.passengerService.exportCsv(tripId, user.tenantId)
-    res.setHeader('Content-Type', 'text/csv')
-    res.setHeader('Content-Disposition', `attachment; filename="passengers-${tripId}.csv"`)
-    res.send(csv)
+    const buffer = await this.passengerService.exportXlsx(tripId, user.tenantId)
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="passengers-${tripId}.xlsx"`,
+    )
+    res.send(buffer)
   }
 
   @Post()

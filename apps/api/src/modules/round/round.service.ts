@@ -69,6 +69,9 @@ export class RoundService {
       if (!assignment) {
         throw new ForbiddenException('BusManager can only update their own assigned round')
       }
+      if (dto.status === RoundStatus.CANCELLED) {
+        throw new ForbiddenException('BusManager cannot cancel a round')
+      }
     }
 
     this.validateStatusTransition(round.status as RoundStatus, dto.status)

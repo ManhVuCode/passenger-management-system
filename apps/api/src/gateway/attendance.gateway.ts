@@ -94,4 +94,10 @@ export class AttendanceGateway implements OnGatewayConnection, OnGatewayDisconne
     const room = `trip:${data.tripId}`
     this.server?.to(room).emit('round:status-updated', data)
   }
+
+  broadcastCallAlert(data: { tripId: string; message: string }) {
+    const room = `trip:${data.tripId}`
+    this.server?.to(room).emit('broadcast:call', data)
+    this.logger.log(`Broadcast call alert to room ${room}: ${data.message}`)
+  }
 }

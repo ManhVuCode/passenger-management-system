@@ -34,6 +34,7 @@ export default function AttendancePage() {
 
   const [expandedNote, setExpandedNote] = useState<string | null>(null)
   const [peerUpdates, setPeerUpdates] = useState<{ name: string; status: string }[]>([])
+  const [broadcastAlert, setBroadcastAlert] = useState<string | null>(null)
 
   useAttendanceSocket({
     tripId,
@@ -47,6 +48,7 @@ export default function AttendancePage() {
       },
       [busId],
     ),
+    onBroadcastAlert: useCallback((msg: string) => setBroadcastAlert(msg), []),
   })
 
   async function handleMark(rpaId: string, status: 'JOIN' | 'ABSENT') {
@@ -77,6 +79,19 @@ export default function AttendancePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
+      {broadcastAlert && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-6">
+          <div className="bg-white rounded-2xl p-6 text-center shadow-2xl max-w-sm w-full">
+            <div className="text-5xl mb-3">📢</div>
+            <h2 className="text-xl font-bold mb-2">Broadcast Alert</h2>
+            <p className="text-slate-600 mb-5">{broadcastAlert}</p>
+            <Button className="w-full" onClick={() => setBroadcastAlert(null)}>
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white border-b border-border sticky top-0 z-10 px-4 py-3">
         <h1 className="font-bold text-base">Attendance</h1>
         {summary && (

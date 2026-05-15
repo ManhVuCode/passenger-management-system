@@ -10,6 +10,15 @@ interface CreateTripPayload {
   endDate: string
 }
 
+interface CreateRoundPayload {
+  name: string
+  sequence: number
+  departurePoint: string
+  arrivalPoint: string
+  scheduledDep: string
+  scheduledArr: string
+}
+
 export const tripsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getTrips: builder.query<Trip[], void>({
@@ -32,6 +41,25 @@ export const tripsApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/trips/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Trip'],
     }),
+    createRound: builder.mutation<Round, { tripId: string; body: CreateRoundPayload }>({
+      query: ({ tripId, body }) => ({
+        url: `/trips/${tripId}/rounds`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (_r, _e, { tripId }) => [{ type: 'Trip', id: tripId }],
+    }),
+    updateRoundStatus: builder.mutation<
+      Round,
+      { tripId: string; roundId: string; status: string }
+    >({
+      query: ({ tripId, roundId, status }) => ({
+        url: `/trips/${tripId}/rounds/${roundId}/status`,
+        method: 'PATCH',
+        body: { status },
+      }),
+      invalidatesTags: (_r, _e, { tripId }) => [{ type: 'Trip', id: tripId }],
+    }),
   }),
 })
 
@@ -41,4 +69,6 @@ export const {
   useCreateTripMutation,
   useUpdateTripMutation,
   useDeleteTripMutation,
+  useCreateRoundMutation,
+  useUpdateRoundStatusMutation,
 } = tripsApi

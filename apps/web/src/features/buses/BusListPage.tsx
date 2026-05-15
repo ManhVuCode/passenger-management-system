@@ -1,54 +1,88 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { useGetBusesQuery, useCreateBusMutation, useDeleteBusMutation } from './busApi'
-import { Button } from '../../components/ui/button'
 import {
-  Plus,
-  Trash2,
-  Edit2,
-  Users,
-  Info,
-  X,
-} from 'lucide-react'
+  useGetBusesQuery,
+  useCreateBusMutation,
+  useUpdateBusMutation,
+  useDeleteBusMutation,
+} from './busApi'
+import { Button } from '../../components/ui/button'
+import { Plus, Trash2, Edit2, Users, Info, X } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { PhotoUploadInput } from './PhotoUploadInput'
+import type { Bus } from '@pms/shared'
+
+const DEFAULT_FORM = {
+  licensePlate: '',
+  name: '',
+  capacity: 30,
+  photoFront: '',
+  photoSide: '',
+  photoRear: '',
+}
 
 export default function BusListPage() {
   const { data: buses = [], isLoading } = useGetBusesQuery()
   const [createBus, { isLoading: creating }] = useCreateBusMutation()
+  const [updateBus, { isLoading: updating }] = useUpdateBusMutation()
   const [deleteBus] = useDeleteBusMutation()
   const [isPanelOpen, setIsPanelOpen] = useState(false)
-  const [form, setForm] = useState({
-    licensePlate: '',
-    name: '',
-    capacity: 30,
-    photoFront: '',
-    photoSide: '',
-    photoRear: '',
-  })
+  const [editingBus, setEditingBus] = useState<Bus | null>(null)
+  const [form, setForm] = useState(DEFAULT_FORM)
   const [formError, setFormError] = useState('')
 
-  async function handleCreate(e: React.FormEvent) {
+  useEffect(() => {
+    if (editingBus) {
+      setForm({
+        licensePlate: editingBus.licensePlate,
+        name: editingBus.name,
+        capacity: editingBus.capacity,
+        photoFront: editingBus.photoFront,
+        photoSide: editingBus.photoSide,
+        photoRear: editingBus.photoRear,
+      })
+    }
+  }, [editingBus])
+
+  function openCreate() {
+    setForm(DEFAULT_FORM)
+    setFormError('')
+    setEditingBus(null)
+    setIsPanelOpen(true)
+  }
+
+  function openEdit(bus: Bus) {
+    setFormError('')
+    setEditingBus(bus)
+    setIsPanelOpen(true)
+  }
+
+  function closePanel() {
+    setIsPanelOpen(false)
+    setEditingBus(null)
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setFormError('')
     try {
-      await createBus(form).unwrap()
-      setForm({
-        licensePlate: '',
-        name: '',
-        capacity: 30,
-        photoFront: '',
-        photoSide: '',
-        photoRear: '',
-      })
-      setIsPanelOpen(false)
+      if (editingBus) {
+        await updateBus({ id: editingBus.id, body: form }).unwrap()
+      } else {
+        await createBus(form).unwrap()
+      }
+      setForm(DEFAULT_FORM)
+      closePanel()
     } catch (err: unknown) {
       const message = (err as { data?: { message?: string } })?.data?.message
-      setFormError(typeof message === 'string' ? message : 'Failed to create bus')
+      setFormError(typeof message === 'string' ? message : 'Failed to save bus')
     }
   }
 
   if (isLoading) return <div className="p-8 text-gray-400">Loading buses…</div>
+
+  const isEdit = editingBus !== null
+  const saving = creating || updating
 
   return (
     <div className="p-8">
@@ -61,7 +95,7 @@ export default function BusListPage() {
               : `${buses.length} vehicle${buses.length === 1 ? '' : 's'} in the fleet`}
           </p>
         </div>
-        <Button className="gap-2" onClick={() => setIsPanelOpen(true)}>
+        <Button className="gap-2" onClick={openCreate}>
           <Plus size={18} />
           Register Bus
         </Button>
@@ -76,7 +110,12 @@ export default function BusListPage() {
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {buses.map((bus) => (
-            <BusCard key={bus.id} bus={bus} onDelete={() => deleteBus(bus.id)} />
+            <BusCard
+              key={bus.id}
+              bus={bus}
+              onDelete={() => deleteBus(bus.id)}
+              onEdit={() => openEdit(bus)}
+            />
           ))}
         </div>
       )}
@@ -88,7 +127,7 @@ export default function BusListPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsPanelOpen(false)}
+              onClick={closePanel}
               className="fixed inset-0 bg-gray-950/20 backdrop-blur-[2px] z-[60]"
             />
             <motion.div
@@ -98,9 +137,11 @@ export default function BusListPage() {
               className="fixed top-0 right-0 bottom-0 w-[460px] bg-white shadow-2xl z-[70] border-l border-gray-100 flex flex-col"
             >
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <h2 className="text-xl font-bold text-gray-950">Register New Bus</h2>
+                <h2 className="text-xl font-bold text-gray-950">
+                  {isEdit ? 'Edit Bus' : 'Register New Bus'}
+                </h2>
                 <button
-                  onClick={() => setIsPanelOpen(false)}
+                  onClick={closePanel}
                   className="p-2 text-gray-400 hover:text-gray-950 rounded-full hover:bg-white transition-all"
                 >
                   <X size={20} />
@@ -108,7 +149,7 @@ export default function BusListPage() {
               </div>
 
               <form
-                onSubmit={handleCreate}
+                onSubmit={handleSubmit}
                 className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col"
               >
                 <div className="space-y-6 flex-1">
@@ -187,10 +228,16 @@ export default function BusListPage() {
                 <div className="pt-6 border-t border-gray-100 -mx-6 px-6 -mb-6 pb-6 bg-gray-50/50 sticky bottom-0">
                   <Button
                     type="submit"
-                    disabled={creating}
+                    disabled={saving}
                     className="w-full h-12 rounded-xl text-md"
                   >
-                    {creating ? 'Registering…' : 'Save Bus Registration'}
+                    {saving
+                      ? isEdit
+                        ? 'Saving…'
+                        : 'Registering…'
+                      : isEdit
+                        ? 'Save Changes'
+                        : 'Save Bus Registration'}
                   </Button>
                 </div>
               </form>
@@ -227,19 +274,14 @@ function FormField({
 }
 
 interface BusCardProps {
-  bus: {
-    id: string
-    name: string
-    licensePlate: string
-    capacity: number
-    photoFront: string
-    photoSide: string
-    photoRear: string
-  }
+  bus: Bus
   onDelete: () => void
+  onEdit: () => void
 }
 
-function BusCard({ bus, onDelete }: BusCardProps) {
+function BusCard({ bus, onDelete, onEdit }: BusCardProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
   const photos = [
     { url: bus.photoFront, label: 'Front' },
     { url: bus.photoSide, label: 'Side' },
@@ -247,58 +289,105 @@ function BusCard({ bus, onDelete }: BusCardProps) {
   ]
 
   return (
-    <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden group">
-      <div className="flex bg-gray-100 h-24 p-1 gap-1">
-        {photos.map((photo) => (
-          <div
-            key={photo.label}
-            className="flex-1 rounded-lg overflow-hidden bg-gray-200"
+    <>
+      <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden group">
+        <div className="flex bg-gray-100 h-24 p-1 gap-1">
+          {photos.map((photo) => (
+            <div key={photo.label} className="flex-1 rounded-lg overflow-hidden bg-gray-200">
+              {photo.url ? (
+                <img
+                  src={photo.url}
+                  alt={photo.label}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    ;(e.target as HTMLImageElement).style.display = 'none'
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400 text-[10px] font-bold uppercase tracking-widest">
+                  {photo.label}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="p-5 flex justify-between items-center">
+          <div className="min-w-0">
+            <h3 className="font-bold text-gray-950 truncate">{bus.name}</h3>
+            <div className="flex items-center gap-3 mt-1">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                {bus.licensePlate}
+              </span>
+              <span className="text-xs text-gray-500 flex items-center gap-1">
+                <Users size={12} /> {bus.capacity} seats
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={onEdit}
+              className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              aria-label="Edit bus"
+            >
+              <Edit2 size={16} />
+            </button>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="p-2 text-gray-400 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
+              aria-label="Delete bus"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-gray-950/40 backdrop-blur-[2px] z-[80] flex items-center justify-center p-6"
+            onClick={() => setConfirmDelete(false)}
           >
-            {photo.url ? (
-              <img
-                src={photo.url}
-                alt={photo.label}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  ;(e.target as HTMLImageElement).style.display = 'none'
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400 text-[10px] font-bold uppercase tracking-widest">
-                {photo.label}
+            <motion.div
+              initial={{ scale: 0.95, y: 8 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 8 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+            >
+              <div className="w-12 h-12 bg-danger-50 rounded-2xl flex items-center justify-center mb-4">
+                <Trash2 size={20} className="text-danger-600" />
               </div>
-            )}
-          </div>
-        ))}
-      </div>
-      <div className="p-5 flex justify-between items-center">
-        <div className="min-w-0">
-          <h3 className="font-bold text-gray-950 truncate">{bus.name}</h3>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-              {bus.licensePlate}
-            </span>
-            <span className="text-xs text-gray-500 flex items-center gap-1">
-              <Users size={12} /> {bus.capacity} seats
-            </span>
-          </div>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <button
-            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-            aria-label="Edit bus"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-2 text-gray-400 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
-            aria-label="Delete bus"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      </div>
-    </div>
+              <h3 className="font-bold text-gray-950 mb-1">Delete {bus.name}?</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                This will permanently remove{' '}
+                <span className="font-medium">{bus.licensePlate}</span> from the fleet. This action
+                cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    onDelete()
+                    setConfirmDelete(false)
+                  }}
+                  className="flex-1 h-10 rounded-xl bg-danger-600 text-white text-sm font-medium hover:bg-danger-600/90 active:scale-[0.98] transition-all"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }

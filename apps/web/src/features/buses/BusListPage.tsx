@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import {
   useGetBusesQuery,
   useCreateBusMutation,
@@ -23,6 +24,7 @@ const DEFAULT_FORM = {
 }
 
 export default function BusListPage() {
+  const { t } = useTranslation()
   const { data: buses = [], isLoading } = useGetBusesQuery()
   const [createBus, { isLoading: creating }] = useCreateBusMutation()
   const [updateBus, { isLoading: updating }] = useUpdateBusMutation()
@@ -88,11 +90,11 @@ export default function BusListPage() {
       closePanel()
     } catch (err: unknown) {
       const message = (err as { data?: { message?: string } })?.data?.message
-      setFormError(typeof message === 'string' ? message : 'Failed to save bus')
+      setFormError(typeof message === 'string' ? message : t('buses.failedSave'))
     }
   }
 
-  if (isLoading) return <div className="p-8 text-gray-400">Loading buses…</div>
+  if (isLoading) return <div className="p-8 text-gray-400">{t('common.loading')}</div>
 
   const isEdit = editingBus !== null
   const saving = creating || updating
@@ -101,24 +103,22 @@ export default function BusListPage() {
     <div className="p-8">
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-950">Bus Fleet</h1>
+          <h1 className="text-3xl font-bold text-gray-950">{t('buses.title')}</h1>
           <p className="text-gray-600 mt-1">
             {buses.length === 0
-              ? 'No buses registered yet.'
-              : `${buses.length} vehicle${buses.length === 1 ? '' : 's'} in the fleet`}
+              ? t('buses.none')
+              : t('buses.subtitle', { count: buses.length })}
           </p>
         </div>
         <Button className="gap-2" onClick={openCreate}>
           <Plus size={18} />
-          Register Bus
+          {t('buses.registerBus')}
         </Button>
       </header>
 
       {buses.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-12 text-center">
-          <p className="text-gray-400 text-sm">
-            No buses registered yet. Click <span className="font-bold">Register Bus</span> to add one.
-          </p>
+          <p className="text-gray-400 text-sm">{t('buses.noBuses')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -151,7 +151,7 @@ export default function BusListPage() {
             >
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <h2 className="text-xl font-bold text-gray-950">
-                  {isEdit ? 'Edit Bus' : 'Register New Bus'}
+                  {isEdit ? t('buses.editTitle') : t('buses.registerTitle')}
                 </h2>
                 <button
                   onClick={closePanel}
@@ -167,9 +167,9 @@ export default function BusListPage() {
               >
                 <div className="space-y-6 flex-1">
                   <div className="grid grid-cols-2 gap-4">
-                    <FormField label="License Plate *">
+                    <FormField label={`${t('buses.licensePlate')} *`}>
                       <input
-                        placeholder="51A-123.45"
+                        placeholder={t('buses.licensePlatePlaceholder')}
                         value={form.licensePlate}
                         onChange={(e) => {
                           const val = e.target.value
@@ -189,9 +189,9 @@ export default function BusListPage() {
                         <p className="text-[11px] text-danger-600">{errors.licensePlate}</p>
                       )}
                     </FormField>
-                    <FormField label="Vehicle Name *">
+                    <FormField label={`${t('buses.vehicleName')} *`}>
                       <input
-                        placeholder="e.g. Bus Alpha"
+                        placeholder={t('buses.vehicleNamePlaceholder')}
                         value={form.name}
                         onChange={(e) => {
                           const val = e.target.value
@@ -213,7 +213,7 @@ export default function BusListPage() {
                     </FormField>
                   </div>
 
-                  <FormField label="Total Capacity (Seats) *">
+                  <FormField label={`${t('buses.capacity')} *`}>
                     <input
                       type="number"
                       min={1}
@@ -226,23 +226,23 @@ export default function BusListPage() {
 
                   <div className="pt-6 border-t border-gray-100 flex flex-col gap-4">
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                      Required Verification Photos
+                      {t('buses.photos')}
                     </p>
 
                     <PhotoUploadInput
-                      label="Front View"
+                      label={t('buses.frontView')}
                       value={form.photoFront}
                       onChange={(b64) => setForm({ ...form, photoFront: b64 })}
                       required
                     />
                     <PhotoUploadInput
-                      label="Side View"
+                      label={t('buses.sideView')}
                       value={form.photoSide}
                       onChange={(b64) => setForm({ ...form, photoSide: b64 })}
                       required
                     />
                     <PhotoUploadInput
-                      label="Rear View"
+                      label={t('buses.rearView')}
                       value={form.photoRear}
                       onChange={(b64) => setForm({ ...form, photoRear: b64 })}
                       required
@@ -251,8 +251,7 @@ export default function BusListPage() {
                     <div className="p-4 bg-primary-50 rounded-xl border border-primary-100 flex items-start gap-3">
                       <Info size={16} className="text-primary-600 shrink-0 mt-0.5" />
                       <p className="text-[10px] text-primary-600 leading-relaxed font-medium">
-                        All 3 photos are required for accounting verification and safety audits.
-                        High resolution preferred.
+                        {t('buses.photosNote')}
                       </p>
                     </div>
                   </div>
@@ -272,11 +271,11 @@ export default function BusListPage() {
                   >
                     {saving
                       ? isEdit
-                        ? 'Saving…'
-                        : 'Registering…'
+                        ? t('buses.saving')
+                        : t('buses.registering')
                       : isEdit
-                        ? 'Save Changes'
-                        : 'Save Bus Registration'}
+                        ? t('buses.saveChanges')
+                        : t('buses.saveRegistration')}
                   </Button>
                 </div>
               </form>
@@ -319,12 +318,13 @@ interface BusCardProps {
 }
 
 function BusCard({ bus, onDelete, onEdit }: BusCardProps) {
+  const { t } = useTranslation()
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const photos = [
-    { url: bus.photoFront, label: 'Front' },
-    { url: bus.photoSide, label: 'Side' },
-    { url: bus.photoRear, label: 'Rear' },
+    { url: bus.photoFront, label: t('buses.frontView') },
+    { url: bus.photoSide, label: t('buses.sideView') },
+    { url: bus.photoRear, label: t('buses.rearView') },
   ]
 
   return (
@@ -358,7 +358,7 @@ function BusCard({ bus, onDelete, onEdit }: BusCardProps) {
                 {bus.licensePlate}
               </span>
               <span className="text-xs text-gray-500 flex items-center gap-1">
-                <Users size={12} /> {bus.capacity} seats
+                <Users size={12} /> {t('buses.seats', { count: bus.capacity })}
               </span>
             </div>
           </div>
@@ -400,18 +400,18 @@ function BusCard({ bus, onDelete, onEdit }: BusCardProps) {
               <div className="w-12 h-12 bg-danger-50 rounded-2xl flex items-center justify-center mb-4">
                 <Trash2 size={20} className="text-danger-600" />
               </div>
-              <h3 className="font-bold text-gray-950 mb-1">Delete {bus.name}?</h3>
+              <h3 className="font-bold text-gray-950 mb-1">
+                {t('buses.deleteBus', { name: bus.name })}
+              </h3>
               <p className="text-sm text-gray-500 mb-6">
-                This will permanently remove{' '}
-                <span className="font-medium">{bus.licensePlate}</span> from the fleet. This action
-                cannot be undone.
+                {t('buses.deleteConfirm', { plate: bus.licensePlate })}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmDelete(false)}
                   className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={() => {
@@ -420,7 +420,7 @@ function BusCard({ bus, onDelete, onEdit }: BusCardProps) {
                   }}
                   className="flex-1 h-10 rounded-xl bg-danger-600 text-white text-sm font-medium hover:bg-danger-600/90 active:scale-[0.98] transition-all"
                 >
-                  Delete
+                  {t('common.delete')}
                 </button>
               </div>
             </motion.div>

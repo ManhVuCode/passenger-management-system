@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import {
   useGetPassengersForBusQuery,
   useMarkAttendanceMutation,
@@ -27,6 +28,7 @@ export default function AttendancePage() {
     roundId: string
     busId: string
   }>()
+  const { t } = useTranslation()
 
   const { data: passengers = [], isLoading } = useGetPassengersForBusQuery({
     tripId: tripId!,
@@ -54,11 +56,18 @@ export default function AttendancePage() {
             hour: '2-digit',
             minute: '2-digit',
           })
-          setPeerUpdate(`Bus ${data.busId.slice(0, 6)}: ${data.passengerName} → ${data.status} · ${time}`)
+          setPeerUpdate(
+            t('attendance.peerUpdate', {
+              bus: data.busId.slice(0, 6),
+              name: data.passengerName,
+              status: t(`status.${data.status}` as const),
+              time,
+            }),
+          )
           window.setTimeout(() => setPeerUpdate(null), 4000)
         }
       },
-      [busId],
+      [busId, t],
     ),
     onBroadcastAlert: useCallback((msg: string) => setBroadcastAlert(msg), []),
   })
@@ -92,7 +101,7 @@ export default function AttendancePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400">Loading passengers…</p>
+        <p className="text-gray-400">{t('attendance.loadingPassengers')}</p>
       </div>
     )
   }
@@ -119,7 +128,9 @@ export default function AttendancePage() {
               <div className="w-20 h-20 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-4xl">📢</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-950 mb-2">Broadcast Alert</h3>
+              <h3 className="text-xl font-bold text-gray-950 mb-2">
+                {t('attendance.broadcastAlert')}
+              </h3>
               <p className="text-gray-600 mb-8 leading-relaxed whitespace-pre-line">
                 {broadcastAlert}
               </p>
@@ -128,7 +139,7 @@ export default function AttendancePage() {
                 className="w-full rounded-2xl"
                 onClick={() => setBroadcastAlert(null)}
               >
-                Got it
+                {t('common.gotIt')}
               </Button>
             </motion.div>
           </motion.div>
@@ -140,17 +151,17 @@ export default function AttendancePage() {
           <Link
             to="/"
             className="p-2 -ml-2 text-gray-400 hover:text-gray-950"
-            aria-label="Back"
+            aria-label={t('common.back')}
           >
             <ArrowLeft size={20} />
           </Link>
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-bold text-gray-950 truncate">Attendance</h2>
+            <h2 className="text-sm font-bold text-gray-950 truncate">{t('attendance.title')}</h2>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              Bus · {summary?.total ?? passengers.length} seats
+              {t('attendance.seats', { count: summary?.total ?? passengers.length })}
             </p>
           </div>
-          <button className="p-2 text-gray-400" aria-label="Search">
+          <button className="p-2 text-gray-400" aria-label={t('common.search')}>
             <Search size={20} />
           </button>
         </div>
@@ -158,9 +169,15 @@ export default function AttendancePage() {
         {summary && (
           <div className="h-10 px-5 flex items-center justify-between border-t border-gray-50 bg-white">
             <div className="flex items-center gap-4 text-[10px] font-bold tracking-widest uppercase">
-              <span className="text-success-600">✓ {summary.join} Joined</span>
-              <span className="text-warning-500">✗ {summary.absent} Absent</span>
-              <span className="text-gray-400">? {summary.pending} Pending</span>
+              <span className="text-success-600">
+                {t('attendance.joined', { count: summary.join })}
+              </span>
+              <span className="text-warning-500">
+                {t('attendance.absent', { count: summary.absent })}
+              </span>
+              <span className="text-gray-400">
+                {t('attendance.pending', { count: summary.pending })}
+              </span>
             </div>
           </div>
         )}
@@ -169,7 +186,7 @@ export default function AttendancePage() {
       {!isOnline && (
         <div className="bg-warning-500 text-white px-5 py-1.5 flex items-center gap-2 text-[11px] font-bold">
           <WifiOff size={14} />
-          Offline — marks queued, will sync on reconnect
+          {t('attendance.offline')}
         </div>
       )}
 
@@ -197,7 +214,7 @@ export default function AttendancePage() {
           onClick={() => handleMarkAll('JOIN')}
           disabled={marking}
         >
-          <Check size={14} /> Mark All Present
+          <Check size={14} /> {t('attendance.markAllJoin')}
         </Button>
         <Button
           variant="outline"
@@ -206,7 +223,7 @@ export default function AttendancePage() {
           onClick={() => handleMarkAll('ABSENT')}
           disabled={marking}
         >
-          <X size={14} /> Mark All Absent
+          <X size={14} /> {t('attendance.markAllAbsent')}
         </Button>
       </div>
 
@@ -214,7 +231,7 @@ export default function AttendancePage() {
         <div className="space-y-px">
           {passengers.length === 0 && (
             <p className="text-center text-gray-400 text-sm py-12">
-              No passengers allocated to this bus.
+              {t('attendance.noPassengers')}
             </p>
           )}
           {passengers.map((p, i) => {
@@ -255,7 +272,7 @@ export default function AttendancePage() {
                       onClick={() => setExpandedNote(noteOpen ? null : p.id)}
                       className="mt-2 text-[10px] font-medium text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 italic max-w-full truncate text-left"
                     >
-                      ▼ Note: {noteText}
+                      {t('attendance.noteLabel', { note: noteText })}
                     </button>
                   )}
                 </div>
@@ -271,7 +288,7 @@ export default function AttendancePage() {
                         ? 'bg-success-600 border-success-600 text-white shadow-lg shadow-success-600/30 scale-105'
                         : 'bg-white border-gray-200 text-gray-400 hover:border-success-600/40',
                     )}
-                    aria-label="Mark JOIN"
+                    aria-label={t('status.JOIN')}
                   >
                     <Check size={20} strokeWidth={3} />
                   </motion.button>
@@ -285,7 +302,7 @@ export default function AttendancePage() {
                         ? 'bg-warning-500 border-warning-500 text-white shadow-lg shadow-warning-500/30 scale-105'
                         : 'bg-white border-gray-200 text-gray-400 hover:border-warning-500/40',
                     )}
-                    aria-label="Mark ABSENT"
+                    aria-label={t('status.ABSENT')}
                   >
                     <X size={20} strokeWidth={3} />
                   </motion.button>
@@ -303,7 +320,7 @@ export default function AttendancePage() {
           onClick={handleComplete}
         >
           <Check size={20} />
-          Complete Round → DONE
+          {t('attendance.completeRound')}
         </Button>
       </div>
     </div>

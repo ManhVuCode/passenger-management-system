@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import {
   useGetTripsQuery,
   useCreateTripMutation,
@@ -27,6 +28,7 @@ type Tab = 'all' | 'active' | 'upcoming' | 'done'
 
 export default function TripListPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { data: trips = [], isLoading } = useGetTripsQuery()
   const [createTrip, { isLoading: creating }] = useCreateTripMutation()
   const [deleteTrip] = useDeleteTripMutation()
@@ -50,7 +52,9 @@ export default function TripListPage() {
       case 'upcoming':
         return trips.filter((t) => t.status === TripStatus.PLANNED)
       case 'done':
-        return trips.filter((t) => t.status === TripStatus.DONE || t.status === TripStatus.CANCELLED)
+        return trips.filter(
+          (t) => t.status === TripStatus.DONE || t.status === TripStatus.CANCELLED,
+        )
       default:
         return trips
     }
@@ -66,7 +70,7 @@ export default function TripListPage() {
       return
     }
     if (form.name.includes('/')) {
-      setFormError('Trip name must not contain "/"')
+      setFormError(t('errors.slashInName'))
       return
     }
     try {
@@ -76,35 +80,68 @@ export default function TripListPage() {
       setShowForm(false)
     } catch (err: unknown) {
       const message = (err as { data?: { message?: string } })?.data?.message
-      setFormError(typeof message === 'string' ? message : 'Failed to create trip')
+      setFormError(typeof message === 'string' ? message : t('trips.failedCreate'))
     }
   }
 
   if (isLoading) {
-    return <div className="p-8 text-gray-400">Loading trips…</div>
+    return <div className="p-8 text-gray-400">{t('common.loading')}</div>
+  }
+
+  const tabLabels: Record<Tab, string> = {
+    all: t('trips.tabAll'),
+    active: t('trips.tabActive'),
+    upcoming: t('trips.tabUpcoming'),
+    done: t('trips.tabDone'),
   }
 
   return (
     <div className="p-8">
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-950">My Trips</h1>
+          <h1 className="text-3xl font-bold text-gray-950">{t('trips.title')}</h1>
           <p className="text-gray-600 mt-1">
-            {trips.length === 0 ? 'No trips yet — create your first.' : `${trips.length} scheduled journey package${trips.length === 1 ? '' : 's'}`}
+            {trips.length === 0
+              ? t('trips.noTripsHeader')
+              : t('trips.subtitle', { count: trips.length })}
           </p>
         </div>
         <Button className="gap-2 px-6" size="lg" onClick={() => setShowForm(true)}>
           <Plus size={20} />
-          New Trip
+          {t('trips.newTrip')}
         </Button>
       </header>
 
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-6 mb-10">
-        <StatCard label="Total Trips" value={stats.total} icon={MapPin} color="text-primary-600" bg="bg-primary-50" />
-        <StatCard label="Active Now" value={stats.active} icon={Activity} color="text-success-600" bg="bg-success-50" />
-        <StatCard label="Upcoming" value={stats.upcoming} icon={Clock} color="text-warning-500" bg="bg-warning-50" />
-        <StatCard label="Completed" value={stats.completed} icon={CheckCircle2} color="text-gray-400" bg="bg-gray-100" />
+        <StatCard
+          label={t('trips.totalTrips')}
+          value={stats.total}
+          icon={MapPin}
+          color="text-primary-600"
+          bg="bg-primary-50"
+        />
+        <StatCard
+          label={t('trips.activeNow')}
+          value={stats.active}
+          icon={Activity}
+          color="text-success-600"
+          bg="bg-success-50"
+        />
+        <StatCard
+          label={t('trips.upcoming')}
+          value={stats.upcoming}
+          icon={Clock}
+          color="text-warning-500"
+          bg="bg-warning-50"
+        />
+        <StatCard
+          label={t('trips.completed')}
+          value={stats.completed}
+          icon={CheckCircle2}
+          color="text-gray-400"
+          bg="bg-gray-100"
+        />
       </div>
 
       {/* Filter tabs */}
@@ -114,11 +151,11 @@ export default function TripListPage() {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              'px-4 py-2 text-sm font-bold transition-all relative capitalize',
+              'px-4 py-2 text-sm font-bold transition-all relative',
               activeTab === tab ? 'text-primary-600' : 'text-gray-400 hover:text-gray-600',
             )}
           >
-            {tab}
+            {tabLabels[tab]}
             {activeTab === tab && (
               <motion.div
                 layoutId="trips-tab"
@@ -132,7 +169,7 @@ export default function TripListPage() {
       {/* Trip cards grid */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          {trips.length === 0 ? 'No trips yet. Create your first trip.' : 'No trips match this filter.'}
+          {trips.length === 0 ? t('trips.noTrips') : t('trips.noTripsFiltered')}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
@@ -165,7 +202,7 @@ export default function TripListPage() {
               className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-2xl shadow-xl border border-gray-100 z-[70]"
             >
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
-                <h2 className="text-xl font-bold text-gray-950">Create New Trip</h2>
+                <h2 className="text-xl font-bold text-gray-950">{t('trips.createTripTitle')}</h2>
                 <button
                   onClick={() => setShowForm(false)}
                   className="p-2 text-gray-400 hover:text-gray-950 rounded-full hover:bg-white transition-all"
@@ -177,10 +214,10 @@ export default function TripListPage() {
               <form onSubmit={handleCreate} className="p-6 space-y-5">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-                    Trip Name *
+                    {t('trips.tripName')} *
                   </label>
                   <input
-                    placeholder='e.g. Hanoi to Sapa (no "/")'
+                    placeholder={t('trips.tripNamePlaceholder')}
                     value={form.name}
                     onChange={(e) => {
                       const val = e.target.value
@@ -201,7 +238,7 @@ export default function TripListPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-                      Start Date *
+                      {t('trips.startDate')} *
                     </label>
                     <input
                       type="date"
@@ -213,7 +250,7 @@ export default function TripListPage() {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-                      End Date *
+                      {t('trips.endDate')} *
                     </label>
                     <input
                       type="date"
@@ -233,10 +270,10 @@ export default function TripListPage() {
 
                 <div className="flex gap-2 pt-2">
                   <Button type="submit" disabled={creating} className="flex-1">
-                    {creating ? 'Creating…' : 'Create Trip'}
+                    {creating ? t('trips.creating') : t('trips.createTrip')}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                 </div>
               </form>
@@ -285,6 +322,7 @@ interface TripCardProps {
 }
 
 function TripCard({ trip, onClick, onDelete }: TripCardProps) {
+  const { t } = useTranslation()
   const status = trip.status as TripStatus
   const highlight = getTripHighlight(trip.startDate, trip.endDate, status)
   const daysToStart = Math.ceil(
@@ -317,22 +355,23 @@ function TripCard({ trip, onClick, onDelete }: TripCardProps) {
           {status === TripStatus.IN_PROGRESS ? (
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-success-50 text-success-600 text-[10px] font-bold uppercase tracking-wider animate-pulse shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-success-600" />
-              Active Now
+              {t('trips.activeNow')}
             </div>
           ) : highlight === 'approaching' ? (
             <Badge
               variant="IN_PROGRESS"
-              label={`⚡ Starts in ${daysToStart} day${daysToStart === 1 ? '' : 's'}`}
+              label={t('trips.startingSoon', { count: daysToStart })}
             />
           ) : (
-            <Badge variant={status as BadgeVariant} label={status} />
+            <Badge variant={status as BadgeVariant} label={t(`status.${status}`)} />
           )}
         </div>
 
         <div className="flex items-center gap-2 text-gray-600 text-sm mb-4">
           <Calendar size={14} />
           <span>
-            {new Date(trip.startDate).toLocaleDateString()} — {new Date(trip.endDate).toLocaleDateString()}
+            {new Date(trip.startDate).toLocaleDateString()} —{' '}
+            {new Date(trip.endDate).toLocaleDateString()}
           </span>
         </div>
 
@@ -348,7 +387,7 @@ function TripCard({ trip, onClick, onDelete }: TripCardProps) {
               />
             ))}
             <span className="ml-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              Journey Progress
+              {t('trips.journeyProgress')}
             </span>
           </div>
           <button

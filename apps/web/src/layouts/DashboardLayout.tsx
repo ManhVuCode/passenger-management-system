@@ -1,12 +1,14 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import { logout } from '../features/auth/authSlice'
 import { Bus, MapPin, LogOut, Users, Shield } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { LanguageToggle } from '../components/LanguageToggle'
 
 type NavItem = {
   to: string
-  label: string
+  labelKey: string
   icon: typeof Bus
   match: (path: string) => boolean
 }
@@ -15,6 +17,7 @@ export default function DashboardLayout() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useTranslation()
   const name = useAppSelector((s) => s.auth.name)
   const role = useAppSelector((s) => s.auth.role)
 
@@ -29,7 +32,7 @@ export default function DashboardLayout() {
     ? [
         {
           to: '/system',
-          label: 'Tenants',
+          labelKey: 'nav.tenants',
           icon: Shield,
           match: (p) => p === '/' || p.startsWith('/system'),
         },
@@ -37,11 +40,16 @@ export default function DashboardLayout() {
     : [
         {
           to: '/trips',
-          label: 'Trips',
+          labelKey: 'nav.trips',
           icon: MapPin,
           match: (p) => p === '/' || p.startsWith('/trips'),
         },
-        { to: '/buses', label: 'Buses', icon: Bus, match: (p) => p.startsWith('/buses') },
+        {
+          to: '/buses',
+          labelKey: 'nav.buses',
+          icon: Bus,
+          match: (p) => p.startsWith('/buses'),
+        },
       ]
 
   return (
@@ -61,10 +69,10 @@ export default function DashboardLayout() {
 
         <nav className="p-4 flex flex-col gap-1 flex-1">
           <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-            {isSystemAdmin ? 'Platform Admin' : 'Operation Admin'}
+            {isSystemAdmin ? t('nav.platformAdmin') : t('nav.operationAdmin')}
           </p>
 
-          {navItems.map(({ to, label, icon: Icon, match }) => {
+          {navItems.map(({ to, labelKey, icon: Icon, match }) => {
             const isActive = match(location.pathname)
             return (
               <NavLink
@@ -81,7 +89,7 @@ export default function DashboardLayout() {
                   <div className="absolute left-0 top-2 bottom-2 w-[3px] bg-primary-600 rounded-r-full" />
                 )}
                 <Icon size={18} className={isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-950'} />
-                {label}
+                {t(labelKey)}
               </NavLink>
             )
           })}
@@ -95,12 +103,15 @@ export default function DashboardLayout() {
               {role && <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-gray-400">{role}</span>}
             </div>
           )}
+          <div className="px-3 pb-2">
+            <LanguageToggle />
+          </div>
           <button
             onClick={handleLogout}
             className="h-10 w-full px-3 rounded-lg flex items-center gap-3 text-gray-600 hover:bg-danger-50 hover:text-danger-600 transition-colors text-sm font-medium"
           >
             <LogOut size={18} />
-            Sign Out
+            {t('nav.signOut')}
           </button>
         </div>
       </aside>

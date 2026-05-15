@@ -64,6 +64,12 @@ export const vi: PWATranslationKeys = {
     markAllJoin: 'Điểm danh tất cả',
     markAllAbsent: 'Vắng tất cả',
     completeRound: 'Hoàn thành chặng → DONE',
+    completing: 'Đang hoàn thành…',
+    confirmCompleteTitle: 'Hoàn thành chặng này?',
+    confirmCompleteBody:
+      'Chặng này sẽ được đánh dấu DONE. Các hành khách chưa điểm danh sẽ vẫn ở trạng thái chờ.',
+    confirmCompleteButton: 'Hoàn thành chặng',
+    failedComplete: 'Hoàn thành chặng thất bại',
     noPassengers: 'Chưa có hành khách trên xe này.',
     offline: 'Ngoại tuyến — điểm danh đã lưu, sẽ gửi khi có mạng',
     broadcastAlert: 'Thông báo khẩn',

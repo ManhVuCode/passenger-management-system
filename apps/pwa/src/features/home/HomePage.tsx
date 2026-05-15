@@ -3,8 +3,9 @@ import { motion } from 'motion/react'
 import { useGetMyAssignmentsQuery } from '../attendance/attendanceApi'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { Badge, type BadgeVariant } from '../../components/ui/badge'
-import { Bus as BusIcon, Clock, ChevronRight, User, WifiOff } from 'lucide-react'
+import { Bus as BusIcon, Clock, ChevronRight, WifiOff } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import ProfileDropdown from './ProfileDropdown'
 
 export default function HomePage() {
   const { data: assignments = [], isLoading } = useGetMyAssignmentsQuery()
@@ -27,9 +28,7 @@ export default function HomePage() {
             {assignments.length} assignment{assignments.length === 1 ? '' : 's'} today
           </p>
         </div>
-        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
-          <User size={18} />
-        </div>
+        <ProfileDropdown />
       </header>
 
       {!isOnline && (

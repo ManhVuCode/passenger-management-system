@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { PhotoUploadInput } from './PhotoUploadInput'
 
 export default function BusListPage() {
   const { data: buses = [], isLoading } = useGetBusesQuery()
@@ -148,33 +149,24 @@ export default function BusListPage() {
                       Required Verification Photos
                     </p>
 
-                    <FormField label="Front Photo URL *" tone="gray-600">
-                      <input
-                        placeholder="https://..."
-                        value={form.photoFront}
-                        onChange={(e) => setForm({ ...form, photoFront: e.target.value })}
-                        required
-                        className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
-                      />
-                    </FormField>
-                    <FormField label="Side Photo URL *" tone="gray-600">
-                      <input
-                        placeholder="https://..."
-                        value={form.photoSide}
-                        onChange={(e) => setForm({ ...form, photoSide: e.target.value })}
-                        required
-                        className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
-                      />
-                    </FormField>
-                    <FormField label="Rear Photo URL *" tone="gray-600">
-                      <input
-                        placeholder="https://..."
-                        value={form.photoRear}
-                        onChange={(e) => setForm({ ...form, photoRear: e.target.value })}
-                        required
-                        className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
-                      />
-                    </FormField>
+                    <PhotoUploadInput
+                      label="Front View"
+                      value={form.photoFront}
+                      onChange={(b64) => setForm({ ...form, photoFront: b64 })}
+                      required
+                    />
+                    <PhotoUploadInput
+                      label="Side View"
+                      value={form.photoSide}
+                      onChange={(b64) => setForm({ ...form, photoSide: b64 })}
+                      required
+                    />
+                    <PhotoUploadInput
+                      label="Rear View"
+                      value={form.photoRear}
+                      onChange={(b64) => setForm({ ...form, photoRear: b64 })}
+                      required
+                    />
 
                     <div className="p-4 bg-primary-50 rounded-xl border border-primary-100 flex items-start gap-3">
                       <Info size={16} className="text-primary-600 shrink-0 mt-0.5" />
@@ -260,19 +252,22 @@ function BusCard({ bus, onDelete }: BusCardProps) {
         {photos.map((photo) => (
           <div
             key={photo.label}
-            className="flex-1 rounded-lg bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-bold uppercase tracking-widest overflow-hidden relative"
+            className="flex-1 rounded-lg overflow-hidden bg-gray-200"
           >
             {photo.url ? (
               <img
                 src={photo.url}
                 alt={photo.label}
-                className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                className="w-full h-full object-cover"
                 onError={(e) => {
                   ;(e.target as HTMLImageElement).style.display = 'none'
                 }}
               />
-            ) : null}
-            <span className="relative z-10 bg-gray-200/80 px-1 rounded">{photo.label}</span>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400 text-[10px] font-bold uppercase tracking-widest">
+                {photo.label}
+              </div>
+            )}
           </div>
         ))}
       </div>

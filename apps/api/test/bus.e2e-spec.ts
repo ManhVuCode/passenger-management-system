@@ -4,6 +4,9 @@ import { AppModule } from '../src/app.module'
 import { INestApplication, ValidationPipe } from '@nestjs/common'
 import { PrismaService } from '../src/prisma/prisma.service'
 
+const MOCK_PHOTO =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+
 describe('Bus & Assignment (e2e)', () => {
   let app: INestApplication
   let prisma: PrismaService
@@ -52,9 +55,9 @@ describe('Bus & Assignment (e2e)', () => {
           licensePlate: '51A-123.45',
           name: 'Bus Alpha',
           capacity: 30,
-          photoFront: 'https://example.com/front.jpg',
-          photoSide: 'https://example.com/side.jpg',
-          photoRear: 'https://example.com/rear.jpg',
+          photoFront: MOCK_PHOTO,
+          photoSide: MOCK_PHOTO,
+          photoRear: MOCK_PHOTO,
         })
       expect(res.status).toBe(201)
       expect(res.body.photoFront).toBeDefined()
@@ -69,9 +72,9 @@ describe('Bus & Assignment (e2e)', () => {
           licensePlate: '51A-123.45',
           name: 'Bus Beta',
           capacity: 20,
-          photoFront: 'https://example.com/f.jpg',
-          photoSide: 'https://example.com/s.jpg',
-          photoRear: 'https://example.com/r.jpg',
+          photoFront: MOCK_PHOTO,
+          photoSide: MOCK_PHOTO,
+          photoRear: MOCK_PHOTO,
         })
       expect(res.status).toBe(409)
     })
@@ -84,7 +87,7 @@ describe('Bus & Assignment (e2e)', () => {
           licensePlate: '51B-999.99',
           name: 'Incomplete Bus',
           capacity: 20,
-          photoFront: 'https://example.com/f.jpg',
+          photoFront: MOCK_PHOTO,
         })
       expect(res.status).toBe(400)
     })
@@ -97,9 +100,9 @@ describe('Bus & Assignment (e2e)', () => {
           licensePlate: '51C-111.11',
           name: 'Unauthorized Bus',
           capacity: 20,
-          photoFront: 'https://x.com/f.jpg',
-          photoSide: 'https://x.com/s.jpg',
-          photoRear: 'https://x.com/r.jpg',
+          photoFront: MOCK_PHOTO,
+          photoSide: MOCK_PHOTO,
+          photoRear: MOCK_PHOTO,
         })
       expect(res.status).toBe(403)
     })

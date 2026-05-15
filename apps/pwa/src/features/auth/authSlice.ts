@@ -6,6 +6,7 @@ interface AuthState {
   tenantId: string | null
   role: string | null
   name: string | null
+  email: string | null
 }
 
 const initialState: AuthState = {
@@ -14,6 +15,7 @@ const initialState: AuthState = {
   tenantId: localStorage.getItem('tenantId'),
   role: localStorage.getItem('role'),
   name: localStorage.getItem('name'),
+  email: localStorage.getItem('email'),
 }
 
 const authSlice = createSlice({
@@ -27,9 +29,17 @@ const authSlice = createSlice({
       localStorage.setItem('tenantId', action.payload.tenantId ?? '')
       localStorage.setItem('role', action.payload.role ?? '')
       localStorage.setItem('name', action.payload.name ?? '')
+      localStorage.setItem('email', action.payload.email ?? '')
     },
     logout(state) {
-      Object.assign(state, { accessToken: null, userId: null, tenantId: null, role: null, name: null })
+      Object.assign(state, {
+        accessToken: null,
+        userId: null,
+        tenantId: null,
+        role: null,
+        name: null,
+        email: null,
+      })
       localStorage.clear()
     },
   },

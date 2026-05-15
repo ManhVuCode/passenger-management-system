@@ -67,6 +67,38 @@ describe('Passengers (e2e)', () => {
       expect(res.status).toBe(400)
     })
 
+    it('Phone with 9 digits → 400', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/trips/${tripId}/passengers`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Test Pax', phone: '090123456' })
+      expect(res.status).toBe(400)
+    })
+
+    it('Phone with 11 digits → 400', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/trips/${tripId}/passengers`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Test Pax', phone: '09012345678' })
+      expect(res.status).toBe(400)
+    })
+
+    it('Phone with hyphen → 400', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/trips/${tripId}/passengers`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Test Pax', phone: '090-123456' })
+      expect(res.status).toBe(400)
+    })
+
+    it('Phone exactly 10 digits → 201', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/trips/${tripId}/passengers`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Valid Pax', phone: '0901234999' })
+      expect(res.status).toBe(201)
+    })
+
     it('BusManager cannot add passenger → 403', async () => {
       const res = await request(app.getHttpServer())
         .post(`/trips/${tripId}/passengers`)

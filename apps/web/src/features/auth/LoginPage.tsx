@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import { useAppDispatch } from '../../store/hooks'
 import { setCredentials } from './authSlice'
 import { Button } from '../../components/ui/button'
@@ -9,6 +10,7 @@ import { Bus } from 'lucide-react'
 export default function LoginPage() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -25,14 +27,14 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
       if (!res.ok) {
-        setError('Invalid email or password')
+        setError(t('auth.invalidCredentials'))
         return
       }
       const data = await res.json()
       dispatch(setCredentials(data))
       navigate(data.role === 'SYSTEM_ADMIN' ? '/system' : '/')
     } catch {
-      setError('Connection error. Is the API running?')
+      setError(t('auth.connectionError'))
     } finally {
       setLoading(false)
     }
@@ -49,12 +51,12 @@ export default function LoginPage() {
           <Bus size={32} />
         </div>
         <h1 className="text-xl font-bold text-gray-950 text-center leading-tight">MPMS</h1>
-        <p className="text-gray-500 text-sm mb-8 text-center">Admin Operations</p>
+        <p className="text-gray-500 text-sm mb-8 text-center">{t('auth.adminOperations')}</p>
 
         <form onSubmit={handleSubmit} className="w-full space-y-4">
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-              Email
+              {t('auth.email')}
             </label>
             <input
               type="email"
@@ -67,7 +69,7 @@ export default function LoginPage() {
           </div>
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-              Password
+              {t('auth.password')}
             </label>
             <input
               type="password"
@@ -84,12 +86,12 @@ export default function LoginPage() {
             </p>
           )}
           <Button type="submit" className="w-full h-12 rounded-xl text-md" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading ? t('auth.signingIn') : t('auth.signInButton')}
           </Button>
         </form>
 
         <p className="mt-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          Demo Tours · v1.0
+          MPMS · v1.0
         </p>
       </motion.div>
     </div>

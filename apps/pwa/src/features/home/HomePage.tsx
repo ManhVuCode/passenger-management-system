@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import { useGetMyAssignmentsQuery } from '../attendance/attendanceApi'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { Badge, type BadgeVariant } from '../../components/ui/badge'
@@ -8,13 +9,14 @@ import { cn } from '../../lib/utils'
 import ProfileDropdown from './ProfileDropdown'
 
 export default function HomePage() {
+  const { t } = useTranslation()
   const { data: assignments = [], isLoading } = useGetMyAssignmentsQuery()
   const isOnline = useOnlineStatus()
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400">Loading assignments…</p>
+        <p className="text-gray-400">{t('home.loadingAssignments')}</p>
       </div>
     )
   }
@@ -23,9 +25,9 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50 max-w-[420px] mx-auto border-x border-gray-200">
       <header className="sticky top-0 z-40 bg-white border-b border-gray-100 px-5 h-14 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-gray-950">My Rounds</h2>
+          <h2 className="text-lg font-bold text-gray-950">{t('home.title')}</h2>
           <p className="text-[10px] font-bold text-success-600 uppercase tracking-widest">
-            {assignments.length} assignment{assignments.length === 1 ? '' : 's'} today
+            {t('home.assignment', { count: assignments.length })}
           </p>
         </div>
         <ProfileDropdown />
@@ -34,13 +36,13 @@ export default function HomePage() {
       {!isOnline && (
         <div className="bg-warning-500 text-white px-5 py-1.5 flex items-center gap-2 text-[11px] font-bold">
           <WifiOff size={14} />
-          Offline — showing cached data
+          {t('home.offline')}
         </div>
       )}
 
       <div className="p-4 space-y-3">
         {assignments.length === 0 && (
-          <p className="text-center py-16 text-gray-400 text-sm">No rounds assigned yet.</p>
+          <p className="text-center py-16 text-gray-400 text-sm">{t('home.noRounds')}</p>
         )}
         {assignments.map((a) => {
           const isActive = a.status === 'IN_PROGRESS'
@@ -61,7 +63,7 @@ export default function HomePage() {
                     <span className="text-[10px] font-bold text-gray-400 uppercase truncate max-w-[200px]">
                       {a.trip.name}
                     </span>
-                    <Badge variant={a.status as BadgeVariant} label={a.status} />
+                    <Badge variant={a.status as BadgeVariant} label={t(`status.${a.status}`)} />
                   </div>
                   <h3 className="text-sm font-bold text-gray-950 mb-3 truncate">{a.name}</h3>
 

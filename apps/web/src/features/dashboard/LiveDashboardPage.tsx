@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import { useGetTripQuery } from '../trips/tripsApi'
 import { useGetAllocationsByRoundQuery } from '../allocation/allocationApi'
 import {
@@ -30,6 +31,7 @@ interface LiveRecord {
 
 export default function LiveDashboardPage() {
   const { tripId } = useParams<{ tripId: string }>()
+  const { t } = useTranslation()
   const { data: trip } = useGetTripQuery(tripId!)
   const [selectedRound, setSelectedRound] = useState<string | null>(null)
   const [liveUpdates, setLiveUpdates] = useState<LiveRecord[]>([])
@@ -72,11 +74,11 @@ export default function LiveDashboardPage() {
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                Trips
+                {t('nav.trips')}
               </span>
               <span className="text-gray-300">/</span>
               <span className="text-xs font-bold text-gray-950 truncate max-w-[260px]">
-                {trip?.name ?? '…'} — Live
+                {trip?.name ?? '…'} — {t('trips.liveDashboard')}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -93,11 +95,11 @@ export default function LiveDashboardPage() {
                     isConnected ? 'text-success-600' : 'text-gray-400',
                   )}
                 >
-                  {isConnected ? 'Live Dashboard' : 'Connecting…'}
+                  {isConnected ? t('attendance.liveTitle') : t('attendance.connecting')}
                 </span>
               </div>
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                • {isConnected ? 'Connected' : 'Disconnected'}
+                • {isConnected ? t('attendance.connected') : t('attendance.connecting')}
               </span>
             </div>
           </div>
@@ -117,7 +119,7 @@ export default function LiveDashboardPage() {
                     : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600',
                 )}
               >
-                Round {round.sequence}
+                #{round.sequence}
               </button>
             )
           })}
@@ -127,10 +129,10 @@ export default function LiveDashboardPage() {
       <div className="flex-1 flex overflow-hidden">
         <aside className="w-[260px] bg-white border-r border-gray-100 p-4 space-y-2 overflow-y-auto">
           <p className="px-2 mb-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            Rounds Progress
+            {t('rounds.title')}
           </p>
           {rounds.length === 0 && (
-            <p className="px-2 text-xs text-gray-400">No rounds yet.</p>
+            <p className="px-2 text-xs text-gray-400">{t('rounds.noRounds')}</p>
           )}
           {rounds.map((round) => {
             const isActive = activeRoundId === round.id
@@ -165,7 +167,7 @@ export default function LiveDashboardPage() {
                   >
                     {round.departurePoint} → {round.arrivalPoint}
                   </p>
-                  <Badge variant={status as BadgeVariant} label={status} />
+                  <Badge variant={status as BadgeVariant} label={t(`status.${status}`)} />
                 </div>
               </button>
             )
@@ -177,7 +179,7 @@ export default function LiveDashboardPage() {
             <RoundBreakdown tripId={tripId!} roundId={activeRoundId} />
           ) : (
             <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-12 text-center text-gray-400">
-              Select a round to see live attendance.
+              {t('attendance.waitingUpdates')}
             </div>
           )}
         </main>
@@ -185,7 +187,7 @@ export default function LiveDashboardPage() {
         <aside className="w-[300px] bg-white border-l border-gray-100 flex flex-col">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
             <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              Live Activity
+              {t('attendance.liveFeed')}
             </h4>
             <div
               className={cn(
@@ -258,7 +260,7 @@ export default function LiveDashboardPage() {
                   ))}
                 </div>
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  Waiting for updates
+                  {t('attendance.waitingUpdates')}
                 </span>
               </div>
             )}
@@ -266,7 +268,7 @@ export default function LiveDashboardPage() {
 
           <div className="p-4 border-t border-gray-100">
             <Button variant="outline" className="w-full text-xs gap-2">
-              <MessageSquare size={14} /> Send Broadcast
+              <MessageSquare size={14} /> {t('notifications.broadcast')}
             </Button>
           </div>
         </aside>
@@ -276,6 +278,7 @@ export default function LiveDashboardPage() {
 }
 
 function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }) {
+  const { t } = useTranslation()
   const { data: allocations = [] } = useGetAllocationsByRoundQuery({ tripId, roundId })
 
   const byBus = allocations.reduce<Record<string, typeof allocations>>((acc, a) => {
@@ -288,7 +291,7 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
   if (Object.keys(byBus).length === 0) {
     return (
       <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-12 text-center text-gray-400 text-sm">
-        No passengers allocated yet.
+        {t('allocation.noPassengersAllocated')}
       </div>
     )
   }
@@ -330,7 +333,7 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
                   <span className="text-gray-400">/{total}</span>
                 </p>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  Attendance
+                  {t('attendance.liveTitle')}
                 </p>
               </div>
             </div>
@@ -349,19 +352,19 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
               <div className="flex justify-between px-1">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    Joined
+                    {t('attendance.join')}
                   </span>
                   <span className="text-sm font-bold text-success-600">✓ {joined}</span>
                 </div>
                 <div className="flex flex-col text-center">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    Absent
+                    {t('attendance.absent')}
                   </span>
                   <span className="text-sm font-bold text-danger-600">✗ {absent}</span>
                 </div>
                 <div className="flex flex-col text-right">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    Pending
+                    {t('attendance.pending')}
                   </span>
                   <span className="text-sm font-bold text-gray-400">? {pending}</span>
                 </div>
@@ -391,10 +394,10 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
                         </span>
                       </div>
                       {st ? (
-                        <Badge variant={st as BadgeVariant} label={st} />
+                        <Badge variant={st as BadgeVariant} label={t(`status.${st}`)} />
                       ) : (
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                          pending
+                          {t('status.PENDING')}
                         </span>
                       )}
                     </div>

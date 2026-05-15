@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/button'
 import { Plus, Trash2, Edit2, Users, Info, X } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { PhotoUploadInput } from './PhotoUploadInput'
+import { validateLicensePlate, validateSimpleText } from '../../lib/validators'
 import type { Bus } from '@pms/shared'
 
 const DEFAULT_FORM = {
@@ -30,6 +31,7 @@ export default function BusListPage() {
   const [editingBus, setEditingBus] = useState<Bus | null>(null)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [formError, setFormError] = useState('')
+  const [errors, setErrors] = useState({ licensePlate: '', name: '' })
 
   useEffect(() => {
     if (editingBus) {
@@ -47,12 +49,14 @@ export default function BusListPage() {
   function openCreate() {
     setForm(DEFAULT_FORM)
     setFormError('')
+    setErrors({ licensePlate: '', name: '' })
     setEditingBus(null)
     setIsPanelOpen(true)
   }
 
   function openEdit(bus: Bus) {
     setFormError('')
+    setErrors({ licensePlate: '', name: '' })
     setEditingBus(bus)
     setIsPanelOpen(true)
   }
@@ -60,11 +64,20 @@ export default function BusListPage() {
   function closePanel() {
     setIsPanelOpen(false)
     setEditingBus(null)
+    setErrors({ licensePlate: '', name: '' })
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setFormError('')
+
+    const plateErr = validateLicensePlate(form.licensePlate)
+    const nameErr = validateSimpleText(form.name)
+    if (plateErr || nameErr) {
+      setErrors({ licensePlate: plateErr, name: nameErr })
+      return
+    }
+
     try {
       if (editingBus) {
         await updateBus({ id: editingBus.id, body: form }).unwrap()
@@ -158,19 +171,45 @@ export default function BusListPage() {
                       <input
                         placeholder="51A-123.45"
                         value={form.licensePlate}
-                        onChange={(e) => setForm({ ...form, licensePlate: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setForm({ ...form, licensePlate: val })
+                          setErrors((prev) => ({
+                            ...prev,
+                            licensePlate: val.length > 0 ? validateLicensePlate(val) : '',
+                          }))
+                        }}
                         required
-                        className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+                        className={cn(
+                          'w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium',
+                          errors.licensePlate && 'border-danger-600 focus:ring-danger-600/20',
+                        )}
                       />
+                      {errors.licensePlate && (
+                        <p className="text-[11px] text-danger-600">{errors.licensePlate}</p>
+                      )}
                     </FormField>
                     <FormField label="Vehicle Name *">
                       <input
                         placeholder="e.g. Bus Alpha"
                         value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setForm({ ...form, name: val })
+                          setErrors((prev) => ({
+                            ...prev,
+                            name: val.length > 0 ? validateSimpleText(val) : '',
+                          }))
+                        }}
                         required
-                        className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+                        className={cn(
+                          'w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium',
+                          errors.name && 'border-danger-600 focus:ring-danger-600/20',
+                        )}
                       />
+                      {errors.name && (
+                        <p className="text-[11px] text-danger-600">{errors.name}</p>
+                      )}
                     </FormField>
                   </div>
 

@@ -56,6 +56,30 @@ describe('Trips (e2e)', () => {
       expect(res.status).toBe(400)
     })
 
+    it('Trip name with special chars (!) → 400', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/trips')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Trip@#!',
+          startDate: '2026-06-01',
+          endDate: '2026-06-03',
+        })
+      expect(res.status).toBe(400)
+    })
+
+    it('Trip name with hyphen → 201 (allowed)', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/trips')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Hanoi-Sapa Day 1',
+          startDate: '2026-06-01',
+          endDate: '2026-06-03',
+        })
+      expect(res.status).toBe(201)
+    })
+
     it('BusManager cannot create trip → 403', async () => {
       const res = await request(app.getHttpServer())
         .post('/trips')

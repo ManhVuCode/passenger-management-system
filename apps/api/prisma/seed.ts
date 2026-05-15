@@ -4,6 +4,30 @@ import * as bcrypt from 'bcrypt'
 const prisma = new PrismaClient()
 
 async function main() {
+  const hash = await bcrypt.hash('password123', 10)
+
+  const platformTenant = await prisma.tenant.upsert({
+    where: { slug: 'platform' },
+    update: {},
+    create: {
+      name: 'Platform',
+      slug: 'platform',
+      status: 'ACTIVE',
+    },
+  })
+
+  const sysadmin = await prisma.user.upsert({
+    where: { email: 'sysadmin@platform.com' },
+    update: {},
+    create: {
+      tenantId: platformTenant.id,
+      email: 'sysadmin@platform.com',
+      passwordHash: hash,
+      name: 'System Admin',
+      role: 'SYSTEM_ADMIN',
+    },
+  })
+
   const tenant = await prisma.tenant.upsert({
     where: { slug: 'demo-tours' },
     update: {},
@@ -15,8 +39,6 @@ async function main() {
   })
 
   console.log('Tenant created:', tenant.slug)
-
-  const hash = await bcrypt.hash('password123', 10)
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@demo.com' },
@@ -65,6 +87,7 @@ async function main() {
   })
 
   console.log('Seed complete')
+  console.log('SystemAdmin:', sysadmin.email, '/ password: password123')
   console.log('Admin:', admin.email, '/ password: password123')
   console.log('Driver:', busManager.email, '/ password: password123')
 }

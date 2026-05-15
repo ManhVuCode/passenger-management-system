@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import * as bcrypt from 'bcrypt'
+import { Role } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 
 @Injectable()
@@ -37,13 +38,16 @@ export class SystemAdminService {
     return this.prisma.tenant.update({ where: { id }, data })
   }
 
-  async listUsers(tenantId: string) {
+  async listUsers(tenantId: string, roleFilter?: string) {
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } })
     if (!tenant) throw new NotFoundException('Tenant not found')
     return this.prisma.user.findMany({
-      where: { tenantId },
+      where: {
+        tenantId,
+        ...(roleFilter && { role: roleFilter as Role }),
+      },
       select: { id: true, email: true, name: true, role: true, createdAt: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { name: 'asc' },
     })
   }
 

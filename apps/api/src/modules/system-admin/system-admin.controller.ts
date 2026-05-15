@@ -8,10 +8,12 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common'
 import { SystemAdminService } from './system-admin.service'
 import { Roles } from '../../common/decorators/roles.decorator'
-import { Role } from '@pms/shared'
+import { CurrentUser } from '../../common/decorators/current-user.decorator'
+import { JwtPayload, Role } from '@pms/shared'
 import { CreateTenantDto } from './dto/create-tenant.dto'
 import { UpdateTenantDto } from './dto/update-tenant.dto'
 import { CreateUserDto } from './dto/create-user.dto'
@@ -25,6 +27,15 @@ export class SystemAdminController {
   @Get()
   listTenants() {
     return this.systemAdminService.listTenants()
+  }
+
+  @Get('current/users')
+  @Roles(Role.ADMIN, Role.SYSTEM_ADMIN)
+  getCurrentTenantUsers(
+    @Query('role') role: string | undefined,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.systemAdminService.listUsers(user.tenantId, role)
   }
 
   @Post()

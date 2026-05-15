@@ -20,6 +20,10 @@ export const busApi = baseApi.injectEndpoints({
       query: (body) => ({ url: '/buses', method: 'POST', body }),
       invalidatesTags: ['Bus'],
     }),
+    updateBus: builder.mutation<Bus, { id: string; body: Partial<CreateBusPayload> }>({
+      query: ({ id, body }) => ({ url: `/buses/${id}`, method: 'PATCH', body }),
+      invalidatesTags: ['Bus'],
+    }),
     deleteBus: builder.mutation<void, string>({
       query: (id) => ({ url: `/buses/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Bus'],
@@ -27,4 +31,9 @@ export const busApi = baseApi.injectEndpoints({
   }),
 })
 
-export const { useGetBusesQuery, useCreateBusMutation, useDeleteBusMutation } = busApi
+export const {
+  useGetBusesQuery,
+  useCreateBusMutation,
+  useUpdateBusMutation,
+  useDeleteBusMutation,
+} = busApi

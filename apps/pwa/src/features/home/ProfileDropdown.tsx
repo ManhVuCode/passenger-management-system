@@ -1,16 +1,19 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { logout } from '../auth/authSlice'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, Key, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
+import { LanguageToggle } from '../../components/LanguageToggle'
 
 export default function ProfileDropdown() {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [showChangePw, setShowChangePw] = useState(false)
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const name = useAppSelector((s) => s.auth.name) ?? 'Driver'
+  const name = useAppSelector((s) => s.auth.name) ?? t('profile.driver')
   const email = useAppSelector((s) => s.auth.email) ?? ''
   const role = useAppSelector((s) => s.auth.role) ?? ''
   const ref = useRef<HTMLDivElement>(null)
@@ -71,6 +74,11 @@ export default function ProfileDropdown() {
               </div>
             </div>
 
+            <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
+              <span className="text-xs text-gray-500 font-medium">{t('nav.language')}</span>
+              <LanguageToggle />
+            </div>
+
             <div className="p-2">
               <button
                 onClick={() => {
@@ -82,7 +90,7 @@ export default function ProfileDropdown() {
                 <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
                   <Key size={15} className="text-gray-500" />
                 </div>
-                Change Password
+                {t('auth.changePassword')}
               </button>
 
               <button
@@ -92,13 +100,13 @@ export default function ProfileDropdown() {
                 <div className="w-8 h-8 rounded-lg bg-danger-50 flex items-center justify-center">
                   <LogOut size={15} className="text-danger-600" />
                 </div>
-                Sign Out
+                {t('nav.signOut')}
               </button>
             </div>
 
             <div className="px-4 py-3 border-t border-gray-100">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">
-                MPMS · v1.0 · BusManager App
+                {t('profile.appFooter')}
               </p>
             </div>
           </motion.div>
@@ -113,6 +121,7 @@ export default function ProfileDropdown() {
 }
 
 function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -124,11 +133,11 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
     e.preventDefault()
     setError('')
     if (next !== confirm) {
-      setError('Passwords do not match')
+      setError(t('auth.passwordMismatch'))
       return
     }
     if (next.length < 6) {
-      setError('Password must be at least 6 characters')
+      setError(t('auth.passwordTooShort'))
       return
     }
 
@@ -146,13 +155,13 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
       )
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        setError(data.message ?? 'Failed to change password')
+        setError(data.message ?? t('auth.failedChangePassword'))
         return
       }
       setSuccess(true)
       setTimeout(onClose, 1500)
     } catch {
-      setError('Connection error')
+      setError(t('errors.connectionError'))
     }
   }
 
@@ -170,21 +179,21 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-bold text-gray-950">Change Password</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-950" aria-label="Close">
+          <h2 className="font-bold text-gray-950">{t('auth.changePassword')}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-950" aria-label={t('common.close')}>
             <X size={18} />
           </button>
         </div>
 
         {success ? (
           <div className="text-center py-4">
-            <p className="text-success-600 font-bold">✓ Password changed</p>
+            <p className="text-success-600 font-bold">{t('auth.passwordChanged')}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
-            <PasswordField label="Current Password" value={current} onChange={setCurrent} />
-            <PasswordField label="New Password" value={next} onChange={setNext} />
-            <PasswordField label="Confirm New Password" value={confirm} onChange={setConfirm} />
+            <PasswordField label={t('auth.currentPassword')} value={current} onChange={setCurrent} />
+            <PasswordField label={t('auth.newPassword')} value={next} onChange={setNext} />
+            <PasswordField label={t('auth.confirmPassword')} value={confirm} onChange={setConfirm} />
 
             {error && <p className="text-danger-600 text-xs">{error}</p>}
 
@@ -192,7 +201,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
               type="submit"
               className="w-full h-11 rounded-xl bg-primary-600 text-white font-medium text-sm hover:bg-primary-600/90 active:scale-[0.98] transition-all mt-2"
             >
-              Update Password
+              {t('auth.updatePassword')}
             </button>
           </form>
         )}

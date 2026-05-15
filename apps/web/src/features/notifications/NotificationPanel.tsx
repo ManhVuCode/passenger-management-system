@@ -1,19 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useSendNotificationMutation, type NotificationChannel } from './notificationApi'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import { MessageSquare, Webhook, Phone, CheckCircle, AlertCircle } from 'lucide-react'
-
-const CHANNELS: {
-  key: NotificationChannel
-  label: string
-  icon: React.ElementType
-  description: string
-}[] = [
-  { key: 'SMS', label: 'SMS', icon: MessageSquare, description: 'Text to passenger phones' },
-  { key: 'TEAMS', label: 'Teams', icon: Webhook, description: 'Post to Teams channel' },
-  { key: 'BROADCAST', label: 'Broadcast Call', icon: Phone, description: 'Voice call — board the bus' },
-]
 
 export default function NotificationPanel({
   tripId,
@@ -22,10 +12,29 @@ export default function NotificationPanel({
   tripId: string
   roundId: string
 }) {
+  const { t } = useTranslation()
   const [send, { isLoading }] = useSendNotificationMutation()
   const [message, setMessage] = useState('Please board the bus. Departure in 5 minutes.')
-  const [result, setResult] = useState<{ channel: string; sent: number; devMode: boolean } | null>(null)
+  const [result, setResult] = useState<{ channel: string; sent: number; devMode: boolean } | null>(
+    null,
+  )
   const [error, setError] = useState<string | null>(null)
+
+  const channels: {
+    key: NotificationChannel
+    label: string
+    icon: React.ElementType
+    description: string
+  }[] = [
+    { key: 'SMS', label: t('notifications.sms'), icon: MessageSquare, description: t('notifications.smsDesc') },
+    { key: 'TEAMS', label: t('notifications.teams'), icon: Webhook, description: t('notifications.teamsDesc') },
+    {
+      key: 'BROADCAST',
+      label: t('notifications.broadcast'),
+      icon: Phone,
+      description: t('notifications.broadcastDesc'),
+    },
+  ]
 
   async function handleSend(channel: NotificationChannel) {
     setResult(null)
@@ -35,7 +44,7 @@ export default function NotificationPanel({
       setResult({ channel, sent: res.sent, devMode: res.devMode })
     } catch (e: unknown) {
       const msg = (e as { data?: { message?: string } })?.data?.message
-      setError(typeof msg === 'string' ? msg : 'Failed to send')
+      setError(typeof msg === 'string' ? msg : t('errors.serverError'))
     }
   }
 
@@ -43,7 +52,7 @@ export default function NotificationPanel({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
-          <MessageSquare size={14} /> Notify Passengers
+          <MessageSquare size={14} /> {t('notifications.title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -53,7 +62,7 @@ export default function NotificationPanel({
           onChange={(e) => setMessage(e.target.value)}
         />
         <div className="grid grid-cols-3 gap-2">
-          {CHANNELS.map(({ key, label, icon: Icon, description }) => (
+          {channels.map(({ key, label, icon: Icon, description }) => (
             <button
               key={key}
               onClick={() => handleSend(key)}
@@ -74,18 +83,18 @@ export default function NotificationPanel({
             rel="noopener noreferrer"
             className="text-blue-500 font-medium hover:underline"
           >
-            Open Zalo
+            {t('notifications.zalo')}
           </a>
-          <span>— client-side only, opens Zalo Web/App directly</span>
+          <span>{t('notifications.zaloDesc')}</span>
         </div>
 
         {result && (
           <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
             <CheckCircle size={13} />
-            {result.channel} → {result.sent} passenger{result.sent !== 1 ? 's' : ''}
+            {t('notifications.sentSuccess', { channel: result.channel, count: result.sent })}
             {result.devMode && (
               <Badge variant="secondary" className="ml-1 text-xs">
-                dev mode
+                {t('notifications.devMode')}
               </Badge>
             )}
           </div>

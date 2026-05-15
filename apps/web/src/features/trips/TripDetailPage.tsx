@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
+import { useTranslation } from 'react-i18next'
 import {
   useGetTripQuery,
   useCreateRoundMutation,
@@ -42,14 +43,15 @@ import { validateSimpleText } from '../../lib/validators'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
+  const { t } = useTranslation()
   const { data: trip, isLoading } = useGetTripQuery(tripId!)
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null)
   const [showAddRound, setShowAddRound] = useState(false)
   const [createRound] = useCreateRoundMutation()
   const [updateRoundStatus] = useUpdateRoundStatusMutation()
 
-  if (isLoading) return <div className="p-8 text-gray-400">Loading trip…</div>
-  if (!trip) return <div className="p-8 text-danger-600">Trip not found</div>
+  if (isLoading) return <div className="p-8 text-gray-400">{t('common.loading')}</div>
+  if (!trip) return <div className="p-8 text-danger-600">{t('errors.tripNotFound')}</div>
 
   const rounds = (trip.rounds ?? []) as Round[]
   const selected = rounds.find((r) => r.id === selectedRoundId) ?? null
@@ -58,12 +60,12 @@ export default function TripDetailPage() {
     <div className="p-8">
       <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">
         <Link to="/trips" className="hover:text-gray-950 transition-colors">
-          Trips
+          {t('nav.trips')}
         </Link>
         <ChevronRight size={12} className="text-gray-300" />
         <span className="text-gray-950">{trip.name}</span>
         <ChevronRight size={12} className="text-gray-300" />
-        <span>Detail</span>
+        <span>{t('trips.detail')}</span>
       </div>
 
       <header className="flex items-center gap-4 mb-8">
@@ -76,7 +78,7 @@ export default function TripDetailPage() {
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-950">{trip.name}</h1>
           <div className="flex items-center gap-2 mt-0.5">
-            <Badge variant={trip.status as BadgeVariant} label={trip.status} />
+            <Badge variant={trip.status as BadgeVariant} label={t(`status.${trip.status}`)} />
             <span className="text-xs text-gray-400 font-medium">
               • {new Date(trip.startDate).toLocaleDateString()} —{' '}
               {new Date(trip.endDate).toLocaleDateString()}
@@ -86,16 +88,15 @@ export default function TripDetailPage() {
       </header>
 
       <div className="flex gap-8 flex-1 min-h-0">
-        {/* Left column: trip info */}
         <div className="w-[240px] space-y-6 shrink-0">
           <div className="bg-white p-5 rounded-2xl shadow-card border border-gray-100">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-              Quick Actions
+              {t('trips.quickActions')}
             </p>
             <div className="flex flex-col gap-2">
               <Link to={`/trips/${tripId}/passengers`}>
                 <Button variant="outline" className="w-full justify-start gap-2 h-9 text-xs">
-                  <Users size={14} /> Manage Passengers
+                  <Users size={14} /> {t('trips.managePassengers')}
                 </Button>
               </Link>
               <Link to={`/trips/${tripId}/dashboard`}>
@@ -103,18 +104,18 @@ export default function TripDetailPage() {
                   variant="outline"
                   className="w-full justify-start gap-2 h-9 text-xs text-success-600 hover:text-success-600 hover:bg-success-50"
                 >
-                  <Activity size={14} /> Live Dashboard
+                  <Activity size={14} /> {t('trips.liveDashboard')}
                 </Button>
               </Link>
               <Button variant="outline" className="w-full justify-start gap-2 h-9 text-xs">
-                <Share2 size={14} /> Share Link
+                <Share2 size={14} /> {t('trips.shareLink')}
               </Button>
             </div>
 
             {trip.description && (
               <div className="mt-6 pt-6 border-t border-gray-100">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-                  Trip Note
+                  {t('trips.tripNote')}
                 </p>
                 <p className="text-xs text-gray-600 leading-relaxed italic">
                   &ldquo;{trip.description}&rdquo;
@@ -124,18 +125,17 @@ export default function TripDetailPage() {
           </div>
         </div>
 
-        {/* Center column: rounds timeline */}
         <div className="flex-1 space-y-4 min-w-0">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-gray-950">Journey Rounds</h2>
+            <h2 className="text-lg font-bold text-gray-950">{t('rounds.title')}</h2>
             <Button size="sm" className="gap-2" onClick={() => setShowAddRound(true)}>
-              <Plus size={14} /> Add Round
+              <Plus size={14} /> {t('rounds.addRound')}
             </Button>
           </div>
 
           {rounds.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8 text-center text-gray-400 text-sm">
-              No rounds yet for this trip.
+              {t('rounds.noRounds')}
             </div>
           ) : (
             <div className="relative pl-10 space-y-12 pb-20">
@@ -170,7 +170,7 @@ export default function TripDetailPage() {
                     <div className="flex justify-between items-start mb-3 gap-3">
                       <div className="min-w-0">
                         <h4 className="font-bold text-gray-950 truncate">
-                          Round {round.sequence}: {round.name}
+                          {round.sequence}. {round.name}
                         </h4>
                         <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
                           <MapPin size={12} strokeWidth={3} />
@@ -179,7 +179,10 @@ export default function TripDetailPage() {
                           </span>
                         </div>
                       </div>
-                      <Badge variant={round.status as BadgeVariant} label={round.status} />
+                      <Badge
+                        variant={round.status as BadgeVariant}
+                        label={t(`status.${round.status}`)}
+                      />
                     </div>
                     <div className="flex items-center gap-4 mt-4">
                       <div className="flex items-center gap-1.5 text-xs text-gray-400 font-medium">
@@ -210,7 +213,7 @@ export default function TripDetailPage() {
                             }}
                             className="flex-1 h-8 rounded-lg bg-warning-500 text-white text-xs font-bold hover:bg-warning-500/90 transition-colors"
                           >
-                            ▶ Start Round
+                            {t('rounds.startRound')}
                           </button>
                         )}
                         {round.status === RoundStatus.IN_PROGRESS && (
@@ -225,7 +228,7 @@ export default function TripDetailPage() {
                             }}
                             className="flex-1 h-8 rounded-lg bg-success-600 text-white text-xs font-bold hover:bg-success-600/90 transition-colors"
                           >
-                            ✓ Complete Round
+                            {t('rounds.completeRound')}
                           </button>
                         )}
                         {(round.status === RoundStatus.PLANNED ||
@@ -241,7 +244,7 @@ export default function TripDetailPage() {
                             }}
                             className="h-8 px-3 rounded-lg border border-danger-100 text-danger-600 text-xs font-bold hover:bg-danger-50 transition-colors"
                           >
-                            Cancel
+                            {t('rounds.cancelRound')}
                           </button>
                         )}
                       </div>
@@ -253,7 +256,6 @@ export default function TripDetailPage() {
           )}
         </div>
 
-        {/* Right column: allocation panel — animated */}
         <AnimatePresence mode="wait">
           {selected && (
             <motion.div
@@ -266,7 +268,7 @@ export default function TripDetailPage() {
             >
               <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
                 <div>
-                  <h3 className="font-bold text-gray-950">Bus Allocation</h3>
+                  <h3 className="font-bold text-gray-950">{t('rounds.busAllocation')}</h3>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     {selected.name}
                   </p>
@@ -304,8 +306,8 @@ export default function TripDetailPage() {
             >
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <div>
-                  <h2 className="font-bold text-gray-950">Add Journey Round</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Define a leg of the trip</p>
+                  <h2 className="font-bold text-gray-950">{t('rounds.addRoundTitle')}</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">{t('rounds.addRoundSubtitle')}</p>
                 </div>
                 <button
                   onClick={() => setShowAddRound(false)}
@@ -350,6 +352,7 @@ function AddRoundForm({
   onSubmit: (data: RoundFormValues) => Promise<void>
   onCancel: () => void
 }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState<RoundFormValues>({
     name: '',
     sequence: nextSequence,
@@ -387,7 +390,7 @@ function AddRoundForm({
       await onSubmit(form)
     } catch (err: unknown) {
       const msg = (err as { data?: { message?: string } })?.data?.message
-      setError(typeof msg === 'string' ? msg : 'Failed to create round')
+      setError(typeof msg === 'string' ? msg : t('rounds.failedCreate'))
     } finally {
       setSubmitting(false)
     }
@@ -401,10 +404,10 @@ function AddRoundForm({
     <form onSubmit={handleSubmit} className="p-6 space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelClass}>Round Name *</label>
+          <label className={labelClass}>{t('rounds.roundName')} *</label>
           <input
             required
-            placeholder="e.g. Leg 1 Hanoi - Sapa"
+            placeholder={t('rounds.roundNamePlaceholder')}
             value={form.name}
             onChange={(e) => {
               const val = e.target.value
@@ -419,7 +422,7 @@ function AddRoundForm({
           {errors.name && <p className="text-[11px] text-danger-600">{errors.name}</p>}
         </div>
         <div className="space-y-1.5">
-          <label className={labelClass}>Sequence *</label>
+          <label className={labelClass}>{t('rounds.sequence')} *</label>
           <input
             type="number"
             min={1}
@@ -433,10 +436,10 @@ function AddRoundForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelClass}>Departure Point *</label>
+          <label className={labelClass}>{t('rounds.departurePoint')} *</label>
           <input
             required
-            placeholder="Nội Bài Airport"
+            placeholder={t('rounds.departurePlaceholder')}
             value={form.departurePoint}
             onChange={(e) => {
               const val = e.target.value
@@ -453,10 +456,10 @@ function AddRoundForm({
           )}
         </div>
         <div className="space-y-1.5">
-          <label className={labelClass}>Arrival Point *</label>
+          <label className={labelClass}>{t('rounds.arrivalPoint')} *</label>
           <input
             required
-            placeholder="Sa Pa Town"
+            placeholder={t('rounds.arrivalPlaceholder')}
             value={form.arrivalPoint}
             onChange={(e) => {
               const val = e.target.value
@@ -476,7 +479,7 @@ function AddRoundForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelClass}>Scheduled Departure *</label>
+          <label className={labelClass}>{t('rounds.scheduledDep')} *</label>
           <input
             type="datetime-local"
             required
@@ -486,7 +489,7 @@ function AddRoundForm({
           />
         </div>
         <div className="space-y-1.5">
-          <label className={labelClass}>Scheduled Arrival *</label>
+          <label className={labelClass}>{t('rounds.scheduledArr')} *</label>
           <input
             type="datetime-local"
             required
@@ -507,14 +510,14 @@ function AddRoundForm({
           onClick={onCancel}
           className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           disabled={submitting}
           className="flex-1 h-11 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-600/90 active:scale-[0.98] transition-all disabled:opacity-50"
         >
-          {submitting ? 'Creating…' : 'Create Round'}
+          {submitting ? t('rounds.creating') : t('rounds.createRound')}
         </button>
       </div>
     </form>
@@ -522,6 +525,7 @@ function AddRoundForm({
 }
 
 function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
+  const { t } = useTranslation()
   const roundId = round.id
   const { data: passengers = [] } = useGetPassengersQuery(tripId)
   const { data: allocations = [], isLoading } = useGetAllocationsByRoundQuery({ tripId, roundId })
@@ -563,7 +567,7 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
       setAddingBusId('')
     } catch (err: unknown) {
       const msg = (err as { data?: { message?: string } })?.data?.message
-      alert(typeof msg === 'string' ? msg : 'Failed to assign bus')
+      alert(typeof msg === 'string' ? msg : t('buses.failedAssign'))
     }
   }
 
@@ -579,21 +583,20 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
     if (res.capacityWarning) setWarning(res.capacityWarning.message)
   }
 
-  if (isLoading) return <div className="p-5 text-gray-400 text-sm">Loading…</div>
+  if (isLoading) return <div className="p-5 text-gray-400 text-sm">{t('common.loading')}</div>
 
   const selectClass =
     'w-full h-10 px-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all'
 
   return (
     <div className="flex flex-col divide-y divide-gray-100">
-      {/* ── Section 1: Buses in this round ── */}
       <div className="p-5 space-y-3">
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          Buses in this Round
+          {t('buses.busesInRound')}
         </p>
 
         {roundBuses.length === 0 && (
-          <p className="text-xs text-gray-400">No buses assigned yet.</p>
+          <p className="text-xs text-gray-400">{t('buses.noBusesInRound')}</p>
         )}
 
         <div className="space-y-2">
@@ -605,11 +608,15 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
                   <div>
                     <p className="text-sm font-bold text-gray-950">{busInfo.name}</p>
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                      {busInfo.licensePlate} · {busInfo.capacity} seats
+                      {busInfo.licensePlate} ·{' '}
+                      {t('buses.seats', { count: busInfo.capacity })}
                     </p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    {byBus[rb.busId]?.length ?? 0}/{busInfo.capacity} pax
+                    {t('buses.pax', {
+                      count: byBus[rb.busId]?.length ?? 0,
+                      capacity: busInfo.capacity,
+                    })}
                   </p>
                 </div>
 
@@ -628,12 +635,12 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
                             userId: e.target.value,
                           }).unwrap()
                         } catch {
-                          alert('Failed to assign driver')
+                          alert(t('buses.failedAssignDriver'))
                         }
                       }}
                     >
                       <option value="" disabled>
-                        Assign driver…
+                        {t('buses.assignDriver')}
                       </option>
                       {busManagers.map((bm) => (
                         <option key={bm.id} value={bm.id}>
@@ -656,7 +663,7 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
               className={selectClass}
             >
               <option value="" disabled>
-                Add a bus to this round…
+                {t('buses.addBusToRound')}
               </option>
               {availableBuses.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -665,17 +672,16 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
               ))}
             </select>
             <Button size="sm" onClick={handleAssignBus} disabled={!addingBusId}>
-              Add
+              {t('common.add')}
             </Button>
           </div>
         )}
       </div>
 
-      {/* ── Section 2: Assign passengers ── */}
       {isAdmin && isPlanned && roundBuses.length > 0 && (
         <div className="p-5 space-y-3">
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            Assign Passengers
+            {t('allocation.assignPassengers')}
           </p>
 
           {warning && (
@@ -687,7 +693,7 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
                   onClick={() => setWarning(null)}
                   className="text-[10px] text-warning-500 underline"
                 >
-                  Dismiss
+                  {t('allocation.dismiss')}
                 </button>
               </div>
             </div>
@@ -699,7 +705,7 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
             className={selectClass}
           >
             <option value="" disabled>
-              Select target bus…
+              {t('allocation.targetBus')}
             </option>
             {roundBuses.map((rb) => (
               <option key={rb.busId} value={rb.busId}>
@@ -740,29 +746,33 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
                 disabled={allocating || !selectedPassengers.length || !targetBusId}
               >
                 <BusIcon size={13} className="mr-1.5" />
-                Assign {selectedPassengers.length ? `(${selectedPassengers.length})` : 'Selected'}
+                {selectedPassengers.length
+                  ? t('allocation.selectedCount', { count: selectedPassengers.length })
+                  : t('allocation.assignButton')}
               </Button>
             </>
           ) : (
             <p className="text-xs text-gray-400 text-center py-2">
-              All passengers are allocated.
+              {t('allocation.allAllocated')}
             </p>
           )}
         </div>
       )}
 
-      {/* ── Section 3: Allocated passengers per bus ── */}
       <div className="p-5 space-y-4 max-h-[40vh] overflow-y-auto">
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          Allocated Passengers
+          {t('allocation.allocated')}
         </p>
         {Object.keys(byBus).length === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-2">No passengers allocated yet.</p>
+          <p className="text-xs text-gray-400 text-center py-2">
+            {t('allocation.noPassengersAllocated')}
+          </p>
         ) : (
           Object.entries(byBus).map(([bid, busAllocs]) => (
             <div key={bid}>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                {busAllocs[0]?.roundBusAssignment?.bus?.name ?? 'Bus'} · {busAllocs.length} pax
+                {busAllocs[0]?.roundBusAssignment?.bus?.name ?? 'Bus'} ·{' '}
+                {t('allocation.pax', { count: busAllocs.length })}
               </p>
               <div className="space-y-1">
                 {busAllocs.map((a) => (
@@ -776,10 +786,10 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
                     {a.attendanceRecord ? (
                       <Badge
                         variant={a.attendanceRecord.status as BadgeVariant}
-                        label={a.attendanceRecord.status}
+                        label={t(`status.${a.attendanceRecord.status}`)}
                       />
                     ) : (
-                      <Badge variant="PLANNED" label="PENDING" />
+                      <Badge variant="PLANNED" label={t('status.PENDING')} />
                     )}
                     {isAdmin &&
                       a.attendanceRecord &&
@@ -796,7 +806,7 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
                           }
                           className="text-[10px] font-bold text-primary-600 hover:underline ml-2"
                         >
-                          Override
+                          {t('allocation.override')}
                         </button>
                       )}
                     {isPlanned && (

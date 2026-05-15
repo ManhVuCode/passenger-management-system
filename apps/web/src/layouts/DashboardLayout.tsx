@@ -1,8 +1,15 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import { logout } from '../features/auth/authSlice'
-import { Bus, MapPin, LogOut, Users } from 'lucide-react'
+import { Bus, MapPin, LogOut, Users, Shield } from 'lucide-react'
 import { cn } from '../lib/utils'
+
+type NavItem = {
+  to: string
+  label: string
+  icon: typeof Bus
+  match: (path: string) => boolean
+}
 
 export default function DashboardLayout() {
   const dispatch = useAppDispatch()
@@ -16,10 +23,26 @@ export default function DashboardLayout() {
     navigate('/login')
   }
 
-  const navItems = [
-    { to: '/trips', label: 'Trips', icon: MapPin, match: (p: string) => p === '/' || p.startsWith('/trips') },
-    { to: '/buses', label: 'Buses', icon: Bus, match: (p: string) => p.startsWith('/buses') },
-  ]
+  const isSystemAdmin = role === 'SYSTEM_ADMIN'
+
+  const navItems: NavItem[] = isSystemAdmin
+    ? [
+        {
+          to: '/system',
+          label: 'Tenants',
+          icon: Shield,
+          match: (p) => p === '/' || p.startsWith('/system'),
+        },
+      ]
+    : [
+        {
+          to: '/trips',
+          label: 'Trips',
+          icon: MapPin,
+          match: (p) => p === '/' || p.startsWith('/trips'),
+        },
+        { to: '/buses', label: 'Buses', icon: Bus, match: (p) => p.startsWith('/buses') },
+      ]
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -28,12 +51,17 @@ export default function DashboardLayout() {
           <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white">
             <Bus size={18} />
           </div>
-          <span className="font-bold text-gray-950 tracking-tight">VinaTour Ops</span>
+          <div className="leading-tight">
+            <span className="font-bold text-gray-950 tracking-tight text-sm block">MPMS</span>
+            <p className="text-[9px] text-gray-400 font-medium leading-none">
+              Multi Passenger Mgmt
+            </p>
+          </div>
         </div>
 
         <nav className="p-4 flex flex-col gap-1 flex-1">
           <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-            Operation Admin
+            {isSystemAdmin ? 'Platform Admin' : 'Operation Admin'}
           </p>
 
           {navItems.map(({ to, label, icon: Icon, match }) => {

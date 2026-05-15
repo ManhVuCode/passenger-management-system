@@ -9,6 +9,7 @@ export interface LoginResponseDto {
   tenantId: string
   role: string
   name: string
+  email: string
 }
 
 export interface CreateTripDto {

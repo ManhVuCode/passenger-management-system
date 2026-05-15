@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsInt, Min, IsUrl } from 'class-validator'
+import { IsString, IsNotEmpty, IsInt, Min } from 'class-validator'
 
 export class CreateBusDto {
   @IsString()
@@ -13,12 +13,15 @@ export class CreateBusDto {
   @Min(1)
   capacity!: number
 
-  @IsUrl()
+  @IsString()
+  @IsNotEmpty()
   photoFront!: string
 
-  @IsUrl()
+  @IsString()
+  @IsNotEmpty()
   photoSide!: string
 
-  @IsUrl()
+  @IsString()
+  @IsNotEmpty()
   photoRear!: string
 }

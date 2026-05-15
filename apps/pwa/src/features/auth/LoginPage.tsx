@@ -48,8 +48,8 @@ export default function LoginPage() {
         <div className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center text-white mb-6 shadow-lg shadow-primary-600/20">
           <Bus size={32} />
         </div>
-        <h1 className="text-xl font-bold text-gray-950 text-center leading-tight">VinaTour Ops</h1>
-        <p className="text-gray-500 text-sm mb-8 text-center">BusManager App</p>
+        <h1 className="text-xl font-bold text-gray-950 text-center leading-tight">MPMS</h1>
+        <p className="text-gray-500 text-sm mb-8 text-center">BusManager Portal</p>
 
         <form onSubmit={handleSubmit} className="w-full space-y-4">
           <div className="space-y-1.5">

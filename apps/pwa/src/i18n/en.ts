@@ -62,6 +62,12 @@ export const en = {
     markAllJoin: 'Mark All Present',
     markAllAbsent: 'Mark All Absent',
     completeRound: 'Complete Round → DONE',
+    completing: 'Completing…',
+    confirmCompleteTitle: 'Complete this round?',
+    confirmCompleteBody:
+      'This round will be marked as DONE. All unmarked passengers will remain pending.',
+    confirmCompleteButton: 'Complete Round',
+    failedComplete: 'Failed to complete round',
     noPassengers: 'No passengers allocated to this bus.',
     offline: 'Offline — marks queued, will sync on reconnect',
     broadcastAlert: 'Broadcast Alert',

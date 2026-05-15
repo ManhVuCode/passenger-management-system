@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -29,6 +29,7 @@ export default function AttendancePage() {
     busId: string
   }>()
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
   const { data: passengers = [], isLoading } = useGetPassengersForBusQuery({
     tripId: tripId!,
@@ -40,11 +41,13 @@ export default function AttendancePage() {
     roundId: roundId!,
   })
   const [markAttendance, { isLoading: marking }] = useMarkAttendanceMutation()
-  const [updateRoundStatus] = useUpdateRoundStatusMutation()
+  const [updateRoundStatus, { isLoading: completing }] = useUpdateRoundStatusMutation()
 
   const [expandedNote, setExpandedNote] = useState<string | null>(null)
   const [peerUpdate, setPeerUpdate] = useState<string | null>(null)
   const [broadcastAlert, setBroadcastAlert] = useState<string | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [completeError, setCompleteError] = useState<string | null>(null)
   const isOnline = useOnlineStatus()
 
   useAttendanceSocket({
@@ -95,7 +98,19 @@ export default function AttendancePage() {
   }
 
   async function handleComplete() {
-    await updateRoundStatus({ tripId: tripId!, roundId: roundId!, status: 'DONE' })
+    setCompleteError(null)
+    try {
+      await updateRoundStatus({
+        tripId: tripId!,
+        roundId: roundId!,
+        status: 'DONE',
+      }).unwrap()
+      setShowConfirm(false)
+      navigate('/')
+    } catch (err: unknown) {
+      const msg = (err as { data?: { message?: string } })?.data?.message
+      setCompleteError(typeof msg === 'string' ? msg : t('attendance.failedComplete'))
+    }
   }
 
   if (isLoading) {
@@ -316,13 +331,76 @@ export default function AttendancePage() {
       <div className="fixed bottom-0 left-0 right-0 max-w-[420px] mx-auto p-4 bg-white border-t border-gray-100 shadow-[0_-8px_24px_rgba(0,0,0,0.05)] z-40">
         <Button
           className="w-full h-14 rounded-xl text-md gap-3"
-          disabled={!someMarked}
-          onClick={handleComplete}
+          disabled={!someMarked || completing}
+          onClick={() => setShowConfirm(true)}
         >
-          <Check size={20} />
-          {t('attendance.completeRound')}
+          {completing ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              {t('attendance.completing')}
+            </>
+          ) : (
+            <>
+              <Check size={20} />
+              {t('attendance.completeRound')}
+            </>
+          )}
         </Button>
       </div>
+
+      <AnimatePresence>
+        {showConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-6"
+            onClick={() => !completing && setShowConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+            >
+              <div className="text-4xl text-center mb-3">✅</div>
+              <h2 className="font-bold text-gray-950 text-center mb-2">
+                {t('attendance.confirmCompleteTitle')}
+              </h2>
+              <p className="text-sm text-gray-500 text-center mb-6">
+                {t('attendance.confirmCompleteBody')}
+              </p>
+              {completeError && (
+                <p className="text-[11px] text-danger-600 bg-danger-50 border border-danger-100 rounded-lg px-3 py-2 mb-4 text-center">
+                  {completeError}
+                </p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  disabled={completing}
+                  className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={handleComplete}
+                  disabled={completing}
+                  className="flex-1 h-11 rounded-xl bg-success-600 text-white text-sm font-bold hover:bg-success-600/90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {completing && (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  )}
+                  {completing
+                    ? t('attendance.completing')
+                    : t('attendance.confirmCompleteButton')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

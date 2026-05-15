@@ -67,6 +67,38 @@ export const allocationApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_r, _e, { roundId }) => [{ type: 'Allocation', id: roundId }],
     }),
+    getRoundBuses: builder.query<
+      { busId: string; bus: { id: string; name: string; licensePlate: string; capacity: number } }[],
+      { tripId: string; roundId: string }
+    >({
+      query: ({ tripId, roundId }) => `/trips/${tripId}/rounds/${roundId}/buses`,
+      providesTags: (_r, _e, { roundId }) => [{ type: 'Allocation', id: `buses-${roundId}` }],
+    }),
+    assignBusToRound: builder.mutation<
+      unknown,
+      { tripId: string; roundId: string; busId: string }
+    >({
+      query: ({ tripId, roundId, busId }) => ({
+        url: `/trips/${tripId}/rounds/${roundId}/buses`,
+        method: 'POST',
+        body: { busId },
+      }),
+      invalidatesTags: (_r, _e, { roundId }) => [
+        { type: 'Allocation', id: roundId },
+        { type: 'Allocation', id: `buses-${roundId}` },
+      ],
+    }),
+    assignBusManager: builder.mutation<
+      unknown,
+      { tripId: string; roundId: string; busId: string; userId: string }
+    >({
+      query: ({ tripId, roundId, busId, userId }) => ({
+        url: `/trips/${tripId}/rounds/${roundId}/buses/${busId}/manager`,
+        method: 'POST',
+        body: { userId },
+      }),
+      invalidatesTags: (_r, _e, { roundId }) => [{ type: 'Allocation', id: roundId }],
+    }),
   }),
 })
 
@@ -76,4 +108,7 @@ export const {
   useMovePassengerMutation,
   useRemoveAllocationMutation,
   useOverrideAttendanceMutation,
+  useGetRoundBusesQuery,
+  useAssignBusToRoundMutation,
+  useAssignBusManagerMutation,
 } = allocationApi

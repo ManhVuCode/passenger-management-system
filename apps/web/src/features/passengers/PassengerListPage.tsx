@@ -25,6 +25,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { validatePhone, validateSimpleText } from '../../lib/validators'
 
 type Tab = 'list' | 'add' | 'sheet'
 
@@ -39,6 +40,7 @@ export default function PassengerListPage() {
 
   const [tab, setTab] = useState<Tab>('list')
   const [form, setForm] = useState({ name: '', phone: '', idCard: '', type: '', note: '' })
+  const [errors, setErrors] = useState({ name: '', phone: '' })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editNote, setEditNote] = useState('')
   const [sheetUrl, setSheetUrl] = useState('')
@@ -51,8 +53,15 @@ export default function PassengerListPage() {
 
   async function handleAddPassenger(e: React.FormEvent) {
     e.preventDefault()
+    const nameErr = validateSimpleText(form.name)
+    const phoneErr = validatePhone(form.phone)
+    if (nameErr || phoneErr) {
+      setErrors({ name: nameErr, phone: phoneErr })
+      return
+    }
     await createPassenger({ tripId: tripId!, body: form })
     setForm({ name: '', phone: '', idCard: '', type: '', note: '' })
+    setErrors({ name: '', phone: '' })
     setTab('list')
   }
 
@@ -239,16 +248,53 @@ export default function PassengerListPage() {
                 <FormField label="Full Name *">
                   <FormInput
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setForm({ ...form, name: val })
+                      setErrors((prev) => ({
+                        ...prev,
+                        name: val.length > 0 ? validateSimpleText(val) : '',
+                      }))
+                    }}
+                    className={errors.name ? 'border-danger-600 focus:ring-danger-600/20' : ''}
                     required
                   />
+                  {errors.name && (
+                    <p className="text-[11px] text-danger-600 mt-1">{errors.name}</p>
+                  )}
                 </FormField>
                 <FormField label="Phone *">
                   <FormInput
                     value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^\d]/g, '')
+                      setForm({ ...form, phone: val })
+                      setErrors((prev) => ({
+                        ...prev,
+                        phone:
+                          val.length > 0 && val.length !== 10 ? `${val.length}/10 digits` : '',
+                      }))
+                    }}
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="0901234567"
+                    className={cn(
+                      form.phone.length === 10
+                        ? 'border-success-600 focus:ring-success-600/20'
+                        : form.phone.length > 0
+                          ? 'border-warning-500 focus:ring-warning-500/20'
+                          : '',
+                    )}
                     required
                   />
+                  <div className="flex justify-between items-center mt-1">
+                    {errors.phone ? (
+                      <p className="text-[11px] text-danger-600">{errors.phone}</p>
+                    ) : (
+                      <p className="text-[11px] text-gray-400">Enter 10 digits</p>
+                    )}
+                    <p className="text-[11px] text-gray-400">{form.phone.length}/10</p>
+                  </div>
                 </FormField>
                 <FormField label="ID Card (CCCD)">
                   <FormInput
@@ -467,11 +513,14 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
   )
 }
 
-function FormInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+function FormInput({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+      className={cn(
+        'w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium',
+        className,
+      )}
     />
   )
 }

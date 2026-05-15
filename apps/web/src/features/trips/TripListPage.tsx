@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { validateSimpleText } from '../../lib/validators'
 
 type Tab = 'all' | 'active' | 'upcoming' | 'done'
 
@@ -32,6 +33,7 @@ export default function TripListPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', startDate: '', endDate: '' })
   const [formError, setFormError] = useState('')
+  const [nameError, setNameError] = useState('')
   const [activeTab, setActiveTab] = useState<Tab>('all')
 
   const stats = useMemo(() => {
@@ -57,6 +59,12 @@ export default function TripListPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setFormError('')
+
+    const nameErr = validateSimpleText(form.name)
+    if (nameErr) {
+      setNameError(nameErr)
+      return
+    }
     if (form.name.includes('/')) {
       setFormError('Trip name must not contain "/"')
       return
@@ -64,6 +72,7 @@ export default function TripListPage() {
     try {
       await createTrip(form).unwrap()
       setForm({ name: '', startDate: '', endDate: '' })
+      setNameError('')
       setShowForm(false)
     } catch (err: unknown) {
       const message = (err as { data?: { message?: string } })?.data?.message
@@ -173,10 +182,20 @@ export default function TripListPage() {
                   <input
                     placeholder='e.g. Hanoi to Sapa (no "/")'
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setForm({ ...form, name: val })
+                      setNameError(val.length > 0 ? validateSimpleText(val) : '')
+                    }}
                     required
-                    className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+                    className={cn(
+                      'w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium',
+                      nameError && 'border-danger-600 focus:ring-danger-600/20',
+                    )}
                   />
+                  {nameError && (
+                    <p className="text-[11px] text-danger-600 mt-1">{nameError}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

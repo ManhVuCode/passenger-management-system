@@ -38,6 +38,7 @@ import {
 import { RoundStatus, type Round } from '@pms/shared'
 import type { BadgeVariant } from '../../components/ui/badge'
 import { cn } from '../../lib/utils'
+import { validateSimpleText } from '../../lib/validators'
 
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -359,10 +360,28 @@ function AddRoundForm({
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  function validateField(field: 'name' | 'departurePoint' | 'arrivalPoint', value: string) {
+    const err = value.length > 0 ? validateSimpleText(value) : ''
+    setErrors((prev) => ({ ...prev, [field]: err }))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    const textFields = ['name', 'departurePoint', 'arrivalPoint'] as const
+    const newErrors: Record<string, string> = {}
+    for (const field of textFields) {
+      const err = validateSimpleText(form[field])
+      if (err) newErrors[field] = err
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+
     setSubmitting(true)
     try {
       await onSubmit(form)
@@ -385,11 +404,19 @@ function AddRoundForm({
           <label className={labelClass}>Round Name *</label>
           <input
             required
-            placeholder="e.g. Leg 1: Hanoi → Sapa"
+            placeholder="e.g. Leg 1 Hanoi - Sapa"
             value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className={fieldClass}
+            onChange={(e) => {
+              const val = e.target.value
+              setForm({ ...form, name: val })
+              validateField('name', val)
+            }}
+            className={cn(
+              fieldClass,
+              errors.name && 'border-danger-600 focus:ring-danger-600/20',
+            )}
           />
+          {errors.name && <p className="text-[11px] text-danger-600">{errors.name}</p>}
         </div>
         <div className="space-y-1.5">
           <label className={labelClass}>Sequence *</label>
@@ -411,9 +438,19 @@ function AddRoundForm({
             required
             placeholder="Nội Bài Airport"
             value={form.departurePoint}
-            onChange={(e) => setForm({ ...form, departurePoint: e.target.value })}
-            className={fieldClass}
+            onChange={(e) => {
+              const val = e.target.value
+              setForm({ ...form, departurePoint: val })
+              validateField('departurePoint', val)
+            }}
+            className={cn(
+              fieldClass,
+              errors.departurePoint && 'border-danger-600 focus:ring-danger-600/20',
+            )}
           />
+          {errors.departurePoint && (
+            <p className="text-[11px] text-danger-600">{errors.departurePoint}</p>
+          )}
         </div>
         <div className="space-y-1.5">
           <label className={labelClass}>Arrival Point *</label>
@@ -421,9 +458,19 @@ function AddRoundForm({
             required
             placeholder="Sa Pa Town"
             value={form.arrivalPoint}
-            onChange={(e) => setForm({ ...form, arrivalPoint: e.target.value })}
-            className={fieldClass}
+            onChange={(e) => {
+              const val = e.target.value
+              setForm({ ...form, arrivalPoint: val })
+              validateField('arrivalPoint', val)
+            }}
+            className={cn(
+              fieldClass,
+              errors.arrivalPoint && 'border-danger-600 focus:ring-danger-600/20',
+            )}
           />
+          {errors.arrivalPoint && (
+            <p className="text-[11px] text-danger-600">{errors.arrivalPoint}</p>
+          )}
         </div>
       </div>
 

@@ -8,8 +8,9 @@ import {
   useUpdatePassengerMutation,
   useDeletePassengerMutation,
   useBulkCreatePassengersMutation,
-  useSheetSyncMutation,
 } from './passengerApi'
+import { useGetAllRoundAllocationsQuery } from '../allocation/allocationApi'
+import { importFromSheetUrl, type SheetRow } from './sheetImporter'
 import { Button } from '../../components/ui/button'
 import { Badge, type BadgeVariant } from '../../components/ui/badge'
 import {
@@ -24,6 +25,7 @@ import {
   Edit2,
   Filter,
   Upload,
+  Info,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { validatePhone, validateSimpleText } from '../../lib/validators'
@@ -34,19 +36,33 @@ export default function PassengerListPage() {
   const { tripId } = useParams<{ tripId: string }>()
   const { t } = useTranslation()
   const { data: passengers = [], isLoading } = useGetPassengersQuery(tripId!)
+  const { data: roundSummaries = [] } = useGetAllRoundAllocationsQuery(tripId!)
   const [createPassenger] = useCreatePassengerMutation()
   const [updatePassenger] = useUpdatePassengerMutation()
   const [deletePassenger] = useDeletePassengerMutation()
   const [bulkCreate] = useBulkCreatePassengersMutation()
-  const [sheetSync, { isLoading: syncing }] = useSheetSyncMutation()
 
   const [tab, setTab] = useState<Tab>('list')
-  const [form, setForm] = useState({ name: '', phone: '', idCard: '', type: '', note: '' })
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    idCard: '',
+    type: '',
+    note: '',
+    hotelRoom: '',
+  })
   const [errors, setErrors] = useState({ name: '', phone: '' })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editNote, setEditNote] = useState('')
   const [sheetUrl, setSheetUrl] = useState('')
-  const [syncResult, setSyncResult] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importPreview, setImportPreview] = useState<{
+    rows: SheetRow[]
+    skippedColumns: string[]
+    errors: string[]
+    detectedMapping: Record<string, string>
+  } | null>(null)
+  const [importError, setImportError] = useState('')
   const [bulkText, setBulkText] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -62,7 +78,7 @@ export default function PassengerListPage() {
       return
     }
     await createPassenger({ tripId: tripId!, body: form })
-    setForm({ name: '', phone: '', idCard: '', type: '', note: '' })
+    setForm({ name: '', phone: '', idCard: '', type: '', note: '', hotelRoom: '' })
     setErrors({ name: '', phone: '' })
     setTab('list')
   }
@@ -72,15 +88,39 @@ export default function PassengerListPage() {
     setEditingId(null)
   }
 
-  async function handleSheetGenerate() {
-    const res = await sheetSync({ tripId: tripId!, mode: 'GENERATE' }).unwrap()
-    setSyncResult(JSON.stringify(res, null, 2))
+  async function handleSheetPreview(e: React.FormEvent) {
+    e.preventDefault()
+    setImportError('')
+    setImportPreview(null)
+    setImporting(true)
+    try {
+      const result = await importFromSheetUrl(sheetUrl)
+      setImportPreview(result)
+    } catch (err: unknown) {
+      setImportError(err instanceof Error ? err.message : 'Import failed')
+    } finally {
+      setImporting(false)
+    }
   }
 
-  async function handleSheetImport(e: React.FormEvent) {
-    e.preventDefault()
-    const res = await sheetSync({ tripId: tripId!, mode: 'IMPORT', sheetUrl }).unwrap()
-    setSyncResult(JSON.stringify(res, null, 2))
+  async function handleSheetImport() {
+    if (!importPreview) return
+    setImporting(true)
+    try {
+      const result = await bulkCreate({
+        tripId: tripId!,
+        passengers: importPreview.rows,
+      }).unwrap()
+      setImportPreview(null)
+      setSheetUrl('')
+      setTab('list')
+      alert(t('passengers.importedCount', { count: result.created }))
+    } catch (err: unknown) {
+      const msg = (err as { data?: { message?: string } })?.data?.message
+      setImportError(typeof msg === 'string' ? msg : 'Bulk import failed')
+    } finally {
+      setImporting(false)
+    }
   }
 
   async function handleBulkPaste(e: React.FormEvent) {
@@ -100,8 +140,7 @@ export default function PassengerListPage() {
       .filter((p) => p.name && p.phone)
 
     if (parsed.length === 0) return
-    const result = await bulkCreate({ tripId: tripId!, passengers: parsed }).unwrap()
-    setSyncResult(t('passengers.importedCount', { count: result.created }))
+    await bulkCreate({ tripId: tripId!, passengers: parsed }).unwrap()
     setBulkText('')
     setTab('list')
   }
@@ -172,63 +211,148 @@ export default function PassengerListPage() {
             exit={{ height: 0, opacity: 0 }}
             className="mb-8 overflow-hidden"
           >
-            <div className="bg-white rounded-2xl shadow-card border border-primary-100 p-6">
-              <h3 className="text-sm font-bold text-gray-950 mb-6 flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-success-50 text-success-600 flex items-center justify-center">
-                  <Download size={14} />
-                </div>
-                {t('passengers.sheetSyncTitle')}
-              </h3>
+            <div className="bg-white rounded-2xl shadow-card border border-primary-100 p-6 space-y-5">
+              <div>
+                <h3 className="font-bold text-gray-950 mb-1 flex items-center gap-2">
+                  <div className="w-6 h-6 rounded bg-success-50 text-success-600 flex items-center justify-center">
+                    <Download size={14} />
+                  </div>
+                  {t('passengers.sheetSyncTitle')}
+                </h3>
+                <p className="text-xs text-gray-400">{t('passengers.sheetPublicNote')}</p>
+              </div>
 
-              <div className="grid grid-cols-2 gap-12">
-                <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-                    {t('passengers.modeA')}
-                  </p>
-                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
-                    <span className="text-xs text-gray-600 font-medium">
-                      {t('passengers.modeATagline')}
-                    </span>
+              <form onSubmit={handleSheetPreview} className="flex gap-2">
+                <input
+                  value={sheetUrl}
+                  onChange={(e) => setSheetUrl(e.target.value)}
+                  placeholder="https://docs.google.com/spreadsheets/d/..."
+                  required
+                  className="flex-1 h-10 px-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600"
+                />
+                <Button type="submit" disabled={importing || !sheetUrl.trim()} size="sm">
+                  {importing ? t('passengers.reading') : `🔍 ${t('passengers.preview')}`}
+                </Button>
+              </form>
+
+              {importError && (
+                <div className="p-3 bg-danger-50 border border-danger-100 rounded-xl text-sm text-danger-600">
+                  {importError}
+                </div>
+              )}
+
+              {importPreview && (
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                      {t('passengers.detectedColumns')}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(importPreview.detectedMapping).map(([col, field]) => (
+                        <span
+                          key={col}
+                          className="px-2 py-1 bg-success-50 text-success-600 rounded-lg text-xs font-medium"
+                        >
+                          {col} → {field}
+                        </span>
+                      ))}
+                    </div>
+                    {importPreview.skippedColumns.length > 0 && (
+                      <p className="text-xs text-gray-400 mt-2">
+                        {t('passengers.skippedColumnsLabel')}{' '}
+                        {importPreview.skippedColumns.join(', ')}
+                      </p>
+                    )}
+                  </div>
+
+                  {importPreview.errors.length > 0 && (
+                    <div className="bg-warning-50 border border-warning-500/20 rounded-xl p-3">
+                      <p className="text-xs font-bold text-warning-500 mb-1">
+                        ⚠ {t('passengers.skippedRows', { count: importPreview.errors.length })}
+                      </p>
+                      <ul className="text-xs text-warning-500 space-y-0.5">
+                        {importPreview.errors.slice(0, 5).map((e, i) => (
+                          <li key={i}>• {e}</li>
+                        ))}
+                        {importPreview.errors.length > 5 && (
+                          <li>
+                            {t('passengers.andMoreLines', {
+                              count: importPreview.errors.length - 5,
+                            })}
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                      {t('passengers.previewLabel', { count: importPreview.rows.length })}
+                    </p>
+                    <div className="max-h-48 overflow-auto rounded-xl border border-gray-100">
+                      <table className="w-full text-xs">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            {[
+                              t('passengers.fullName'),
+                              t('passengers.phoneShort'),
+                              t('passengers.typeShort'),
+                              t('passengers.hotelRoom'),
+                              t('passengers.note'),
+                            ].map((h) => (
+                              <th
+                                key={h}
+                                className="px-3 py-2 text-left font-bold text-gray-400 text-[10px] uppercase tracking-wide"
+                              >
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {importPreview.rows.slice(0, 10).map((row, i) => (
+                            <tr key={i} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 font-medium">{row.name}</td>
+                              <td className="px-3 py-2 text-gray-500">{row.phone}</td>
+                              <td className="px-3 py-2 text-gray-500">{row.type ?? '—'}</td>
+                              <td className="px-3 py-2 text-gray-500">{row.hotelRoom ?? '—'}</td>
+                              <td className="px-3 py-2 text-gray-500">{row.note ?? '—'}</td>
+                            </tr>
+                          ))}
+                          {importPreview.rows.length > 10 && (
+                            <tr>
+                              <td colSpan={5} className="px-3 py-2 text-center text-gray-400">
+                                {t('passengers.andMorePassengers', {
+                                  count: importPreview.rows.length - 10,
+                                })}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
                     <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      onClick={handleSheetGenerate}
-                      disabled={syncing}
+                      onClick={handleSheetImport}
+                      disabled={importing || importPreview.rows.length === 0}
+                      className="flex-1"
                     >
-                      {t('passengers.modeAButton')}
+                      {importing
+                        ? t('passengers.importing')
+                        : `✓ ${t('passengers.importN', { count: importPreview.rows.length })}`}
+                    </Button>
+                    <Button variant="outline" onClick={() => setImportPreview(null)}>
+                      {t('common.cancel')}
                     </Button>
                   </div>
                 </div>
-
-                <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-                    {t('passengers.modeB')}
-                  </p>
-                  <form onSubmit={handleSheetImport} className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder={t('passengers.modeBPlaceholder')}
-                      value={sheetUrl}
-                      onChange={(e) => setSheetUrl(e.target.value)}
-                      required
-                      className="flex-1 h-10 px-4 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600"
-                    />
-                    <Button type="submit" size="sm" disabled={syncing}>
-                      {syncing ? t('passengers.syncing') : t('passengers.sync')}
-                    </Button>
-                  </form>
-                </div>
-              </div>
-
-              {syncResult && (
-                <pre className="mt-6 text-[10px] bg-gray-50 border border-gray-100 rounded p-3 overflow-auto max-h-40 font-mono">
-                  {syncResult}
-                </pre>
               )}
+
               <button
                 onClick={() => setTab('list')}
-                className="mt-4 text-[10px] font-bold text-gray-400 hover:text-gray-950 uppercase tracking-widest"
+                className="mt-2 text-[10px] font-bold text-gray-400 hover:text-gray-950 uppercase tracking-widest"
               >
                 {t('passengers.backToList')}
               </button>
@@ -315,6 +439,13 @@ export default function PassengerListPage() {
                     onChange={(e) => setForm({ ...form, type: e.target.value })}
                   />
                 </FormField>
+                <FormField label={t('passengers.hotelRoom')}>
+                  <FormInput
+                    placeholder={t('passengers.hotelRoomPlaceholder')}
+                    value={form.hotelRoom}
+                    onChange={(e) => setForm({ ...form, hotelRoom: e.target.value })}
+                  />
+                </FormField>
                 <div className="col-span-2">
                   <FormField label={t('passengers.note')}>
                     <FormInput
@@ -387,31 +518,42 @@ export default function PassengerListPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50/50 text-left">
-                {[
-                  '#',
-                  t('passengers.fullName'),
-                  t('passengers.phone'),
-                  t('passengers.idCard'),
-                  t('passengers.type'),
-                  t('passengers.note'),
-                  t('common.actions'),
-                ].map((h, i) => (
-                  <th
-                    key={i}
-                    className={cn(
-                      'px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100',
-                      i === 6 && 'text-right',
-                    )}
-                  >
-                    {h}
-                  </th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                  #
+                </th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                  {t('passengers.fullName')}
+                </th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                  {t('passengers.phone')}
+                </th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                  {t('passengers.idCard')}
+                </th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                  {t('passengers.type')}
+                </th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                  {t('passengers.hotelRoom')}
+                </th>
+                {roundSummaries.map((round) => (
+                  <RoundColumnHeader key={round.roundId} round={round} />
                 ))}
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                  {t('passengers.note')}
+                </th>
+                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">
+                  {t('common.actions')}
+                </th>
               </tr>
             </thead>
             <tbody>
               {filteredPassengers.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center text-gray-400 text-sm">
+                  <td
+                    colSpan={8 + roundSummaries.length}
+                    className="px-6 py-16 text-center text-gray-400 text-sm"
+                  >
                     {passengers.length === 0
                       ? t('passengers.noPassengers')
                       : t('passengers.noPassengersFiltered')}
@@ -438,6 +580,42 @@ export default function PassengerListPage() {
                       <span className="text-gray-400 text-sm">—</span>
                     )}
                   </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 font-medium">
+                    {p.hotelRoom ?? '—'}
+                  </td>
+                  {roundSummaries.map((round) => {
+                    const alloc = round.allocations.find(
+                      (a) => a.tripPassengerAssignmentId === p.id,
+                    )
+                    return (
+                      <td key={round.roundId} className="px-6 py-4">
+                        {alloc ? (
+                          <span
+                            className={cn(
+                              'inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold',
+                              alloc.attendanceStatus === 'JOIN'
+                                ? 'bg-success-50 text-success-600'
+                                : alloc.attendanceStatus === 'ABSENT'
+                                  ? 'bg-warning-50 text-warning-500'
+                                  : alloc.attendanceStatus === 'CANCELLED'
+                                    ? 'bg-danger-50 text-danger-600'
+                                    : 'bg-gray-100 text-gray-500',
+                            )}
+                          >
+                            {alloc.attendanceStatus === 'JOIN'
+                              ? '✓'
+                              : alloc.attendanceStatus === 'ABSENT'
+                                ? '✗'
+                                : alloc.attendanceStatus === 'CANCELLED'
+                                  ? '—'
+                                  : '?'}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </td>
+                    )
+                  })}
                   <td className="px-6 py-4">
                     {editingId === p.id ? (
                       <div className="flex items-center gap-2">
@@ -532,5 +710,42 @@ function FormInput({ className, ...props }: React.InputHTMLAttributes<HTMLInputE
         className,
       )}
     />
+  )
+}
+
+function RoundColumnHeader({
+  round,
+}: {
+  round: {
+    roundId: string
+    roundName: string
+    sequence: number
+    departurePoint: string
+    arrivalPoint: string
+  }
+}) {
+  const { t } = useTranslation()
+  const [showTooltip, setShowTooltip] = useState(false)
+
+  return (
+    <th
+      className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 cursor-pointer select-none relative"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+      onClick={() => setShowTooltip(!showTooltip)}
+    >
+      <span className="flex items-center gap-1">
+        {t('passengers.roundShort', { count: round.sequence })}
+        <Info size={11} className="text-gray-400" />
+      </span>
+      {showTooltip && (
+        <div className="absolute top-full left-0 mt-1 z-50 bg-gray-950 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-xl pointer-events-none normal-case">
+          <p className="font-bold mb-0.5">{round.roundName}</p>
+          <p className="text-gray-300 font-normal tracking-normal">
+            {round.departurePoint} → {round.arrivalPoint}
+          </p>
+        </div>
+      )}
+    </th>
   )
 }

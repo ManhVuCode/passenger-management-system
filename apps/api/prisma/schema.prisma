@@ -160,6 +160,7 @@ model TripPassengerAssignment {
   idCard    String?
   type      String?
   note      String?
+  hotelRoom String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

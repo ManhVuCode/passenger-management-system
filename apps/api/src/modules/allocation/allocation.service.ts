@@ -40,6 +40,41 @@ export class AllocationService {
     })
   }
 
+  async getAllocationsSummaryByTrip(tripId: string, tenantId: string) {
+    const rounds = await this.prisma.round.findMany({
+      where: { tripId, tenantId },
+      orderBy: { sequence: 'asc' },
+      include: {
+        roundBusAssignments: {
+          include: {
+            roundPassengerAssignments: {
+              include: {
+                attendanceRecord: { select: { status: true } },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    return rounds.map((round) => {
+      const allRPAs = round.roundBusAssignments.flatMap(
+        (rba) => rba.roundPassengerAssignments,
+      )
+      return {
+        roundId: round.id,
+        roundName: round.name,
+        sequence: round.sequence,
+        departurePoint: round.departurePoint,
+        arrivalPoint: round.arrivalPoint,
+        allocations: allRPAs.map((rpa) => ({
+          tripPassengerAssignmentId: rpa.tripPassengerAssignmentId,
+          attendanceStatus: rpa.attendanceRecord?.status ?? null,
+        })),
+      }
+    })
+  }
+
   async getAllocationsByRound(tripId: string, roundId: string, tenantId: string) {
     const round = await this.prisma.round.findFirst({
       where: { id: roundId, tripId, tenantId },

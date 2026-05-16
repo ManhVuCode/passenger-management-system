@@ -9,6 +9,20 @@ import { Roles } from '../../common/decorators/roles.decorator'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
 import { Role, JwtPayload } from '@pms/shared'
 
+@Controller('trips/:tripId/rounds')
+export class AllocationSummaryController {
+  constructor(private allocationService: AllocationService) {}
+
+  @Get('allocations-summary')
+  @Roles(Role.ADMIN, Role.BUS_MANAGER)
+  getAllocationsSummary(
+    @Param('tripId') tripId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.allocationService.getAllocationsSummaryByTrip(tripId, user.tenantId)
+  }
+}
+
 @Controller('trips/:tripId/rounds/:roundId')
 export class AllocationController {
   constructor(private allocationService: AllocationService) {}

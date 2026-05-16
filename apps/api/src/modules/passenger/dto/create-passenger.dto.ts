@@ -23,4 +23,8 @@ export class CreatePassengerDto {
   @IsString()
   @IsOptional()
   note?: string
+
+  @IsString()
+  @IsOptional()
+  hotelRoom?: string
 }

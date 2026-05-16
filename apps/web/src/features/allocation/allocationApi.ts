@@ -99,6 +99,23 @@ export const allocationApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_r, _e, { roundId }) => [{ type: 'Allocation', id: roundId }],
     }),
+    getAllRoundAllocations: builder.query<
+      {
+        roundId: string
+        roundName: string
+        sequence: number
+        departurePoint: string
+        arrivalPoint: string
+        allocations: {
+          tripPassengerAssignmentId: string
+          attendanceStatus: string | null
+        }[]
+      }[],
+      string
+    >({
+      query: (tripId) => `/trips/${tripId}/rounds/allocations-summary`,
+      providesTags: (_r, _e, tripId) => [{ type: 'Allocation', id: `summary-${tripId}` }],
+    }),
   }),
 })
 
@@ -111,4 +128,5 @@ export const {
   useGetRoundBusesQuery,
   useAssignBusToRoundMutation,
   useAssignBusManagerMutation,
+  useGetAllRoundAllocationsQuery,
 } = allocationApi

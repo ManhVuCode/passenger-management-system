@@ -64,6 +64,7 @@ export interface TripPassengerAssignment {
   idCard?: string
   type?: string
   note?: string
+  hotelRoom?: string
   createdAt: Date
 }
 

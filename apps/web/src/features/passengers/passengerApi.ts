@@ -9,6 +9,7 @@ interface CreatePassengerPayload {
   idCard?: string
   type?: string
   note?: string
+  hotelRoom?: string
 }
 
 export const passengerApi = baseApi.injectEndpoints({

@@ -37,6 +37,8 @@ export default function TripListPage() {
   const [formError, setFormError] = useState('')
   const [nameError, setNameError] = useState('')
   const [activeTab, setActiveTab] = useState<Tab>('all')
+  const [deletingTripId, setDeletingTripId] = useState<string | null>(null)
+  const deletingTrip = trips.find((t) => t.id === deletingTripId) ?? null
 
   const stats = useMemo(() => {
     const active = trips.filter((t) => t.status === TripStatus.IN_PROGRESS).length
@@ -178,11 +180,60 @@ export default function TripListPage() {
               key={trip.id}
               trip={trip}
               onClick={() => navigate(`/trips/${trip.id}`)}
-              onDelete={() => deleteTrip(trip.id)}
+              onDelete={() => setDeletingTripId(trip.id)}
             />
           ))}
         </div>
       )}
+
+      {/* Delete Trip Confirm Modal */}
+      <AnimatePresence>
+        {deletingTrip && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-gray-950/40 backdrop-blur-[2px] z-[80] flex items-center justify-center p-6"
+            onClick={() => setDeletingTripId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 8 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 8 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+            >
+              <div className="w-12 h-12 bg-danger-50 rounded-2xl flex items-center justify-center mb-4">
+                <Trash2 size={20} className="text-danger-600" />
+              </div>
+              <h3 className="font-bold text-gray-950 mb-1">
+                {t('trips.deleteTrip')}
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                <span className="font-semibold">"{deletingTrip.name}"</span>{' '}
+                {t('trips.deleteTripConfirm')}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeletingTripId(null)}
+                  className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={async () => {
+                    await deleteTrip(deletingTrip.id)
+                    setDeletingTripId(null)
+                  }}
+                  className="flex-1 h-10 rounded-xl bg-danger-600 text-white text-sm font-medium hover:bg-danger-600/90 active:scale-[0.98] transition-all"
+                >
+                  {t('common.delete')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Create Trip Modal */}
       <AnimatePresence>
@@ -395,8 +446,9 @@ function TripCard({ trip, onClick, onDelete }: TripCardProps) {
               e.stopPropagation()
               onDelete()
             }}
-            className="p-1.5 text-gray-300 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+            className="p-1.5 text-danger-600 hover:bg-danger-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
             aria-label="Delete trip"
+            title={t('common.delete')}
           >
             <Trash2 size={14} />
           </button>

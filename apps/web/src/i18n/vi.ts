@@ -112,6 +112,8 @@ export const vi: TranslationKeys = {
     shareLink: 'Chia sẻ liên kết',
     tripNote: 'Ghi chú chuyến đi',
     failedCreate: 'Tạo chuyến đi thất bại',
+    deleteTrip: 'Xóa chuyến đi',
+    deleteTripConfirm: 'sẽ bị xóa vĩnh viễn cùng tất cả dữ liệu liên quan. Không thể hoàn tác.',
   },
 
   rounds: {

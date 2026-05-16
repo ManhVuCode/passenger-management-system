@@ -110,6 +110,8 @@ export const en = {
     shareLink: 'Share Link',
     tripNote: 'Trip Note',
     failedCreate: 'Failed to create trip',
+    deleteTrip: 'Delete Trip',
+    deleteTripConfirm: 'will be permanently deleted along with all related data. This action cannot be undone.',
   },
 
   rounds: {

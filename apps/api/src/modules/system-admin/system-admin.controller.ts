@@ -59,8 +59,12 @@ export class SystemAdminController {
   }
 
   @Patch(':id/users/:userId')
-  updateUser(@Param('userId') userId: string, @Body() dto: UpdateUserDto) {
-    return this.systemAdminService.updateUser(userId, dto)
+  updateUser(
+    @Param('id') tenantId: string,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.systemAdminService.updateUser(tenantId, userId, dto)
   }
 
   @Delete(':id/users/:userId')

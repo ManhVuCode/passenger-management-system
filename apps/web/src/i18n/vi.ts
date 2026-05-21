@@ -331,6 +331,7 @@ export const vi: TranslationKeys = {
     noUsersHelp: 'Thêm Điều phối viên hoặc Tài xế đầu tiên cho đơn vị này',
     nameColumn: 'Họ tên',
     emailColumn: 'Email',
+    phoneColumn: 'Số điện thoại',
     roleColumn: 'Vai trò',
     joinedColumn: 'Ngày tham gia',
     actionsColumn: 'Thao tác',

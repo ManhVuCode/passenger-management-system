@@ -15,6 +15,7 @@ export interface UserRow {
   id: string
   email: string
   name: string
+  phone?: string | null
   role: 'ADMIN' | 'BUS_MANAGER' | 'SYSTEM_ADMIN'
   createdAt: string
 }
@@ -42,6 +43,8 @@ export interface UpdateUserPayload {
   tenantId: string
   userId: string
   name?: string
+  email?: string
+  phone?: string
   role?: 'ADMIN' | 'BUS_MANAGER'
 }
 

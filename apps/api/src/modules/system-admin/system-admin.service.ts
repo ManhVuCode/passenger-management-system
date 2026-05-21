@@ -46,7 +46,7 @@ export class SystemAdminService {
         tenantId,
         ...(roleFilter && { role: roleFilter as Role }),
       },
-      select: { id: true, email: true, name: true, role: true, createdAt: true },
+      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
       orderBy: { name: 'asc' },
     })
   }
@@ -67,15 +67,27 @@ export class SystemAdminService {
   }
 
   async updateUser(
+    tenantId: string,
     userId: string,
-    data: { name?: string; role?: 'ADMIN' | 'BUS_MANAGER' },
+    data: { name?: string; email?: string; phone?: string; role?: 'ADMIN' | 'BUS_MANAGER' },
   ) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    const user = await this.prisma.user.findFirst({ where: { id: userId, tenantId } })
     if (!user) throw new NotFoundException('User not found')
+
+    if (data.email && data.email !== user.email) {
+      const existing = await this.prisma.user.findUnique({ where: { email: data.email } })
+      if (existing) throw new ConflictException('Email already in use')
+    }
+
     return this.prisma.user.update({
       where: { id: userId },
-      data,
-      select: { id: true, email: true, name: true, role: true, createdAt: true },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.email !== undefined && { email: data.email }),
+        ...(data.phone !== undefined && { phone: data.phone || null }),
+        ...(data.role !== undefined && { role: data.role }),
+      },
+      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
     })
   }
 

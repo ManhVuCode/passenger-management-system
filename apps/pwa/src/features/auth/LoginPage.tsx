@@ -33,7 +33,8 @@ export default function LoginPage() {
         setError(t('auth.invalidCredentials'))
         return
       }
-      const data = await res.json()
+      const json = await res.json()
+      const data = json && typeof json === 'object' && 'data' in json ? json.data : json
       dispatch(setCredentials(data))
       navigate('/')
     } catch {

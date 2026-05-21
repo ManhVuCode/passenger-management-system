@@ -8,7 +8,7 @@ export type {
   TripPassengerAssignment,
   AttendanceRecord,
 } from './types'
-export type { ApiResponse, PaginatedResponse, JwtPayload } from './api'
+export type { ApiResponse, Pagination, JwtPayload } from './api'
 export type {
   LoginDto,
   LoginResponseDto,

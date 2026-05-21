@@ -31,6 +31,13 @@ describe('Bus & Assignment (e2e)', () => {
     const existingIds = existing.map((b) => b.id)
     if (existingIds.length > 0) {
       await prisma.busManagerAssignment.deleteMany({ where: { busId: { in: existingIds } } })
+      await prisma.roundPassengerAssignment.deleteMany({
+        where: {
+          roundBusAssignment: {
+            busId: { in: existingIds },
+          },
+        },
+      })
       await prisma.roundBusAssignment.deleteMany({ where: { busId: { in: existingIds } } })
       await prisma.bus.deleteMany({ where: { id: { in: existingIds } } })
     }

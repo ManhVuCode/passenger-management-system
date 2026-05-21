@@ -329,6 +329,7 @@ export const en = {
     noUsersHelp: 'Add the first Admin or BusManager for this tenant',
     nameColumn: 'Name',
     emailColumn: 'Email',
+    phoneColumn: 'Phone',
     roleColumn: 'Role',
     joinedColumn: 'Joined',
     actionsColumn: 'Actions',

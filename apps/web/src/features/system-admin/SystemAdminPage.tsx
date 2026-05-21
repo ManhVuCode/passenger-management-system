@@ -313,6 +313,7 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
   const [showAdd, setShowAdd] = useState(false)
   const [editUser, setEditUser] = useState<UserRow | null>(null)
   const [removeUser] = useRemoveTenantUserMutation()
+  const [updateUser, { isLoading: updating }] = useUpdateTenantUserMutation()
 
   async function handleRemove(u: UserRow) {
     if (!confirm(t('systemAdmin.confirmRemoveUser', { name: u.name, email: u.email }))) return
@@ -357,6 +358,7 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
               <tr className="bg-gray-50 text-left text-[10px] font-bold uppercase tracking-widest text-gray-400">
                 <th className="px-5 py-3">{t('systemAdmin.nameColumn')}</th>
                 <th className="px-5 py-3">{t('systemAdmin.emailColumn')}</th>
+                <th className="px-5 py-3">{t('systemAdmin.phoneColumn')}</th>
                 <th className="px-5 py-3">{t('systemAdmin.roleColumn')}</th>
                 <th className="px-5 py-3">{t('systemAdmin.joinedColumn')}</th>
                 <th className="px-5 py-3 text-right">{t('systemAdmin.actionsColumn')}</th>
@@ -373,6 +375,7 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
                 >
                   <td className="px-5 font-bold text-gray-950">{u.name}</td>
                   <td className="px-5 text-gray-500">{u.email}</td>
+                  <td className="px-5 text-gray-500">{u.phone ?? '—'}</td>
                   <td className="px-5">
                     <RolePill role={u.role} />
                   </td>
@@ -407,11 +410,50 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
       <AnimatePresence>
         {showAdd && <AddUserModal tenantId={tenant.id} onClose={() => setShowAdd(false)} />}
         {editUser && (
-          <EditUserModal
-            tenantId={tenant.id}
-            user={editUser}
-            onClose={() => setEditUser(null)}
-          />
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditUser(null)}
+              className="fixed inset-0 bg-gray-950/20 backdrop-blur-[2px] z-[60]"
+            />
+            <motion.div
+              initial={{ x: 420 }}
+              animate={{ x: 0 }}
+              exit={{ x: 420 }}
+              className="fixed top-0 right-0 bottom-0 w-[420px] bg-white shadow-2xl z-[70] border-l border-gray-100 flex flex-col"
+            >
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div>
+                  <h2 className="font-bold text-gray-950">Edit User</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Update user details and role
+                  </p>
+                </div>
+                <button
+                  onClick={() => setEditUser(null)}
+                  className="p-2 text-gray-400 hover:text-gray-950 hover:bg-white rounded-full transition-all"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <EditUserForm
+                user={editUser}
+                onSubmit={async (data) => {
+                  await updateUser({
+                    tenantId: tenant.id,
+                    userId: editUser.id,
+                    ...data,
+                  }).unwrap()
+                  setEditUser(null)
+                }}
+                onCancel={() => setEditUser(null)}
+                isLoading={updating}
+              />
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
@@ -533,90 +575,148 @@ function AddUserModal({ tenantId, onClose }: { tenantId: string; onClose: () => 
   )
 }
 
-function EditUserModal({
-  tenantId,
+function EditUserForm({
   user,
-  onClose,
+  onSubmit,
+  onCancel,
+  isLoading,
 }: {
-  tenantId: string
   user: UserRow
-  onClose: () => void
+  onSubmit: (data: {
+    name: string
+    email: string
+    phone: string
+    role: 'ADMIN' | 'BUS_MANAGER'
+  }) => Promise<void>
+  onCancel: () => void
+  isLoading: boolean
 }) {
-  const { t } = useTranslation()
-  const [name, setName] = useState(user.name)
-  const [role, setRole] = useState<'ADMIN' | 'BUS_MANAGER'>(
-    user.role === 'BUS_MANAGER' ? 'BUS_MANAGER' : 'ADMIN',
-  )
+  const [form, setForm] = useState({
+    name: user.name,
+    email: user.email,
+    phone: user.phone ?? '',
+    role: (user.role === 'BUS_MANAGER' ? 'BUS_MANAGER' : 'ADMIN') as 'ADMIN' | 'BUS_MANAGER',
+  })
   const [error, setError] = useState('')
-  const [updateUser, { isLoading }] = useUpdateTenantUserMutation()
-  const isSysAdmin = user.role === 'SYSTEM_ADMIN'
+
+  const fieldClass =
+    'w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all text-sm font-medium'
+  const labelClass = 'text-[10px] font-bold text-gray-400 uppercase tracking-widest'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    if (form.phone && !/^\d{10}$/.test(form.phone)) {
+      setError('Phone must be exactly 10 digits')
+      return
+    }
+
     try {
-      await updateUser({
-        tenantId,
-        userId: user.id,
-        name,
-        role: isSysAdmin ? undefined : role,
-      }).unwrap()
-      onClose()
+      await onSubmit(form)
     } catch (err: unknown) {
-      const message = (err as { data?: { message?: string } })?.data?.message
-      setError(typeof message === 'string' ? message : t('systemAdmin.failedUpdateUser'))
+      const msg = (err as { data?: { message?: string } })?.data?.message
+      setError(typeof msg === 'string' ? msg : 'Failed to update user')
     }
   }
 
   return (
-    <ModalShell title={t('systemAdmin.editUserTitle')} onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <FieldLabel label={t('passengers.fullName')}>
+    <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-6 space-y-5">
+        <div className="space-y-1.5">
+          <label className={labelClass}>Full Name</label>
           <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            placeholder="e.g. Nguyen Van A"
+            className={fieldClass}
           />
-        </FieldLabel>
-        {!isSysAdmin && (
-          <FieldLabel label={t('systemAdmin.role')}>
-            <div className="flex gap-2">
-              {(['ADMIN', 'BUS_MANAGER'] as const).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r)}
-                  className={cn(
-                    'flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-widest transition-all',
-                    role === r
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-50 border border-gray-100 text-gray-500 hover:bg-gray-100',
-                  )}
-                >
-                  {r === 'BUS_MANAGER' ? t('systemAdmin.drivers') : t('systemAdmin.admins')}
-                </button>
-              ))}
-            </div>
-          </FieldLabel>
-        )}
+        </div>
+
+        <div className="space-y-1.5">
+          <label className={labelClass}>Email</label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="user@example.com"
+            className={fieldClass}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className={labelClass}>Phone Number</label>
+          <input
+            value={form.phone}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '')
+              setForm({ ...form, phone: val })
+            }}
+            maxLength={10}
+            placeholder="0901234567"
+            className={fieldClass}
+          />
+          <div className="flex justify-between">
+            <p className="text-[10px] text-gray-400">10 digits only</p>
+            <p
+              className={cn(
+                'text-[10px] font-medium',
+                form.phone.length === 10
+                  ? 'text-success-600'
+                  : form.phone.length > 0
+                    ? 'text-warning-500'
+                    : 'text-gray-400',
+              )}
+            >
+              {form.phone.length}/10
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className={labelClass}>Role</label>
+          <select
+            value={form.role}
+            onChange={(e) => setForm({ ...form, role: e.target.value as 'ADMIN' | 'BUS_MANAGER' })}
+            className={fieldClass}
+          >
+            <option value="ADMIN">Admin — Điều phối viên</option>
+            <option value="BUS_MANAGER">BusManager — Tài xế</option>
+          </select>
+        </div>
+
+        <div className="p-3 bg-primary-50 rounded-xl border border-primary-100">
+          <p className="text-[11px] text-primary-600 leading-relaxed">
+            {form.role === 'ADMIN'
+              ? '🗂 Admin có quyền quản lý chuyến đi, xe, hành khách và xem live dashboard.'
+              : '🚌 BusManager (Tài xế) chỉ có quyền điểm danh hành khách trên xe được phân công.'}
+          </p>
+        </div>
 
         {error && (
           <p className="text-sm text-danger-600 bg-danger-50 border border-danger-100 rounded-lg px-3 py-2">
             {error}
           </p>
         )}
+      </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? t('systemAdmin.saving') : t('systemAdmin.saveChanges')}
-          </Button>
-        </div>
-      </form>
-    </ModalShell>
+      <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex gap-3">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="flex-1 h-11 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-600/90 active:scale-[0.98] transition-all disabled:opacity-50"
+        >
+          {isLoading ? 'Saving…' : 'Save Changes'}
+        </button>
+      </div>
+    </form>
   )
 }
 

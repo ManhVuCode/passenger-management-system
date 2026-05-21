@@ -3,7 +3,7 @@ import { AllocationController, AllocationSummaryController } from './allocation.
 import { AllocationService } from './allocation.service';
 
 @Module({
-  controllers: [AllocationController, AllocationSummaryController],
+  controllers: [AllocationSummaryController, AllocationController],
   providers: [AllocationService]
 })
 export class AllocationModule {}

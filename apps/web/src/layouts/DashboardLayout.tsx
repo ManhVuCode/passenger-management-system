@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import { logout } from '../features/auth/authSlice'
-import { Bus, MapPin, LogOut, Users, Shield } from 'lucide-react'
+import { Bus, MapPin, LogOut, Users, Shield, LayoutDashboard } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { LanguageToggle } from '../components/LanguageToggle'
 
@@ -39,10 +39,16 @@ export default function DashboardLayout() {
       ]
     : [
         {
+          to: '/',
+          labelKey: 'nav.dashboard',
+          icon: LayoutDashboard,
+          match: (p) => p === '/',
+        },
+        {
           to: '/trips',
           labelKey: 'nav.trips',
           icon: MapPin,
-          match: (p) => p === '/' || p.startsWith('/trips'),
+          match: (p) => p.startsWith('/trips'),
         },
         {
           to: '/buses',

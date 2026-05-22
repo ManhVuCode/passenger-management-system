@@ -53,7 +53,13 @@ export class SystemAdminService {
 
   async createUser(
     tenantId: string,
-    data: { email: string; name: string; role: 'ADMIN' | 'BUS_MANAGER'; password: string },
+    data: {
+      email: string
+      name: string
+      role: 'ADMIN' | 'BUS_MANAGER'
+      password: string
+      phone?: string
+    },
   ) {
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } })
     if (!tenant) throw new NotFoundException('Tenant not found')
@@ -61,8 +67,15 @@ export class SystemAdminService {
     if (existing) throw new ConflictException('Email already exists')
     const passwordHash = await bcrypt.hash(data.password, 10)
     return this.prisma.user.create({
-      data: { tenantId, email: data.email, name: data.name, role: data.role, passwordHash },
-      select: { id: true, email: true, name: true, role: true, createdAt: true },
+      data: {
+        tenantId,
+        email: data.email,
+        name: data.name,
+        role: data.role,
+        passwordHash,
+        ...(data.phone && { phone: data.phone }),
+      },
+      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
     })
   }
 

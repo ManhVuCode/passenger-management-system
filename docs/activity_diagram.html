@@ -17,10 +17,10 @@
 </head>
 <body>
 <h1>Activity Diagram — GR2 Passenger Management System</h1>
-<p class="sub">v5 · May 2026 · 4 swimlanes · Full operational workflow</p>
+<p class="sub">v6 · May 2026 · 4 swimlanes · Full operational workflow</p>
 <p class="desc">
   Covers the complete trip lifecycle across 4 actors: <strong>SystemAdmin</strong> (tenant setup) →
-  <strong>Admin</strong> (trip/round/bus/passenger/allocation) →
+  <strong>Admin</strong> (trip/round/bus/passenger/allocation/users-own-tenant) →
   <strong>System</strong> (guards, cascade, MQTT) →
   <strong>BusManager</strong> (round operations, attendance, notifications).
   Passenger movement is Admin-only and occurs only between rounds at stops.
@@ -67,7 +67,7 @@
 <text x="270"  y="85"  text-anchor="middle" font-size="22" font-weight="700" fill="#5b21b6">SystemAdmin</text>
 <text x="270"  y="112" text-anchor="middle" font-size="13" fill="#7c3aed">Tenant &amp; User Setup</text>
 <text x="790"  y="85"  text-anchor="middle" font-size="22" font-weight="700" fill="#15803d">Admin</text>
-<text x="790"  y="112" text-anchor="middle" font-size="13" fill="#16a34a">Trip · Round · Passenger · Allocation</text>
+<text x="790"  y="112" text-anchor="middle" font-size="13" fill="#16a34a">Trip · Round · Passenger · Allocation · Users (own tenant)</text>
 <text x="1420" y="85"  text-anchor="middle" font-size="22" font-weight="700" fill="#1d4ed8">System</text>
 <text x="1420" y="112" text-anchor="middle" font-size="13" fill="#2563eb">Guards · DB · MQTT · Cascade</text>
 <text x="2250" y="85"  text-anchor="middle" font-size="22" font-weight="700" fill="#c2410c">BusManager</text>

@@ -27,7 +27,7 @@
 <body>
 
 <h1>Use Case Diagram — GR2 Passenger Management System</h1>
-<p class="sub">v5 · May 2026 · 3 Actors · 11 Modules · UML compliant</p>
+<p class="sub">v6 · May 2026 · 3 Actors · 11 Modules · UML compliant</p>
 
 <div class="legend">
   <div class="lg-group">
@@ -95,7 +95,7 @@
      MODULE 02 — TENANT MGMT
 ══════════════════════════════════════ -->
 <rect x="280" y="290" width="2040" height="160" rx="12" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
-<text x="310" y="322" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#15803d" letter-spacing="1">02  TENANT &amp; USER MANAGEMENT  —  SystemAdmin only</text>
+<text x="310" y="322" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="600" fill="#15803d" letter-spacing="1">02  TENANT MGMT (SystemAdmin)  +  USER MGMT (SystemAdmin · Admin own tenant)</text>
 
 <ellipse cx="600" cy="375" rx="155" ry="40" fill="white" stroke="#16a34a" stroke-width="2" filter="url(#shadow)"/>
 <text x="600" y="370" text-anchor="middle" font-size="15" font-weight="600" fill="#14532d">Manage Tenants</text>
@@ -384,6 +384,8 @@
      ASSOCIATIONS — Admin
 ══════════════════════════════════════ -->
 <line x1="150" y1="1538" x2="480" y2="190"  stroke="#16a34a" stroke-width="1.4" opacity="0.3"/>
+<!-- Admin → Manage Users in Tenant (own tenant scope) -->
+<line x1="150" y1="1542" x2="915" y2="375" stroke="#16a34a" stroke-width="1.4" opacity="0.45"/>
 <!-- Trip/Round -->
 <line x1="150" y1="1544" x2="405" y2="565"  stroke="#16a34a" stroke-width="1.4" opacity="0.4"/>
 <line x1="150" y1="1548" x2="895" y2="565"  stroke="#16a34a" stroke-width="1.4" opacity="0.4"/>

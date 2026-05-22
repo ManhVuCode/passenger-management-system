@@ -50,6 +50,12 @@ export default function DashboardLayout() {
           icon: Bus,
           match: (p) => p.startsWith('/buses'),
         },
+        {
+          to: '/users',
+          labelKey: 'nav.users',
+          icon: Users,
+          match: (p) => p.startsWith('/users'),
+        },
       ]
 
   return (

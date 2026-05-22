@@ -52,6 +52,9 @@ export const vi: PWATranslationKeys = {
     noRounds: 'Chưa có chặng nào được phân công.',
     loadingAssignments: 'Đang tải phân công…',
     offline: 'Ngoại tuyến — đang dùng dữ liệu lưu',
+    emptyTitle: 'Chưa có chặng nào',
+    emptyBody: 'Liên hệ Admin để được phân công',
+    tapToCheckin: 'Nhấn để điểm danh',
   },
 
   attendance: {

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -36,7 +36,22 @@ export default function TripListPage() {
   const [form, setForm] = useState({ name: '', startDate: '', endDate: '' })
   const [formError, setFormError] = useState('')
   const [nameError, setNameError] = useState('')
-  const [activeTab, setActiveTab] = useState<Tab>('all')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlFilter = searchParams.get('filter')
+  const initialTab: Tab =
+    urlFilter === 'active' || urlFilter === 'upcoming' || urlFilter === 'done'
+      ? urlFilter
+      : 'all'
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab)
+
+  function handleTabChange(tab: Tab) {
+    setActiveTab(tab)
+    if (tab === 'all') {
+      setSearchParams({})
+    } else {
+      setSearchParams({ filter: tab })
+    }
+  }
   const [deletingTripId, setDeletingTripId] = useState<string | null>(null)
   const deletingTrip = trips.find((t) => t.id === deletingTripId) ?? null
 
@@ -129,22 +144,22 @@ export default function TripListPage() {
           label={t('trips.activeNow')}
           value={stats.active}
           icon={Activity}
-          color="text-success-600"
-          bg="bg-success-50"
+          color="text-warning-500"
+          bg="bg-warning-50"
         />
         <StatCard
           label={t('trips.upcoming')}
           value={stats.upcoming}
           icon={Clock}
-          color="text-warning-500"
-          bg="bg-warning-50"
+          color="text-[#f59e0b]"
+          bg="bg-[#fffbeb]"
         />
         <StatCard
           label={t('trips.completed')}
           value={stats.completed}
           icon={CheckCircle2}
-          color="text-gray-400"
-          bg="bg-gray-100"
+          color="text-success-600"
+          bg="bg-success-50"
         />
       </div>
 
@@ -153,7 +168,7 @@ export default function TripListPage() {
         {(['all', 'active', 'upcoming', 'done'] as Tab[]).map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => handleTabChange(tab)}
             className={cn(
               'px-4 py-2 text-sm font-bold transition-all relative',
               activeTab === tab ? 'text-primary-600' : 'text-gray-400 hover:text-gray-600',

@@ -145,23 +145,26 @@ export default function DashboardPage() {
           icon={MapPin}
           color="text-primary-600"
           bg="bg-primary-50"
+          onClick={() => navigate('/trips')}
         />
         <StatCard
           label={t('dashboard.activeTrips')}
           value={stats.active}
           icon={Activity}
-          color="text-warning-600"
+          color="text-warning-500"
           bg="bg-warning-50"
           trend={
             stats.active > 0 ? t('dashboard.activeTrend', { count: stats.active }) : undefined
           }
+          onClick={() => navigate('/trips?filter=active')}
         />
         <StatCard
           label={t('dashboard.upcomingTrips')}
           value={stats.planned}
           icon={Clock}
-          color="text-primary-600"
-          bg="bg-primary-50"
+          color="text-[#f59e0b]"
+          bg="bg-[#fffbeb]"
+          onClick={() => navigate('/trips?filter=upcoming')}
         />
         <StatCard
           label={t('dashboard.completedTrips')}
@@ -174,6 +177,7 @@ export default function DashboardPage() {
               ? t('dashboard.successTrend', { pct: stats.successRate })
               : undefined
           }
+          onClick={() => navigate('/trips?filter=done')}
         />
       </div>
 

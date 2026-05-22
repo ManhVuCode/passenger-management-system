@@ -5,7 +5,11 @@
 @tailwind utilities;
 
 @layer base {
-  body { @apply bg-gray-50 text-gray-950 font-sans antialiased; }
+  body {
+    @apply bg-gray-50 text-gray-950 font-sans antialiased;
+    background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }

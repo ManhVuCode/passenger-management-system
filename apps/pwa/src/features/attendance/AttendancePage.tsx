@@ -86,13 +86,13 @@ export default function AttendancePage() {
   }
 
   async function handleMarkAll(status: 'JOIN' | 'ABSENT') {
-    const unmarked = passengers.filter((p) => !p.attendanceRecord).map((p) => p.id)
-    if (!unmarked.length) return
+    const all = passengers.map((p) => p.id)
+    if (!all.length) return
     await markAttendance({
       tripId: tripId!,
       roundId: roundId!,
       busId: busId!,
-      rpaIds: unmarked,
+      rpaIds: all,
       status,
     })
   }
@@ -122,7 +122,6 @@ export default function AttendancePage() {
   }
 
   const someMarked = passengers.some((p) => p.attendanceRecord)
-  const hasUnmarked = passengers.some((p) => !p.attendanceRecord)
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col max-w-[420px] mx-auto border-x border-gray-200">
@@ -234,7 +233,7 @@ export default function AttendancePage() {
           size="sm"
           className="bg-white border-success-600/30 text-success-600 text-xs gap-2"
           onClick={() => handleMarkAll('JOIN')}
-          disabled={!hasUnmarked || marking}
+          disabled={!passengers.length || marking}
         >
           <Check size={14} /> {t('attendance.markAllJoin')}
         </Button>
@@ -243,7 +242,7 @@ export default function AttendancePage() {
           size="sm"
           className="bg-white border-warning-500/30 text-warning-500 text-xs gap-2"
           onClick={() => handleMarkAll('ABSENT')}
-          disabled={!hasUnmarked || marking}
+          disabled={!passengers.length || marking}
         >
           <X size={14} /> {t('attendance.markAllAbsent')}
         </Button>

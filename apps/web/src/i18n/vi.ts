@@ -2,6 +2,7 @@ import type { TranslationKeys } from './en'
 
 export const vi: TranslationKeys = {
   nav: {
+    dashboard: 'Tổng quan',
     trips: 'Chuyến đi',
     buses: 'Đội xe',
     users: 'Quản lý người dùng',
@@ -147,6 +148,38 @@ export const vi: TranslationKeys = {
     noRounds: 'Chuyến đi này chưa có chặng nào.',
     busAllocation: 'Phân công xe',
     failedCreate: 'Tạo chặng thất bại',
+  },
+
+  dashboard: {
+    greeting: {
+      morning: 'Chào buổi sáng',
+      afternoon: 'Chào buổi chiều',
+      evening: 'Chào buổi tối',
+    },
+    subtitle: 'Tổng quan hoạt động của công ty bạn',
+    totalTrips: 'Tổng chuyến đi',
+    activeTrips: 'Đang hoạt động',
+    upcomingTrips: 'Sắp diễn ra',
+    completedTrips: 'Đã hoàn thành',
+    activeTrend_one: '{{count}} chuyến đang chạy',
+    activeTrend_other: '{{count}} chuyến đang chạy',
+    successTrend: 'Tỉ lệ thành công {{pct}}%',
+    successRate: 'Tỉ lệ hoàn thành',
+    fleetAndTeam: 'Đội ngũ & Phương tiện',
+    busesInFleet: 'Xe trong đội',
+    upcoming: 'Sắp diễn ra',
+    viewAll: 'Xem tất cả',
+    noUpcoming: 'Không có chuyến đi sắp tới',
+    recentTrips: 'Chuyến đi gần đây',
+    noTrips: 'Chưa có chuyến đi nào.',
+    colTripName: 'Tên chuyến đi',
+    colStart: 'Ngày bắt đầu',
+    colEnd: 'Ngày kết thúc',
+    colStatus: 'Trạng thái',
+    statusInProgress: 'Đang hoạt động',
+    statusPlanned: 'Kế hoạch',
+    statusDone: 'Hoàn thành',
+    statusCancelled: 'Đã hủy',
   },
 
   buses: {

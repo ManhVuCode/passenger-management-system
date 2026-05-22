@@ -1,5 +1,6 @@
 export const en = {
   nav: {
+    dashboard: 'Dashboard',
     trips: 'Trips',
     buses: 'Buses',
     users: 'Manage Users',
@@ -145,6 +146,38 @@ export const en = {
     noRounds: 'No rounds yet for this trip.',
     busAllocation: 'Bus Allocation',
     failedCreate: 'Failed to create round',
+  },
+
+  dashboard: {
+    greeting: {
+      morning: 'Good morning',
+      afternoon: 'Good afternoon',
+      evening: 'Good evening',
+    },
+    subtitle: 'Overview of your company activity',
+    totalTrips: 'Total Trips',
+    activeTrips: 'Active',
+    upcomingTrips: 'Upcoming',
+    completedTrips: 'Completed',
+    activeTrend_one: '{{count}} trip currently running',
+    activeTrend_other: '{{count}} trips currently running',
+    successTrend: 'Success rate {{pct}}%',
+    successRate: 'Completion Rate',
+    fleetAndTeam: 'Fleet & Team',
+    busesInFleet: 'Buses in fleet',
+    upcoming: 'Upcoming',
+    viewAll: 'View all',
+    noUpcoming: 'No upcoming trips',
+    recentTrips: 'Recent Trips',
+    noTrips: 'No trips yet.',
+    colTripName: 'Trip Name',
+    colStart: 'Start Date',
+    colEnd: 'End Date',
+    colStatus: 'Status',
+    statusInProgress: 'Active',
+    statusPlanned: 'Planned',
+    statusDone: 'Done',
+    statusCancelled: 'Cancelled',
   },
 
   buses: {

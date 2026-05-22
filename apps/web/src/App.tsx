@@ -7,6 +7,7 @@ import BusListPage from './features/buses/BusListPage'
 import PassengerListPage from './features/passengers/PassengerListPage'
 import TripDetailPage from './features/trips/TripDetailPage'
 import LiveDashboardPage from './features/dashboard/LiveDashboardPage'
+import DashboardPage from './features/dashboard/DashboardPage'
 import SystemAdminPage from './features/system-admin/SystemAdminPage'
 import UserManagementPage from './features/users/UserManagementPage'
 
@@ -16,9 +17,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function IndexRedirect() {
+function IndexRoute() {
   const role = useAppSelector((s) => s.auth.role)
-  return <Navigate to={role === 'SYSTEM_ADMIN' ? '/system' : '/trips'} replace />
+  if (role === 'SYSTEM_ADMIN') return <Navigate to="/system" replace />
+  return <DashboardPage />
 }
 
 export default function App() {
@@ -33,7 +35,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<IndexRedirect />} />
+        <Route index element={<IndexRoute />} />
         <Route path="trips" element={<TripListPage />} />
         <Route path="trips/:tripId" element={<TripDetailPage />} />
         <Route path="trips/:tripId/dashboard" element={<LiveDashboardPage />} />

@@ -27,7 +27,13 @@ export class BusService {
     if (existing) throw new ConflictException('License plate already registered')
 
     return this.prisma.bus.create({
-      data: { tenantId, ...dto },
+      data: {
+        tenantId,
+        ...dto,
+        photoFront: dto.photoFront ?? '',
+        photoSide: dto.photoSide ?? '',
+        photoRear: dto.photoRear ?? '',
+      },
     })
   }
 

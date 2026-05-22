@@ -76,7 +76,7 @@ export default function TripDetailPage() {
           <ArrowLeft size={20} />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-950">{trip.name}</h1>
+          <h1 className="text-2xl font-extrabold text-navy-900 tracking-tight">{trip.name}</h1>
           <div className="flex items-center gap-2 mt-0.5">
             <Badge variant={trip.status as BadgeVariant} label={t(`status.${trip.status}`)} />
             <span className="text-xs text-gray-400 font-medium">
@@ -127,7 +127,7 @@ export default function TripDetailPage() {
 
         <div className="flex-1 space-y-4 min-w-0">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-gray-950">{t('rounds.title')}</h2>
+            <h2 className="text-lg font-extrabold text-navy-900 tracking-tight">{t('rounds.title')}</h2>
             <Button size="sm" className="gap-2" onClick={() => setShowAddRound(true)}>
               <Plus size={14} /> {t('rounds.addRound')}
             </Button>

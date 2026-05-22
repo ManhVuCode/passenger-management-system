@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsInt, Min, Matches } from 'class-validator'
+import { IsString, IsNotEmpty, IsInt, Min, Matches, IsOptional } from 'class-validator'
 import { IsSimpleText } from '../../../common/validators/is-simple-text.validator'
 
 export class CreateBusDto {
@@ -19,14 +19,14 @@ export class CreateBusDto {
   capacity!: number
 
   @IsString()
-  @IsNotEmpty()
-  photoFront!: string
+  @IsOptional()
+  photoFront?: string
 
   @IsString()
-  @IsNotEmpty()
-  photoSide!: string
+  @IsOptional()
+  photoSide?: string
 
   @IsString()
-  @IsNotEmpty()
-  photoRear!: string
+  @IsOptional()
+  photoRear?: string
 }

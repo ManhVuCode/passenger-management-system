@@ -86,17 +86,17 @@ describe('Bus & Assignment (e2e)', () => {
       expect(res.status).toBe(409)
     })
 
-    it('Missing photo → 400', async () => {
+    it('Missing photos → 201 (photos optional)', async () => {
       const res = await request(app.getHttpServer())
         .post('/buses')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           licensePlate: '51B-999.99',
-          name: 'Incomplete Bus',
+          name: 'No-Photo Bus',
           capacity: 20,
-          photoFront: MOCK_PHOTO,
         })
-      expect(res.status).toBe(400)
+      expect(res.status).toBe(201)
+      expect(res.body.photoFront).toBe('')
     })
 
     it('BusManager cannot create bus → 403', async () => {

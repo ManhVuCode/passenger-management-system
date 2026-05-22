@@ -51,7 +51,7 @@ function TenantsView({ onOpenTenant }: { onOpenTenant: (t: TenantRow) => void })
     <div className="p-8">
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-950">{t('systemAdmin.title')}</h1>
+          <h1 className="text-3xl font-extrabold text-navy-900 tracking-tight">{t('systemAdmin.title')}</h1>
           <p className="text-gray-600 mt-1">
             {tenants.length === 0
               ? t('systemAdmin.noOperators')
@@ -335,7 +335,7 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
               {t('systemAdmin.tenantUsers')}
             </p>
-            <h1 className="text-3xl font-bold text-gray-950">{tenant.name}</h1>
+            <h1 className="text-3xl font-extrabold text-navy-900 tracking-tight">{tenant.name}</h1>
           </div>
         </div>
         <Button className="gap-2" onClick={() => setShowAdd(true)}>

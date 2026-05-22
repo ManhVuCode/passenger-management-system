@@ -103,21 +103,26 @@ export default function BusListPage() {
     <div className="p-8">
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-950">{t('buses.title')}</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-3xl font-extrabold text-navy-900 tracking-tight">
+            {t('buses.title')}
+          </h1>
+          <p className="text-gray-600 mt-1.5">
             {buses.length === 0
               ? t('buses.none')
               : t('buses.subtitle', { count: buses.length })}
           </p>
         </div>
-        <Button className="gap-2" onClick={openCreate}>
+        <Button className="gap-2 shadow-glow" size="lg" onClick={openCreate}>
           <Plus size={18} />
           {t('buses.registerBus')}
         </Button>
       </header>
 
       {buses.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-12 text-center">
+        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-16 text-center flex flex-col items-center gap-4">
+          <div className="text-primary-600/50">
+            <BusPlaceholderSvg className="w-32 h-20" />
+          </div>
           <p className="text-gray-400 text-sm">{t('buses.noBuses')}</p>
         </div>
       ) : (
@@ -233,19 +238,16 @@ export default function BusListPage() {
                       label={t('buses.frontView')}
                       value={form.photoFront}
                       onChange={(b64) => setForm({ ...form, photoFront: b64 })}
-                      required
                     />
                     <PhotoUploadInput
                       label={t('buses.sideView')}
                       value={form.photoSide}
                       onChange={(b64) => setForm({ ...form, photoSide: b64 })}
-                      required
                     />
                     <PhotoUploadInput
                       label={t('buses.rearView')}
                       value={form.photoRear}
                       onChange={(b64) => setForm({ ...form, photoRear: b64 })}
-                      required
                     />
 
                     <div className="p-4 bg-primary-50 rounded-xl border border-primary-100 flex items-start gap-3">
@@ -311,6 +313,43 @@ function FormField({
   )
 }
 
+function BusPlaceholderSvg({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 200 100"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect
+        x="10"
+        y="30"
+        width="180"
+        height="60"
+        rx="8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="20"
+        y="20"
+        width="120"
+        height="35"
+        rx="4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle cx="45" cy="92" r="12" fill="none" stroke="currentColor" strokeWidth="2" />
+      <circle cx="155" cy="92" r="12" fill="none" stroke="currentColor" strokeWidth="2" />
+      <rect x="30" y="28" width="20" height="20" rx="2" fill="currentColor" opacity="0.2" />
+      <rect x="58" y="28" width="20" height="20" rx="2" fill="currentColor" opacity="0.2" />
+      <rect x="86" y="28" width="20" height="20" rx="2" fill="currentColor" opacity="0.2" />
+    </svg>
+  )
+}
+
 interface BusCardProps {
   bus: Bus
   onDelete: () => void
@@ -326,30 +365,40 @@ function BusCard({ bus, onDelete, onEdit }: BusCardProps) {
     { url: bus.photoSide, label: t('buses.sideView') },
     { url: bus.photoRear, label: t('buses.rearView') },
   ]
+  const hasAnyPhoto = photos.some((p) => p.url)
 
   return (
     <>
-      <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden group">
-        <div className="flex bg-gray-100 h-24 p-1 gap-1">
-          {photos.map((photo) => (
-            <div key={photo.label} className="flex-1 rounded-lg overflow-hidden bg-gray-200">
-              {photo.url ? (
-                <img
-                  src={photo.url}
-                  alt={photo.label}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    ;(e.target as HTMLImageElement).style.display = 'none'
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400 text-[10px] font-bold uppercase tracking-widest">
-                  {photo.label}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+      <div className="bg-white rounded-2xl shadow-card hover:shadow-card-hover border border-gray-100 overflow-hidden group transition-shadow">
+        {hasAnyPhoto ? (
+          <div className="flex bg-gray-100 h-28 p-1 gap-1">
+            {photos.map((photo) => (
+              <div key={photo.label} className="flex-1 rounded-lg overflow-hidden bg-gray-200 relative">
+                {photo.url ? (
+                  <img
+                    src={photo.url}
+                    alt={photo.label}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      ;(e.target as HTMLImageElement).style.display = 'none'
+                    }}
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                    <BusPlaceholderSvg className="w-12 h-12" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-gradient-to-br from-primary-50 via-gray-50 to-primary-100/40 h-28 flex items-center justify-center text-primary-600 relative">
+            <BusPlaceholderSvg className="w-20 h-20 opacity-70" />
+            <span className="absolute bottom-1.5 right-2 text-[9px] font-bold uppercase tracking-widest text-primary-600/70">
+              {t('buses.noPhotosYet')}
+            </span>
+          </div>
+        )}
         <div className="p-5 flex justify-between items-center">
           <div className="min-w-0">
             <h3 className="font-bold text-gray-950 truncate">{bus.name}</h3>

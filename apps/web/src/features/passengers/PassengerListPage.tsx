@@ -181,8 +181,8 @@ export default function PassengerListPage() {
             <ArrowLeft size={20} />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-950">{t('passengers.title')}</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-extrabold text-navy-900 tracking-tight">{t('passengers.title')}</h1>
+            <p className="text-gray-600 mt-1.5">
               {t('passengers.subtitle', { count: passengers.length })}
             </p>
           </div>

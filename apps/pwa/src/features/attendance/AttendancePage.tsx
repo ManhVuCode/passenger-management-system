@@ -162,41 +162,47 @@ export default function AttendancePage() {
         )}
       </AnimatePresence>
 
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-100 flex flex-col shadow-sm">
-        <div className="h-14 px-4 flex items-center gap-3">
-          <Link
-            to="/"
-            className="p-2 -ml-2 text-gray-400 hover:text-gray-950"
-            aria-label={t('common.back')}
-          >
-            <ArrowLeft size={20} />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-bold text-gray-950 truncate">{t('attendance.title')}</h2>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              {t('attendance.seats', { count: summary?.total ?? passengers.length })}
-            </p>
-          </div>
-          <button className="p-2 text-gray-400" aria-label={t('common.search')}>
-            <Search size={20} />
-          </button>
-        </div>
-
-        {summary && (
-          <div className="h-10 px-5 flex items-center justify-between border-t border-gray-50 bg-white">
-            <div className="flex items-center gap-4 text-[10px] font-bold tracking-widest uppercase">
-              <span className="text-success-600">
-                {t('attendance.joined', { count: summary.join })}
-              </span>
-              <span className="text-warning-500">
-                {t('attendance.absent', { count: summary.absent })}
-              </span>
-              <span className="text-gray-400">
-                {t('attendance.pending', { count: summary.pending })}
-              </span>
+      <header className="sticky top-0 z-40 flex flex-col">
+        <div className="h-1 bg-gradient-to-r from-primary-600 via-primary-400 to-primary-600" />
+        <div className="bg-white/85 backdrop-blur-md border-b border-gray-100 shadow-sm">
+          <div className="h-14 px-4 flex items-center gap-3">
+            <Link
+              to="/"
+              className="p-2 -ml-2 text-gray-500 hover:text-navy-900"
+              aria-label={t('common.back')}
+            >
+              <ArrowLeft size={20} />
+            </Link>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm font-bold text-navy-900 truncate">{t('attendance.title')}</h2>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                {t('attendance.seats', { count: summary?.total ?? passengers.length })}
+              </p>
             </div>
+            <button className="p-2 text-gray-500" aria-label={t('common.search')}>
+              <Search size={20} />
+            </button>
           </div>
-        )}
+
+          {summary && (
+            <div className="h-10 px-5 flex items-center justify-between border-t border-gray-50">
+              <div className="flex items-center gap-4 text-[10px] font-bold tracking-widest uppercase">
+                <span className="flex items-center gap-1.5 text-success-600">
+                  <span className="w-2 h-2 rounded-full bg-success-600" />
+                  {t('attendance.joined', { count: summary.join })}
+                </span>
+                <span className="flex items-center gap-1.5 text-warning-600">
+                  <span className="w-2 h-2 rounded-full bg-warning-500" />
+                  {t('attendance.absent', { count: summary.absent })}
+                </span>
+                <span className="flex items-center gap-1.5 text-gray-500">
+                  <span className="w-2 h-2 rounded-full bg-gray-300" />
+                  {t('attendance.pending', { count: summary.pending })}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       </header>
 
       {!isOnline && (

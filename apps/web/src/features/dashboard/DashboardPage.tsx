@@ -15,7 +15,6 @@ import {
   Users,
   TrendingUp,
   ArrowRight,
-  Calendar,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -83,11 +82,6 @@ export default function DashboardPage() {
       .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
       .slice(0, 5)
 
-    const upcoming = trips
-      .filter((t) => t.status === 'PLANNED')
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-      .slice(0, 3)
-
     return {
       total,
       active,
@@ -98,7 +92,6 @@ export default function DashboardPage() {
       admins,
       drivers,
       recent,
-      upcoming,
     }
   }, [trips, users])
 
@@ -184,8 +177,8 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-card ring-1 ring-gray-100">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl p-6 shadow-card ring-1 ring-gray-100 min-h-[180px]">
           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">
             {t('dashboard.successRate')}
           </p>
@@ -244,7 +237,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-card ring-1 ring-gray-100">
+        <div className="bg-white rounded-2xl p-6 shadow-card ring-1 ring-gray-100 min-h-[180px]">
           <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">
             {t('dashboard.fleetAndTeam')}
           </p>
@@ -288,48 +281,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-card ring-1 ring-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-              {t('dashboard.upcoming')}
-            </p>
-            <Link
-              to="/trips"
-              className="text-xs text-primary-600 font-semibold hover:underline"
-            >
-              {t('dashboard.viewAll')} →
-            </Link>
-          </div>
-          {stats.upcoming.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">
-              {t('dashboard.noUpcoming')}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {stats.upcoming.map((trip) => (
-                <Link key={trip.id} to={`/trips/${trip.id}`}>
-                  <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition-colors group cursor-pointer">
-                    <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
-                      <Calendar size={14} className="text-primary-600" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-navy-900 truncate">
-                        {trip.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(trip.startDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <ArrowRight
-                      size={14}
-                      className="text-gray-300 group-hover:text-primary-600 transition-colors shrink-0"
-                    />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-card ring-1 ring-gray-100 overflow-hidden">

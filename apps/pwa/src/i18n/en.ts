@@ -50,6 +50,9 @@ export const en = {
     noRounds: 'No rounds assigned yet.',
     loadingAssignments: 'Loading assignments…',
     offline: 'Offline — showing cached data',
+    emptyTitle: 'No rounds yet',
+    emptyBody: 'Contact your Admin to be assigned',
+    tapToCheckin: 'Tap to check in',
   },
 
   attendance: {

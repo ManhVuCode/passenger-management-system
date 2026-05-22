@@ -237,3 +237,22 @@ Strong success criteria let you loop independently.
 
 ---
 Guidelines working if: fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, clarifying questions come before implementation rather than after mistakes.
+
+---
+
+## AVAILABLE SKILLS
+
+<available_skills>
+  <skill>
+    <name>ui-ux-pro-max</name>
+    <description>
+      This skill should be used when the user asks to "design UI", "improve interface",
+      "make it look professional", "redesign", "apply design system", "choose colors",
+      "pick fonts", "create landing page", "build dashboard UI", or any request involving
+      visual design, UI/UX improvements, or frontend aesthetics.
+      Provides 67 UI styles, 96 color palettes, 57 font pairings, and industry-specific
+      design system generation for React + Tailwind projects.
+    </description>
+    <location>.claude/skills/ui-ux-pro-max/SKILL.md</location>
+  </skill>
+</available_skills>

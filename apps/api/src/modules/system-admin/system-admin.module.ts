@@ -5,5 +5,6 @@ import { SystemAdminService } from './system-admin.service'
 @Module({
   controllers: [SystemAdminController],
   providers: [SystemAdminService],
+  exports: [SystemAdminService],
 })
 export class SystemAdminModule {}

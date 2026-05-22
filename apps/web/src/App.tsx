@@ -8,6 +8,7 @@ import PassengerListPage from './features/passengers/PassengerListPage'
 import TripDetailPage from './features/trips/TripDetailPage'
 import LiveDashboardPage from './features/dashboard/LiveDashboardPage'
 import SystemAdminPage from './features/system-admin/SystemAdminPage'
+import UserManagementPage from './features/users/UserManagementPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useAppSelector((s) => s.auth.accessToken)
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="trips/:tripId/dashboard" element={<LiveDashboardPage />} />
         <Route path="trips/:tripId/passengers" element={<PassengerListPage />} />
         <Route path="buses" element={<BusListPage />} />
+        <Route path="users" element={<UserManagementPage />} />
         <Route path="system" element={<SystemAdminPage />} />
       </Route>
     </Routes>

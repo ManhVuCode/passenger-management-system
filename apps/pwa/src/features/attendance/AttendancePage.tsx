@@ -199,8 +199,8 @@ export default function AttendancePage() {
       </header>
 
       {!isOnline && (
-        <div className="bg-warning-500 text-white px-5 py-1.5 flex items-center gap-2 text-[11px] font-bold">
-          <WifiOff size={14} />
+        <div className="bg-warning-500 text-white px-5 py-2.5 flex items-center gap-2.5 text-[13px] font-bold shadow-md">
+          <WifiOff size={16} />
           {t('attendance.offline')}
         </div>
       )}
@@ -260,7 +260,7 @@ export default function AttendancePage() {
               <motion.div
                 key={p.id}
                 className={cn(
-                  'px-5 py-4 bg-white border-b border-gray-50 flex items-center gap-4 transition-colors min-h-16',
+                  'px-5 py-4 bg-white border-b border-gray-50 flex items-center gap-4 transition-colors min-h-[80px]',
                   isJoined && 'bg-success-50/50 border-l-[4px] border-l-success-600 pl-[16px]',
                   isAbsent && 'bg-warning-50/50 border-l-[4px] border-l-warning-500 pl-[16px]',
                 )}
@@ -292,34 +292,38 @@ export default function AttendancePage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2.5 shrink-0">
                   <motion.button
-                    whileTap={{ scale: 0.9 }}
+                    whileTap={{ scale: 0.88 }}
+                    animate={isJoined ? { scale: [1, 1.12, 1.05] } : { scale: 1 }}
+                    transition={{ duration: 0.25 }}
                     onClick={() => handleMark(p.id, 'JOIN')}
                     disabled={marking}
                     className={cn(
-                      'w-10 h-10 rounded-xl flex items-center justify-center transition-all border-2',
+                      'w-14 h-14 rounded-2xl flex items-center justify-center transition-all border-2 active:scale-90',
                       isJoined
-                        ? 'bg-success-600 border-success-600 text-white shadow-lg shadow-success-600/30 scale-105'
-                        : 'bg-white border-gray-200 text-gray-400 hover:border-success-600/40',
+                        ? 'bg-success-600 border-success-600 text-white shadow-lg shadow-success-600/40'
+                        : 'bg-white border-gray-200 text-gray-400 hover:border-success-600/60 active:bg-success-50',
                     )}
                     aria-label={t('status.JOIN')}
                   >
-                    <Check size={20} strokeWidth={3} />
+                    <Check size={26} strokeWidth={3.2} />
                   </motion.button>
                   <motion.button
-                    whileTap={{ scale: 0.9 }}
+                    whileTap={{ scale: 0.88 }}
+                    animate={isAbsent ? { scale: [1, 1.12, 1.05] } : { scale: 1 }}
+                    transition={{ duration: 0.25 }}
                     onClick={() => handleMark(p.id, 'ABSENT')}
                     disabled={marking}
                     className={cn(
-                      'w-10 h-10 rounded-xl flex items-center justify-center transition-all border-2',
+                      'w-14 h-14 rounded-2xl flex items-center justify-center transition-all border-2 active:scale-90',
                       isAbsent
-                        ? 'bg-warning-500 border-warning-500 text-white shadow-lg shadow-warning-500/30 scale-105'
-                        : 'bg-white border-gray-200 text-gray-400 hover:border-warning-500/40',
+                        ? 'bg-warning-500 border-warning-500 text-white shadow-lg shadow-warning-500/40'
+                        : 'bg-white border-gray-200 text-gray-400 hover:border-warning-500/60 active:bg-warning-50',
                     )}
                     aria-label={t('status.ABSENT')}
                   >
-                    <X size={20} strokeWidth={3} />
+                    <X size={26} strokeWidth={3.2} />
                   </motion.button>
                 </div>
               </motion.div>

@@ -101,14 +101,16 @@ export default function TripListPage() {
     <div className="p-8">
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-950">{t('trips.title')}</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-3xl font-extrabold text-navy-900 tracking-tight">
+            {t('trips.title')}
+          </h1>
+          <p className="text-gray-600 mt-1.5">
             {trips.length === 0
               ? t('trips.noTripsHeader')
               : t('trips.subtitle', { count: trips.length })}
           </p>
         </div>
-        <Button className="gap-2 px-6" size="lg" onClick={() => setShowForm(true)}>
+        <Button className="gap-2 px-6 shadow-glow" size="lg" onClick={() => setShowForm(true)}>
           <Plus size={20} />
           {t('trips.newTrip')}
         </Button>
@@ -350,12 +352,12 @@ function StatCard({
   bg: string
 }) {
   return (
-    <div className="bg-white p-5 rounded-2xl shadow-card">
-      <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-4', bg)}>
+    <div className="bg-white p-5 rounded-2xl shadow-card ring-1 ring-gray-100 hover:shadow-card-hover hover:-translate-y-0.5 transition-all">
+      <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center mb-4', bg)}>
         <Icon size={20} className={color} />
       </div>
       <p className="text-sm font-medium text-gray-600">{label}</p>
-      <p className="text-2xl font-bold text-gray-950">{value}</p>
+      <p className="text-3xl font-extrabold text-navy-900 tracking-tight">{value}</p>
     </div>
   )
 }
@@ -382,30 +384,51 @@ function TripCard({ trip, onClick, onDelete }: TripCardProps) {
 
   const config = (() => {
     if (status === TripStatus.IN_PROGRESS)
-      return { border: 'border-l-4 border-success-600', bg: 'bg-success-50/30' }
+      return {
+        border: 'border-l-[3px] border-success-600',
+        ring: 'ring-1 ring-success-200/40',
+        accent: 'from-success-50/60 via-white to-white',
+      }
     if (status === TripStatus.PLANNED)
-      return { border: 'border-l-4 border-warning-500', bg: 'bg-warning-50/30' }
-    return { border: 'border-l-4 border-gray-200', bg: 'bg-white' }
+      return {
+        border: 'border-l-[3px] border-warning-500',
+        ring: 'ring-1 ring-warning-200/40',
+        accent: 'from-warning-50/60 via-white to-white',
+      }
+    return {
+      border: 'border-l-[3px] border-gray-200',
+      ring: 'ring-1 ring-gray-100',
+      accent: 'from-white via-white to-white',
+    }
   })()
 
-  const progressFilled = status === TripStatus.DONE ? 4 : status === TripStatus.IN_PROGRESS ? 2 : 0
+  const progressFilled =
+    status === TripStatus.DONE ? 4 : status === TripStatus.IN_PROGRESS ? 2 : 0
 
   return (
     <motion.div
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -6 }}
+      transition={{ type: 'spring', stiffness: 360, damping: 24 }}
       onClick={onClick}
       className={cn(
-        'cursor-pointer rounded-xl bg-white shadow-card overflow-hidden relative group',
+        'cursor-pointer rounded-2xl overflow-hidden relative group bg-gradient-to-br shadow-card hover:shadow-card-hover transition-shadow',
         config.border,
+        config.ring,
+        config.accent,
         highlight === 'approaching' && 'bg-warning-50/20',
       )}
     >
-      <div className="p-5">
-        <div className="flex justify-between items-start mb-3 gap-3">
-          <h3 className="text-lg font-bold text-gray-950 leading-tight flex-1">{trip.name}</h3>
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-4 gap-3">
+          <h3 className="text-lg font-bold text-navy-900 leading-tight flex-1 tracking-tight">
+            {trip.name}
+          </h3>
           {status === TripStatus.IN_PROGRESS ? (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-success-50 text-success-600 text-[10px] font-bold uppercase tracking-wider animate-pulse shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-success-600" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-50 text-success-700 text-[10px] font-bold uppercase tracking-wider shrink-0">
+              <span className="relative flex w-1.5 h-1.5">
+                <span className="absolute inline-flex w-full h-full rounded-full bg-success-500 opacity-75 animate-ping" />
+                <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-success-600" />
+              </span>
               {t('trips.activeNow')}
             </div>
           ) : highlight === 'approaching' ? (
@@ -418,26 +441,28 @@ function TripCard({ trip, onClick, onDelete }: TripCardProps) {
           )}
         </div>
 
-        <div className="flex items-center gap-2 text-gray-600 text-sm mb-4">
-          <Calendar size={14} />
+        <div className="flex items-center gap-2 text-gray-600 text-sm mb-5 font-medium">
+          <Calendar size={14} className="text-gray-400" />
           <span>
             {new Date(trip.startDate).toLocaleDateString()} —{' '}
             {new Date(trip.endDate).toLocaleDateString()}
           </span>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-1.5">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
                 className={cn(
-                  'w-2 h-2 rounded-full',
-                  i <= progressFilled ? 'bg-success-600' : 'bg-gray-200',
+                  'h-1.5 rounded-full transition-all',
+                  i <= progressFilled
+                    ? 'w-6 bg-gradient-to-r from-success-500 to-success-600'
+                    : 'w-3 bg-gray-200',
                 )}
               />
             ))}
-            <span className="ml-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            <span className="ml-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
               {t('trips.journeyProgress')}
             </span>
           </div>

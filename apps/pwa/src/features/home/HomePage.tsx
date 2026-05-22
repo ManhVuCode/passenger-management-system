@@ -34,8 +34,8 @@ export default function HomePage() {
       </header>
 
       {!isOnline && (
-        <div className="bg-warning-500 text-white px-5 py-1.5 flex items-center gap-2 text-[11px] font-bold">
-          <WifiOff size={14} />
+        <div className="bg-warning-500 text-white px-5 py-2.5 flex items-center gap-2.5 text-[13px] font-bold shadow-md">
+          <WifiOff size={16} />
           {t('home.offline')}
         </div>
       )}

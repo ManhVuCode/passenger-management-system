@@ -55,13 +55,13 @@ export default function DashboardLayout() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <aside className="w-[220px] fixed top-0 left-0 bottom-0 bg-white border-r border-gray-200 flex flex-col z-50">
-        <div className="h-14 px-5 flex items-center border-b border-gray-100 gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white">
+        <div className="h-16 px-5 flex items-center border-b border-gray-100 gap-2.5 bg-gradient-to-br from-navy-900 to-navy-800 text-white">
+          <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center text-white shadow-glow">
             <Bus size={18} />
           </div>
           <div className="leading-tight">
-            <span className="font-bold text-gray-950 tracking-tight text-sm block">MPMS</span>
-            <p className="text-[9px] text-gray-400 font-medium leading-none">
+            <span className="font-extrabold tracking-tight text-sm block">MPMS</span>
+            <p className="text-[9px] text-white/60 font-medium leading-none">
               Multi Passenger Mgmt
             </p>
           </div>

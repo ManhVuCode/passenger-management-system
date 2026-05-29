@@ -48,6 +48,7 @@ export default function AttendancePage() {
   const [broadcastAlert, setBroadcastAlert] = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [completeError, setCompleteError] = useState<string | null>(null)
+  const [markError, setMarkError] = useState<string | null>(null)
   const isOnline = useOnlineStatus()
 
   useAttendanceSocket({
@@ -75,26 +76,47 @@ export default function AttendancePage() {
     onBroadcastAlert: useCallback((msg: string) => setBroadcastAlert(msg), []),
   })
 
+  // Offline marks fail to reach the server but are queued by the service worker
+  // and replayed on reconnect — the offline banner already signals that, so we
+  // stay quiet. Only a real server rejection surfaces an error.
+  function surfaceMarkError(err: unknown) {
+    const e = err as { status?: unknown; data?: { message?: string } }
+    if (e.status === 'FETCH_ERROR' || e.status === 'TIMEOUT_ERROR') return
+    const msg = e.data?.message
+    setMarkError(typeof msg === 'string' ? msg : t('attendance.failedMark'))
+    window.setTimeout(() => setMarkError(null), 4000)
+  }
+
   async function handleMark(rpaId: string, status: 'JOIN' | 'ABSENT') {
-    await markAttendance({
-      tripId: tripId!,
-      roundId: roundId!,
-      busId: busId!,
-      rpaIds: [rpaId],
-      status,
-    })
+    setMarkError(null)
+    try {
+      await markAttendance({
+        tripId: tripId!,
+        roundId: roundId!,
+        busId: busId!,
+        rpaIds: [rpaId],
+        status,
+      }).unwrap()
+    } catch (err) {
+      surfaceMarkError(err)
+    }
   }
 
   async function handleMarkAll(status: 'JOIN' | 'ABSENT') {
     const all = passengers.map((p) => p.id)
     if (!all.length) return
-    await markAttendance({
-      tripId: tripId!,
-      roundId: roundId!,
-      busId: busId!,
-      rpaIds: all,
-      status,
-    })
+    setMarkError(null)
+    try {
+      await markAttendance({
+        tripId: tripId!,
+        roundId: roundId!,
+        busId: busId!,
+        rpaIds: all,
+        status,
+      }).unwrap()
+    } catch (err) {
+      surfaceMarkError(err)
+    }
   }
 
   async function handleComplete() {
@@ -210,6 +232,20 @@ export default function AttendancePage() {
           {t('attendance.offline')}
         </div>
       )}
+
+      <AnimatePresence>
+        {markError && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-danger-600 text-white px-5 py-2.5 flex items-center gap-2.5 text-[13px] font-bold shadow-md overflow-hidden"
+          >
+            <X size={16} />
+            {markError}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {peerUpdate && (

@@ -73,6 +73,43 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body: { roundPassengerAssignmentIds: rpaIds, status, ...(note && { note }) },
       }),
+      // Optimistically reflect the mark so the toggle updates instantly — and
+      // stays visible while offline, where the service-worker background-sync
+      // queue replays the request on reconnect.
+      async onQueryStarted(
+        { tripId, roundId, busId, rpaIds, status, note },
+        { dispatch, queryFulfilled },
+      ) {
+        const patch = dispatch(
+          attendanceApi.util.updateQueryData(
+            'getPassengersForBus',
+            { tripId, roundId, busId },
+            (draft) => {
+              for (const p of draft) {
+                if (!rpaIds.includes(p.id)) continue
+                p.attendanceRecord = {
+                  id: p.attendanceRecord?.id ?? `optimistic-${p.id}`,
+                  status,
+                  markedAt: new Date().toISOString(),
+                  markedBy: p.attendanceRecord?.markedBy ?? '',
+                  note: note ?? p.attendanceRecord?.note,
+                }
+              }
+            },
+          ),
+        )
+        try {
+          await queryFulfilled
+        } catch (err) {
+          // Keep the optimistic state when the request merely failed to reach
+          // the server (offline) — it is queued and will sync. Roll back only
+          // on a real server rejection (e.g. cancelled round).
+          const queryStatus = (err as { error?: { status?: unknown } })?.error?.status
+          if (queryStatus !== 'FETCH_ERROR' && queryStatus !== 'TIMEOUT_ERROR') {
+            patch.undo()
+          }
+        }
+      },
       invalidatesTags: (_r, _e, { roundId }) => [{ type: 'Attendance', id: roundId }],
     }),
     getAttendanceSummary: builder.query<

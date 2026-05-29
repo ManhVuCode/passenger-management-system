@@ -71,6 +71,7 @@ export const en = {
       'This round will be marked as DONE. All unmarked passengers will remain pending.',
     confirmCompleteButton: 'Complete Round',
     failedComplete: 'Failed to complete round',
+    failedMark: 'Could not save attendance',
     noPassengers: 'No passengers allocated to this bus.',
     offline: 'Offline — marks queued, will sync on reconnect',
     broadcastAlert: 'Broadcast Alert',

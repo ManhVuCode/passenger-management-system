@@ -73,6 +73,7 @@ export const vi: PWATranslationKeys = {
       'Chặng này sẽ được đánh dấu DONE. Các hành khách chưa điểm danh sẽ vẫn ở trạng thái chờ.',
     confirmCompleteButton: 'Hoàn thành chặng',
     failedComplete: 'Hoàn thành chặng thất bại',
+    failedMark: 'Không thể lưu điểm danh',
     noPassengers: 'Chưa có hành khách trên xe này.',
     offline: 'Ngoại tuyến — điểm danh đã lưu, sẽ gửi khi có mạng',
     broadcastAlert: 'Thông báo khẩn',

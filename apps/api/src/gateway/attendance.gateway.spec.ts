@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing'
 import { AttendanceGateway } from './attendance.gateway'
 import { JwtService } from '@nestjs/jwt'
+import { PrismaService } from '../prisma/prisma.service'
 
 describe('AttendanceGateway', () => {
   let gateway: AttendanceGateway
@@ -14,6 +15,10 @@ describe('AttendanceGateway', () => {
           useValue: {
             verify: jest.fn().mockReturnValue({ userId: 'u1', tenantId: 't1', role: 'ADMIN' }),
           },
+        },
+        {
+          provide: PrismaService,
+          useValue: { trip: { findFirst: jest.fn() } },
         },
       ],
     }).compile()

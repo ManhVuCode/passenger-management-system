@@ -10,6 +10,8 @@ import {
 import { Server, Socket } from 'socket.io'
 import { JwtService } from '@nestjs/jwt'
 import { Logger } from '@nestjs/common'
+import { JwtPayload } from '@pms/shared'
+import { PrismaService } from '../prisma/prisma.service'
 
 export interface AttendanceUpdatePayload {
   tripId: string
@@ -36,7 +38,10 @@ export class AttendanceGateway implements OnGatewayConnection, OnGatewayDisconne
   @WebSocketServer() server!: Server
   private readonly logger = new Logger(AttendanceGateway.name)
 
-  constructor(private jwt: JwtService) {}
+  constructor(
+    private jwt: JwtService,
+    private prisma: PrismaService,
+  ) {}
 
   async handleConnection(client: Socket) {
     try {
@@ -49,7 +54,7 @@ export class AttendanceGateway implements OnGatewayConnection, OnGatewayDisconne
         return
       }
 
-      const payload = this.jwt.verify(token)
+      const payload = this.jwt.verify<JwtPayload>(token)
       client.data.user = payload
       this.logger.log(`Client connected: ${client.id} (user: ${payload.userId})`)
     } catch {
@@ -62,10 +67,30 @@ export class AttendanceGateway implements OnGatewayConnection, OnGatewayDisconne
   }
 
   @SubscribeMessage('join-trip')
-  handleJoinTrip(
+  async handleJoinTrip(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { tripId: string },
   ) {
+    const user = client.data.user as JwtPayload | undefined
+    if (!user) {
+      client.disconnect()
+      return { error: 'Unauthorized' }
+    }
+
+    // Enforce tenant isolation (domain rule #10): only join a trip room when
+    // the trip belongs to the connected user's tenant. Without this, any
+    // authenticated user could subscribe to another tenant's live feed.
+    const trip = await this.prisma.trip.findFirst({
+      where: { id: data.tripId, tenantId: user.tenantId },
+      select: { id: true },
+    })
+    if (!trip) {
+      this.logger.warn(
+        `Client ${client.id} denied join to trip ${data.tripId} (cross-tenant)`,
+      )
+      return { error: 'Forbidden' }
+    }
+
     const room = `trip:${data.tripId}`
     client.join(room)
     this.logger.log(`Client ${client.id} joined room ${room}`)

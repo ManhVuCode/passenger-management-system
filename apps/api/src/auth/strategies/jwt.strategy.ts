@@ -17,11 +17,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     })
   }
 
-  async validate(payload: JwtPayload) {
+  async validate(payload: JwtPayload): Promise<JwtPayload> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.userId },
+      include: { tenant: { select: { status: true } } },
     })
     if (!user) throw new UnauthorizedException()
-    return payload
+    if (user.tenant.status !== 'ACTIVE') {
+      throw new UnauthorizedException('Tenant is suspended')
+    }
+    // Source role/tenant from the DB, not the token, so a demoted or moved
+    // user cannot keep stale privileges for the remaining life of the token.
+    return { userId: user.id, tenantId: user.tenantId, role: user.role }
   }
 }

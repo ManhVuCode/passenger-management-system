@@ -69,7 +69,9 @@ export class AssignmentService {
     const rba = await this.prisma.roundBusAssignment.findUnique({
       where: { tripId_roundId_busId: { tripId, roundId, busId } },
     })
-    if (!rba) throw new NotFoundException('Bus not assigned to this round')
+    if (!rba || rba.tenantId !== tenantId) {
+      throw new NotFoundException('Bus not assigned to this round')
+    }
 
     const user = await this.prisma.user.findFirst({
       where: { id: dto.userId, tenantId, role: Role.BUS_MANAGER },
@@ -83,11 +85,13 @@ export class AssignmentService {
     })
   }
 
-  async removeBusManager(tripId: string, roundId: string, busId: string, _tenantId: string) {
+  async removeBusManager(tripId: string, roundId: string, busId: string, tenantId: string) {
     const rba = await this.prisma.roundBusAssignment.findUnique({
       where: { tripId_roundId_busId: { tripId, roundId, busId } },
     })
-    if (!rba) throw new NotFoundException('Bus not assigned to this round')
+    if (!rba || rba.tenantId !== tenantId) {
+      throw new NotFoundException('Bus not assigned to this round')
+    }
 
     return this.prisma.busManagerAssignment.delete({
       where: { tripId_roundId_busId: { tripId, roundId, busId } },

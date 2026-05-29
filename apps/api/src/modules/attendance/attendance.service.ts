@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import { MarkAttendanceDto } from './dto/mark-attendance.dto'
@@ -65,6 +66,17 @@ export class AttendanceService {
     })
     if (!rba || rba.tenantId !== tenantId) {
       throw new NotFoundException('Bus not assigned to this round')
+    }
+
+    // Domain rule #6: a CANCELLED round's attendance is terminal — block
+    // re-marking so a cascade-cancelled record cannot be reverted to JOIN/ABSENT.
+    const round = await this.prisma.round.findFirst({
+      where: { id: roundId, tripId, tenantId },
+      select: { status: true },
+    })
+    if (!round) throw new NotFoundException('Round not found')
+    if (round.status === 'CANCELLED') {
+      throw new BadRequestException('Cannot mark attendance on a cancelled round')
     }
 
     const rpas = await this.prisma.roundPassengerAssignment.findMany({

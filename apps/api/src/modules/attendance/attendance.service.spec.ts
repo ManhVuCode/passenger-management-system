@@ -52,6 +52,7 @@ describe('AttendanceService — BusManager scope', () => {
 
   it('Admin skips BusManager scope check', async () => {
     mockPrisma.roundBusAssignment.findUnique.mockResolvedValue({ tenantId: 'tenant1' })
+    mockPrisma.round.findFirst.mockResolvedValue({ status: 'PLANNED' })
     mockPrisma.roundPassengerAssignment.findMany
       .mockResolvedValueOnce([{ id: 'rpa1' }])
       .mockResolvedValueOnce([

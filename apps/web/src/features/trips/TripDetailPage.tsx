@@ -23,6 +23,8 @@ import { useAppSelector } from '../../store/hooks'
 import NotificationPanel from '../notifications/NotificationPanel'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
+import { SectionCard } from '../../components/ui/section-card'
+import { EmptyState } from '../../components/ui/empty-state'
 import {
   ArrowLeft,
   ChevronRight,
@@ -76,7 +78,7 @@ export default function TripDetailPage() {
           <ArrowLeft size={20} />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-extrabold text-navy-900 tracking-tight">{trip.name}</h1>
+          <h1 className="text-3xl font-extrabold text-navy-900 tracking-tight">{trip.name}</h1>
           <div className="flex items-center gap-2 mt-0.5">
             <Badge variant={trip.status as BadgeVariant} label={t(`status.${trip.status}`)} />
             <span className="text-xs text-gray-400 font-medium">
@@ -89,10 +91,7 @@ export default function TripDetailPage() {
 
       <div className="flex gap-8 flex-1 min-h-0">
         <div className="w-[240px] space-y-6 shrink-0">
-          <div className="bg-white p-5 rounded-2xl shadow-card border border-gray-100">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-              {t('trips.quickActions')}
-            </p>
+          <SectionCard title={t('trips.quickActions')} bodyClassName="p-5">
             <div className="flex flex-col gap-2">
               <Link to={`/trips/${tripId}/passengers`}>
                 <Button variant="outline" className="w-full justify-start gap-2 h-9 text-xs">
@@ -122,7 +121,7 @@ export default function TripDetailPage() {
                 </p>
               </div>
             )}
-          </div>
+          </SectionCard>
         </div>
 
         <div className="flex-1 space-y-4 min-w-0">
@@ -134,8 +133,16 @@ export default function TripDetailPage() {
           </div>
 
           {rounds.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-8 text-center text-gray-400 text-sm">
-              {t('rounds.noRounds')}
+            <div className="bg-white rounded-2xl shadow-card border border-gray-100">
+              <EmptyState
+                icon={MapPin}
+                title={t('rounds.noRounds')}
+                action={
+                  <Button size="sm" className="gap-2" onClick={() => setShowAddRound(true)}>
+                    <Plus size={14} /> {t('rounds.addRound')}
+                  </Button>
+                }
+              />
             </div>
           ) : (
             <div className="relative pl-10 space-y-12 pb-20">
@@ -550,6 +557,7 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
   const [warning, setWarning] = useState<string | null>(null)
   const [addingBusId, setAddingBusId] = useState('')
   const [driverError, setDriverError] = useState<string | null>(null)
+  const [busError, setBusError] = useState<string | null>(null)
 
   const assignedBusIds = new Set(roundBuses.map((rb) => rb.busId))
   const availableBuses = buses.filter((b) => !assignedBusIds.has(b.id))
@@ -578,12 +586,13 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
 
   async function handleAssignBus() {
     if (!addingBusId) return
+    setBusError(null)
     try {
       await assignBus({ tripId, roundId, busId: addingBusId }).unwrap()
       setAddingBusId('')
     } catch (err: unknown) {
       const msg = (err as { data?: { message?: string } })?.data?.message
-      alert(typeof msg === 'string' ? msg : t('buses.failedAssign'))
+      setBusError(typeof msg === 'string' ? msg : t('buses.failedAssign'))
     }
   }
 
@@ -696,6 +705,21 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
             )
           })}
         </div>
+
+        {busError && (
+          <div className="p-3 bg-danger-50 rounded-xl border border-danger-500/20 flex gap-2">
+            <AlertCircle size={14} className="text-danger-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-[11px] text-danger-600">{busError}</p>
+              <button
+                onClick={() => setBusError(null)}
+                className="text-[10px] text-danger-600 underline"
+              >
+                {t('allocation.dismiss')}
+              </button>
+            </div>
+          </div>
+        )}
 
         {isAdmin && isPlanned && availableBuses.length > 0 && (
           <div className="flex gap-2">
@@ -856,9 +880,10 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
                         onClick={() =>
                           removeAllocation({ tripId, roundId, assignmentId: a.id })
                         }
-                        className="text-[10px] text-danger-600 hover:underline ml-1"
+                        className="text-danger-600 hover:bg-danger-50 rounded p-1 ml-1"
+                        aria-label={t('common.delete')}
                       >
-                        ✕
+                        <X size={12} />
                       </button>
                     )}
                   </div>

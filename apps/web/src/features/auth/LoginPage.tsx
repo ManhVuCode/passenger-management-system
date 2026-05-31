@@ -131,7 +131,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary-600/10 focus:border-primary-600 transition-all font-medium"
+                className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/30 focus:border-primary-600 transition-all font-medium"
               />
             </div>
             <div className="space-y-1.5">
@@ -144,11 +144,11 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary-600/10 focus:border-primary-600 transition-all font-medium"
+                className="w-full h-12 px-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/30 focus:border-primary-600 transition-all font-medium"
               />
             </div>
             {error && (
-              <p className="text-sm text-danger-600 bg-danger-50 border border-danger-100 rounded-lg px-3 py-2.5">
+              <p className="text-sm text-danger-600 bg-danger-50 border border-danger-100 rounded-xl px-4 py-3">
                 {error}
               </p>
             )}

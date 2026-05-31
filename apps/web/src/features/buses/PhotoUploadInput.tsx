@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { Upload, X, ImageOff } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { Upload, X, ImageOff, CheckCircle2 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function PhotoUploadInput({ label, value, onChange, required }: Props) {
+  const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -138,8 +140,9 @@ export function PhotoUploadInput({ label, value, onChange, required }: Props) {
       )}
 
       {hasImage && !error && (
-        <p className="text-[10px] text-success-600 font-medium">
-          ✓ Image loaded ({Math.round((value.length * 0.75) / 1024)}KB)
+        <p className="text-[10px] text-success-600 font-medium flex items-center gap-1">
+          <CheckCircle2 size={11} />{' '}
+          {t('buses.imageLoaded', { kb: Math.round((value.length * 0.75) / 1024) })}
         </p>
       )}
     </div>

@@ -13,6 +13,8 @@ import { useGetAllRoundAllocationsQuery } from '../allocation/allocationApi'
 import { importFromSheetUrl, type SheetRow } from './sheetImporter'
 import { Button } from '../../components/ui/button'
 import { Badge, type BadgeVariant } from '../../components/ui/badge'
+import { ConfirmDialog } from '../../components/ui/confirm-dialog'
+import { EmptyState } from '../../components/ui/empty-state'
 import {
   Plus,
   Trash2,
@@ -26,6 +28,10 @@ import {
   Filter,
   Upload,
   Info,
+  AlertTriangle,
+  CheckCircle2,
+  Minus,
+  Users,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { validatePhone, validateSimpleText } from '../../lib/validators'
@@ -65,6 +71,8 @@ export default function PassengerListPage() {
   const [importError, setImportError] = useState('')
   const [bulkText, setBulkText] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [importSuccess, setImportSuccess] = useState<string | null>(null)
 
   const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
   const token = localStorage.getItem('accessToken') ?? ''
@@ -86,6 +94,12 @@ export default function PassengerListPage() {
   async function handleSaveNote(id: string) {
     await updatePassenger({ id, tripId: tripId!, body: { note: editNote } })
     setEditingId(null)
+  }
+
+  async function handleDeletePassenger() {
+    if (!deletingId) return
+    await deletePassenger({ id: deletingId, tripId: tripId! })
+    setDeletingId(null)
   }
 
   async function handleSheetPreview(e: React.FormEvent) {
@@ -114,7 +128,8 @@ export default function PassengerListPage() {
       setImportPreview(null)
       setSheetUrl('')
       setTab('list')
-      alert(t('passengers.importedCount', { count: result.created }))
+      setImportSuccess(t('passengers.importedCount', { count: result.created }))
+      setTimeout(() => setImportSuccess(null), 4000)
     } catch (err: unknown) {
       const msg = (err as { data?: { message?: string } })?.data?.message
       setImportError(typeof msg === 'string' ? msg : 'Bulk import failed')
@@ -157,6 +172,8 @@ export default function PassengerListPage() {
     a.click()
     URL.revokeObjectURL(url)
   }
+
+  const deletingPassenger = passengers.find((p) => p.id === deletingId) ?? null
 
   const filteredPassengers = passengers.filter((p) => {
     if (!searchTerm) return true
@@ -231,7 +248,13 @@ export default function PassengerListPage() {
                   className="flex-1 h-10 px-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600"
                 />
                 <Button type="submit" disabled={importing || !sheetUrl.trim()} size="sm">
-                  {importing ? t('passengers.reading') : `🔍 ${t('passengers.preview')}`}
+                  {importing ? (
+                    t('passengers.reading')
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <Search size={14} /> {t('passengers.preview')}
+                    </span>
+                  )}
                 </Button>
               </form>
 
@@ -267,8 +290,9 @@ export default function PassengerListPage() {
 
                   {importPreview.errors.length > 0 && (
                     <div className="bg-warning-50 border border-warning-500/20 rounded-xl p-3">
-                      <p className="text-xs font-bold text-warning-500 mb-1">
-                        ⚠ {t('passengers.skippedRows', { count: importPreview.errors.length })}
+                      <p className="text-xs font-bold text-warning-500 mb-1 flex items-center gap-1">
+                        <AlertTriangle size={12} />
+                        {t('passengers.skippedRows', { count: importPreview.errors.length })}
                       </p>
                       <ul className="text-xs text-warning-500 space-y-0.5">
                         {importPreview.errors.slice(0, 5).map((e, i) => (
@@ -339,9 +363,14 @@ export default function PassengerListPage() {
                       disabled={importing || importPreview.rows.length === 0}
                       className="flex-1"
                     >
-                      {importing
-                        ? t('passengers.importing')
-                        : `✓ ${t('passengers.importN', { count: importPreview.rows.length })}`}
+                      {importing ? (
+                        t('passengers.importing')
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <CheckCircle2 size={14} />
+                          {t('passengers.importN', { count: importPreview.rows.length })}
+                        </span>
+                      )}
                     </Button>
                     <Button variant="outline" onClick={() => setImportPreview(null)}>
                       {t('common.cancel')}
@@ -489,6 +518,13 @@ export default function PassengerListPage() {
         )}
       </AnimatePresence>
 
+      {importSuccess && (
+        <div className="mb-4 p-3 bg-success-50 rounded-xl border border-success-200 flex items-center gap-2">
+          <CheckCircle2 size={16} className="text-success-600 shrink-0" />
+          <p className="text-sm text-success-700 font-medium">{importSuccess}</p>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-card overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
           <div className="relative w-80">
@@ -550,13 +586,15 @@ export default function PassengerListPage() {
             <tbody>
               {filteredPassengers.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={8 + roundSummaries.length}
-                    className="px-6 py-16 text-center text-gray-400 text-sm"
-                  >
-                    {passengers.length === 0
-                      ? t('passengers.noPassengers')
-                      : t('passengers.noPassengersFiltered')}
+                  <td colSpan={8 + roundSummaries.length} className="p-0">
+                    <EmptyState
+                      icon={Users}
+                      title={
+                        passengers.length === 0
+                          ? t('passengers.noPassengers')
+                          : t('passengers.noPassengersFiltered')
+                      }
+                    />
                   </td>
                 </tr>
               )}
@@ -602,13 +640,13 @@ export default function PassengerListPage() {
                                     : 'bg-gray-100 text-gray-500',
                             )}
                           >
-                            {alloc.attendanceStatus === 'JOIN'
-                              ? '✓'
-                              : alloc.attendanceStatus === 'ABSENT'
-                                ? '✗'
-                                : alloc.attendanceStatus === 'CANCELLED'
-                                  ? '—'
-                                  : '?'}
+                            {alloc.attendanceStatus === 'JOIN' ? (
+                              <Check size={14} />
+                            ) : alloc.attendanceStatus === 'ABSENT' ? (
+                              <X size={14} />
+                            ) : (
+                              <Minus size={14} />
+                            )}
                           </span>
                         ) : (
                           <span className="text-gray-300 text-xs">—</span>
@@ -672,7 +710,7 @@ export default function PassengerListPage() {
                         <Edit2 size={16} />
                       </button>
                       <button
-                        onClick={() => deletePassenger({ id: p.id, tripId: tripId! })}
+                        onClick={() => setDeletingId(p.id)}
                         className="p-2 text-gray-400 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
                         aria-label={t('common.delete')}
                       >
@@ -686,6 +724,20 @@ export default function PassengerListPage() {
           </table>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deletingId}
+        title={t('passengers.deletePassengerTitle')}
+        description={
+          deletingPassenger
+            ? t('passengers.deletePassengerConfirm', { name: deletingPassenger.name })
+            : null
+        }
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={handleDeletePassenger}
+        onCancel={() => setDeletingId(null)}
+      />
     </div>
   )
 }

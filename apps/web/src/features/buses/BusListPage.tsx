@@ -8,7 +8,11 @@ import {
   useDeleteBusMutation,
 } from './busApi'
 import { Button } from '../../components/ui/button'
-import { Plus, Trash2, Edit2, Users, Info, X } from 'lucide-react'
+import { Badge } from '../../components/ui/badge'
+import { PageHeader } from '../../components/ui/page-header'
+import { EmptyState } from '../../components/ui/empty-state'
+import { ConfirmDialog } from '../../components/ui/confirm-dialog'
+import { Plus, Trash2, Edit2, Users, Info, X, Bus as BusIcon } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { PhotoUploadInput } from './PhotoUploadInput'
 import { validateLicensePlate, validateSimpleText } from '../../lib/validators'
@@ -101,29 +105,32 @@ export default function BusListPage() {
 
   return (
     <div className="p-8">
-      <header className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-extrabold text-navy-900 tracking-tight">
-            {t('buses.title')}
-          </h1>
-          <p className="text-gray-600 mt-1.5">
-            {buses.length === 0
-              ? t('buses.none')
-              : t('buses.subtitle', { count: buses.length })}
-          </p>
-        </div>
-        <Button className="gap-2 shadow-glow" size="lg" onClick={openCreate}>
-          <Plus size={18} />
-          {t('buses.registerBus')}
-        </Button>
-      </header>
+      <PageHeader
+        className="mb-8"
+        title={t('buses.title')}
+        subtitle={
+          buses.length === 0 ? t('buses.none') : t('buses.subtitle', { count: buses.length })
+        }
+        actions={
+          <Button className="gap-2 shadow-glow" size="lg" onClick={openCreate}>
+            <Plus size={18} />
+            {t('buses.registerBus')}
+          </Button>
+        }
+      />
 
       {buses.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-16 text-center flex flex-col items-center gap-4">
-          <div className="text-primary-600/50">
-            <BusPlaceholderSvg className="w-32 h-20" />
-          </div>
-          <p className="text-gray-400 text-sm">{t('buses.noBuses')}</p>
+        <div className="bg-white rounded-2xl shadow-card border border-gray-100">
+          <EmptyState
+            icon={BusIcon}
+            title={t('buses.noBuses')}
+            action={
+              <Button className="gap-2" onClick={openCreate}>
+                <Plus size={16} />
+                {t('buses.registerBus')}
+              </Button>
+            }
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -402,13 +409,13 @@ function BusCard({ bus, onDelete, onEdit }: BusCardProps) {
         <div className="p-5 flex justify-between items-center">
           <div className="min-w-0">
             <h3 className="font-bold text-gray-950 truncate">{bus.name}</h3>
-            <div className="flex items-center gap-3 mt-1">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+            <div className="flex items-center gap-2 mt-1.5">
+              <Badge variant="secondary" className="font-mono tracking-tight">
                 {bus.licensePlate}
-              </span>
-              <span className="text-xs text-gray-500 flex items-center gap-1">
-                <Users size={12} /> {t('buses.seats', { count: bus.capacity })}
-              </span>
+              </Badge>
+              <Badge variant="secondary" className="gap-1">
+                <Users size={11} /> {t('buses.seats', { count: bus.capacity })}
+              </Badge>
             </div>
           </div>
           <div className="flex gap-2 shrink-0">
@@ -430,52 +437,18 @@ function BusCard({ bus, onDelete, onEdit }: BusCardProps) {
         </div>
       </div>
 
-      <AnimatePresence>
-        {confirmDelete && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-gray-950/40 backdrop-blur-[2px] z-[80] flex items-center justify-center p-6"
-            onClick={() => setConfirmDelete(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 8 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 8 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
-            >
-              <div className="w-12 h-12 bg-danger-50 rounded-2xl flex items-center justify-center mb-4">
-                <Trash2 size={20} className="text-danger-600" />
-              </div>
-              <h3 className="font-bold text-gray-950 mb-1">
-                {t('buses.deleteBus', { name: bus.name })}
-              </h3>
-              <p className="text-sm text-gray-500 mb-6">
-                {t('buses.deleteConfirm', { plate: bus.licensePlate })}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  onClick={() => {
-                    onDelete()
-                    setConfirmDelete(false)
-                  }}
-                  className="flex-1 h-10 rounded-xl bg-danger-600 text-white text-sm font-medium hover:bg-danger-600/90 active:scale-[0.98] transition-all"
-                >
-                  {t('common.delete')}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmDialog
+        open={confirmDelete}
+        title={t('buses.deleteBus', { name: bus.name })}
+        description={t('buses.deleteConfirm', { plate: bus.licensePlate })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => {
+          onDelete()
+          setConfirmDelete(false)
+        }}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </>
   )
 }

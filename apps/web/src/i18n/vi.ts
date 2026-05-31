@@ -101,8 +101,8 @@ export const vi: TranslationKeys = {
     tabDone: 'Hoàn thành',
     journeyProgress: 'Tiến độ chặng',
     activeNowBadge: '● Đang chạy',
-    startingSoon_one: '⚡ Còn {{count}} ngày',
-    startingSoon_other: '⚡ Còn {{count}} ngày',
+    startingSoon_one: 'Còn {{count}} ngày',
+    startingSoon_other: 'Còn {{count}} ngày',
     createTrip: 'Tạo chuyến đi',
     creating: 'Đang tạo…',
     createTripTitle: 'Tạo chuyến đi mới',
@@ -122,6 +122,7 @@ export const vi: TranslationKeys = {
     shareLink: 'Chia sẻ liên kết',
     tripNote: 'Ghi chú chuyến đi',
     failedCreate: 'Tạo chuyến đi thất bại',
+    failedDelete: 'Không thể xóa chuyến đi',
     deleteTrip: 'Xóa chuyến đi',
     deleteTripConfirm: 'sẽ bị xóa vĩnh viễn cùng tất cả dữ liệu liên quan. Không thể hoàn tác.',
   },
@@ -220,6 +221,9 @@ export const vi: TranslationKeys = {
     failedSave: 'Lưu thông tin xe thất bại',
     failedAssign: 'Gán xe thất bại',
     failedAssignDriver: 'Gán tài xế thất bại',
+    alreadyAssignedShort: 'Đã gán xe khác',
+    driverAlreadyAssigned:
+      'Tài xế này đã được gán cho xe khác trong chặng. Vui lòng chọn tài xế khác.',
   },
 
   users: {

@@ -11,6 +11,11 @@ import {
 import { useAppSelector } from '../../store/hooks'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
+import { MetricCard } from '../../components/ui/metric-card'
+import { PageHeader } from '../../components/ui/page-header'
+import { EmptyState } from '../../components/ui/empty-state'
+import { ConfirmDialog } from '../../components/ui/confirm-dialog'
+import { DataTable, type Column } from '../../components/ui/data-table'
 import {
   Plus,
   Edit2,
@@ -38,6 +43,8 @@ export default function UserManagementPage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserItem | null>(null)
   const [deletingUser, setDeletingUser] = useState<UserItem | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const filtered = users.filter(
     (u) =>
@@ -58,6 +65,111 @@ export default function UserManagementPage() {
     setIsPanelOpen(true)
   }
 
+  async function handleDeleteUser() {
+    if (!deletingUser) return
+    setDeleteError('')
+    setDeleting(true)
+    try {
+      await deleteUser(deletingUser.id).unwrap()
+      setDeletingUser(null)
+    } catch (err: unknown) {
+      const msg = (err as { data?: { message?: string } })?.data?.message
+      setDeleteError(typeof msg === 'string' ? msg : t('users.submitFailed'))
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const columns: Column<UserItem>[] = [
+    {
+      key: 'name',
+      header: t('users.colName'),
+      sortValue: (u) => u.name,
+      render: (u) => {
+        const isSelf = u.id === currentUserId
+        return (
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
+                u.role === 'ADMIN' ? 'bg-primary-50 text-primary-600' : 'bg-[#fff7ed] text-[#c2410c]',
+              )}
+            >
+              {u.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+            </div>
+            <span className="font-semibold text-navy-900">{u.name}</span>
+            {isSelf && (
+              <span className="text-[10px] font-bold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full uppercase tracking-widest">
+                {t('users.you')}
+              </span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'email',
+      header: t('users.colEmail'),
+      sortValue: (u) => u.email,
+      render: (u) => <span className="text-gray-600">{u.email}</span>,
+    },
+    {
+      key: 'phone',
+      header: t('users.colPhone'),
+      render: (u) => <span className="text-gray-600">{u.phone ?? '—'}</span>,
+    },
+    {
+      key: 'role',
+      header: t('users.colRole'),
+      sortValue: (u) => u.role,
+      render: (u) => (
+        <Badge
+          variant={u.role === 'ADMIN' ? 'ADMIN' : 'BUS_MANAGER'}
+          label={u.role === 'ADMIN' ? t('users.roleAdmin') : t('users.roleDriver')}
+        />
+      ),
+    },
+    {
+      key: 'joined',
+      header: t('users.colJoined'),
+      sortValue: (u) => new Date(u.createdAt).getTime(),
+      render: (u) => <span className="text-gray-400">{new Date(u.createdAt).toLocaleDateString()}</span>,
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      render: (u) => {
+        const isSelf = u.id === currentUserId
+        return (
+          <div className="flex items-center gap-1 justify-end">
+            <button
+              onClick={() => openEdit(u)}
+              className="cursor-pointer p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              aria-label={t('common.edit')}
+            >
+              <Edit2 size={14} />
+            </button>
+            <button
+              onClick={() => !isSelf && setDeletingUser(u)}
+              disabled={isSelf}
+              title={isSelf ? t('users.cannotDeleteSelf') : undefined}
+              className={cn(
+                'p-1.5 rounded-lg transition-colors',
+                isSelf
+                  ? 'text-gray-200 cursor-not-allowed'
+                  : 'cursor-pointer text-gray-400 hover:text-danger-600 hover:bg-danger-50',
+              )}
+              aria-label={t('common.delete')}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        )
+      },
+    },
+  ]
+
   if (isLoading) {
     return <div className="p-8 text-gray-400 text-sm">{t('common.loading')}</div>
   }
@@ -65,37 +177,34 @@ export default function UserManagementPage() {
   return (
     <div className="p-8">
       {/* Header */}
-      <header className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-3xl font-extrabold text-navy-900 tracking-tight">
-            {t('users.title')}
-          </h1>
-          <p className="text-gray-600 mt-1.5">
-            {t('users.subtitle', { count: users.length })}
-          </p>
-        </div>
-        <Button className="gap-2 shadow-glow" size="lg" onClick={openCreate}>
-          <Plus size={18} /> {t('users.addUser')}
-        </Button>
-      </header>
+      <PageHeader
+        className="mb-8"
+        title={t('users.title')}
+        subtitle={t('users.subtitle', { count: users.length })}
+        actions={
+          <Button className="gap-2 shadow-glow" size="lg" onClick={openCreate}>
+            <Plus size={18} /> {t('users.addUser')}
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-6 mb-8">
-        <StatCard
+        <MetricCard
           label={t('users.totalUsers')}
           value={users.length}
           icon={Users}
           color="text-primary-600"
           bg="bg-primary-50"
         />
-        <StatCard
+        <MetricCard
           label={t('users.admins')}
           value={adminCount}
           icon={Shield}
           color="text-primary-600"
           bg="bg-primary-50"
         />
-        <StatCard
+        <MetricCard
           label={t('users.drivers')}
           value={driverCount}
           icon={BusIcon}
@@ -121,115 +230,17 @@ export default function UserManagementPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="p-16 text-center flex flex-col items-center gap-3">
-            <div className="text-primary-600/40">
-              <UsersPlaceholderSvg className="w-24 h-16" />
-            </div>
-            <p className="text-gray-400 text-sm">
-              {users.length === 0 ? t('users.noUsers') : t('users.noResults')}
-            </p>
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                {[
-                  t('users.colName'),
-                  t('users.colEmail'),
-                  t('users.colPhone'),
-                  t('users.colRole'),
-                  t('users.colJoined'),
-                  '',
-                ].map((h, i) => (
-                  <th
-                    key={i}
-                    className="px-5 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filtered.map((user) => {
-                const isSelf = user.id === currentUserId
-                return (
-                  <motion.tr
-                    key={user.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="hover:bg-gray-50/60 transition-colors"
-                  >
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
-                            user.role === 'ADMIN'
-                              ? 'bg-primary-50 text-primary-600'
-                              : 'bg-[#fff7ed] text-[#c2410c]',
-                          )}
-                        >
-                          {user.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </div>
-                        <span className="font-semibold text-navy-900">{user.name}</span>
-                        {isSelf && (
-                          <span className="text-[10px] font-bold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full uppercase tracking-widest">
-                            {t('users.you')}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-gray-600">{user.email}</td>
-                    <td className="px-5 py-3.5 text-sm text-gray-600">{user.phone ?? '—'}</td>
-                    <td className="px-5 py-3.5">
-                      <Badge
-                        variant={user.role === 'ADMIN' ? 'ADMIN' : 'BUS_MANAGER'}
-                        label={user.role === 'ADMIN' ? t('users.roleAdmin') : t('users.roleDriver')}
-                      />
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-gray-400">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-1 justify-end">
-                        <button
-                          onClick={() => openEdit(user)}
-                          className="cursor-pointer p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                          aria-label={t('common.edit')}
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          onClick={() => !isSelf && setDeletingUser(user)}
-                          disabled={isSelf}
-                          title={isSelf ? t('users.cannotDeleteSelf') : undefined}
-                          className={cn(
-                            'p-1.5 rounded-lg transition-colors',
-                            isSelf
-                              ? 'text-gray-200 cursor-not-allowed'
-                              : 'cursor-pointer text-gray-400 hover:text-danger-600 hover:bg-danger-50',
-                          )}
-                          aria-label={t('common.delete')}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <DataTable
+        columns={columns}
+        data={filtered}
+        rowKey={(u) => u.id}
+        empty={
+          <EmptyState
+            icon={Users}
+            title={users.length === 0 ? t('users.noUsers') : t('users.noResults')}
+          />
+        }
+      />
 
       {/* Create/Edit slide-in panel */}
       <AnimatePresence>
@@ -284,103 +295,28 @@ export default function UserManagementPage() {
       </AnimatePresence>
 
       {/* Delete confirm */}
-      <AnimatePresence>
-        {deletingUser && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-gray-950/40 backdrop-blur-[2px] z-[80] flex items-center justify-center p-6"
-            onClick={() => setDeletingUser(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 8 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 8 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
-            >
-              <div className="w-12 h-12 bg-danger-50 rounded-2xl flex items-center justify-center mb-4">
-                <Trash2 size={20} className="text-danger-600" />
-              </div>
-              <h3 className="font-bold text-navy-900 mb-1">{t('users.deleteTitle')}</h3>
-              <p className="text-sm text-gray-500 mb-6">
-                <span className="font-semibold">{deletingUser.name}</span>{' '}
-                ({deletingUser.email}) {t('users.deleteConfirm')}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setDeletingUser(null)}
-                  className="cursor-pointer flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  onClick={async () => {
-                    await deleteUser(deletingUser.id)
-                    setDeletingUser(null)
-                  }}
-                  className="cursor-pointer flex-1 h-10 rounded-xl bg-danger-600 text-white text-sm font-medium hover:bg-danger-600/90 active:scale-[0.98] transition-all"
-                >
-                  {t('common.delete')}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  color,
-  bg,
-}: {
-  label: string
-  value: number
-  icon: React.ElementType
-  color: string
-  bg: string
-}) {
-  return (
-    <div className="bg-white p-5 rounded-2xl shadow-card ring-1 ring-gray-100 hover:shadow-card-hover hover:-translate-y-0.5 transition-all">
-      <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center mb-4', bg)}>
-        <Icon size={20} className={color} />
-      </div>
-      <p className="text-sm font-medium text-gray-600">{label}</p>
-      <p className="text-3xl font-extrabold text-navy-900 tracking-tight">{value}</p>
-    </div>
-  )
-}
-
-function UsersPlaceholderSvg({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 64 64"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      aria-hidden="true"
-    >
-      <circle cx="24" cy="20" r="10" stroke="currentColor" strokeWidth="2.5" />
-      <path
-        d="M4 52c0-11 9-20 20-20h0c11 0 20 9 20 20"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
+      <ConfirmDialog
+        open={!!deletingUser}
+        title={t('users.deleteTitle')}
+        description={
+          deletingUser ? (
+            <>
+              <span className="font-semibold">{deletingUser.name}</span> ({deletingUser.email}){' '}
+              {t('users.deleteConfirm')}
+            </>
+          ) : null
+        }
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        loading={deleting}
+        error={deleteError || null}
+        onConfirm={handleDeleteUser}
+        onCancel={() => {
+          setDeletingUser(null)
+          setDeleteError('')
+        }}
       />
-      <circle cx="46" cy="22" r="8" stroke="currentColor" strokeWidth="2.5" />
-      <path
-        d="M38 52c0-9 7-16 16-16"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-      />
-    </svg>
+    </div>
   )
 }
 

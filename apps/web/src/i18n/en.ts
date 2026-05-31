@@ -99,8 +99,8 @@ export const en = {
     tabDone: 'Done',
     journeyProgress: 'Journey Progress',
     activeNowBadge: '● Active Now',
-    startingSoon_one: '⚡ Starts in {{count}} day',
-    startingSoon_other: '⚡ Starts in {{count}} days',
+    startingSoon_one: 'Starts in {{count}} day',
+    startingSoon_other: 'Starts in {{count}} days',
     createTrip: 'Create Trip',
     creating: 'Creating…',
     createTripTitle: 'Create New Trip',
@@ -120,6 +120,7 @@ export const en = {
     shareLink: 'Share Link',
     tripNote: 'Trip Note',
     failedCreate: 'Failed to create trip',
+    failedDelete: 'Could not delete trip',
     deleteTrip: 'Delete Trip',
     deleteTripConfirm: 'will be permanently deleted along with all related data. This action cannot be undone.',
   },
@@ -218,6 +219,9 @@ export const en = {
     failedSave: 'Failed to save bus',
     failedAssign: 'Failed to assign bus',
     failedAssignDriver: 'Failed to assign driver',
+    alreadyAssignedShort: 'Already assigned',
+    driverAlreadyAssigned:
+      'This driver is already assigned to another bus in this round. Please choose a different driver.',
   },
 
   users: {

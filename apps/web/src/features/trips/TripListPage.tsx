@@ -11,6 +11,11 @@ import { getTripHighlight } from './tripUtils'
 import { TripStatus } from '@pms/shared'
 import { Button } from '../../components/ui/button'
 import { Badge, type BadgeVariant } from '../../components/ui/badge'
+import { MetricCard } from '../../components/ui/metric-card'
+import { ConfirmDialog } from '../../components/ui/confirm-dialog'
+import { EmptyState } from '../../components/ui/empty-state'
+import { PageHeader } from '../../components/ui/page-header'
+import { TabTransition } from '../../components/ui/tab-transition'
 import {
   Plus,
   Trash2,
@@ -20,6 +25,8 @@ import {
   Clock,
   CheckCircle2,
   X,
+  Zap,
+  Inbox,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { validateSimpleText } from '../../lib/validators'
@@ -37,23 +44,26 @@ export default function TripListPage() {
   const [formError, setFormError] = useState('')
   const [nameError, setNameError] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
-  const urlFilter = searchParams.get('filter')
-  const initialTab: Tab =
-    urlFilter === 'active' || urlFilter === 'upcoming' || urlFilter === 'done'
-      ? urlFilter
-      : 'all'
-  const [activeTab, setActiveTab] = useState<Tab>(initialTab)
+  // Trip.status is DERIVED (R7); the list filters on the status the API returns.
+  // URL is the single source of truth for the active filter (?status=IN_PROGRESS|PLANNED|DONE).
+  const tabToStatus: Record<Tab, string | null> = {
+    all: null,
+    active: 'IN_PROGRESS',
+    upcoming: 'PLANNED',
+    done: 'DONE',
+  }
+  const statusToTab = (s: string | null): Tab =>
+    s === 'IN_PROGRESS' ? 'active' : s === 'PLANNED' ? 'upcoming' : s === 'DONE' ? 'done' : 'all'
+  const activeTab = statusToTab(searchParams.get('status'))
 
   function handleTabChange(tab: Tab) {
-    setActiveTab(tab)
-    if (tab === 'all') {
-      setSearchParams({})
-    } else {
-      setSearchParams({ filter: tab })
-    }
+    const status = tabToStatus[tab]
+    setSearchParams(status ? { status } : {})
   }
   const [deletingTripId, setDeletingTripId] = useState<string | null>(null)
   const deletingTrip = trips.find((t) => t.id === deletingTripId) ?? null
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const stats = useMemo(() => {
     const active = trips.filter((t) => t.status === TripStatus.IN_PROGRESS).length
@@ -101,6 +111,21 @@ export default function TripListPage() {
     }
   }
 
+  async function handleDeleteTrip() {
+    if (!deletingTrip) return
+    setDeleteError('')
+    setDeleting(true)
+    try {
+      await deleteTrip(deletingTrip.id).unwrap()
+      setDeletingTripId(null)
+    } catch (err: unknown) {
+      const message = (err as { data?: { message?: string } })?.data?.message
+      setDeleteError(typeof message === 'string' ? message : t('trips.failedDelete'))
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   if (isLoading) {
     return <div className="p-8 text-gray-400">{t('common.loading')}</div>
   }
@@ -114,52 +139,55 @@ export default function TripListPage() {
 
   return (
     <div className="p-8">
-      <header className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-extrabold text-navy-900 tracking-tight">
-            {t('trips.title')}
-          </h1>
-          <p className="text-gray-600 mt-1.5">
-            {trips.length === 0
-              ? t('trips.noTripsHeader')
-              : t('trips.subtitle', { count: trips.length })}
-          </p>
-        </div>
-        <Button className="gap-2 px-6 shadow-glow" size="lg" onClick={() => setShowForm(true)}>
-          <Plus size={20} />
-          {t('trips.newTrip')}
-        </Button>
-      </header>
+      <PageHeader
+        className="mb-8"
+        title={t('trips.title')}
+        subtitle={
+          trips.length === 0
+            ? t('trips.noTripsHeader')
+            : t('trips.subtitle', { count: trips.length })
+        }
+        actions={
+          <Button className="gap-2 px-6 shadow-glow" size="lg" onClick={() => setShowForm(true)}>
+            <Plus size={20} />
+            {t('trips.newTrip')}
+          </Button>
+        }
+      />
 
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-6 mb-10">
-        <StatCard
+        <MetricCard
           label={t('trips.totalTrips')}
           value={stats.total}
           icon={MapPin}
           color="text-primary-600"
           bg="bg-primary-50"
+          onClick={() => handleTabChange('all')}
         />
-        <StatCard
+        <MetricCard
           label={t('trips.activeNow')}
           value={stats.active}
           icon={Activity}
           color="text-warning-500"
           bg="bg-warning-50"
+          onClick={() => handleTabChange('active')}
         />
-        <StatCard
+        <MetricCard
           label={t('trips.upcoming')}
           value={stats.upcoming}
           icon={Clock}
           color="text-[#f59e0b]"
           bg="bg-[#fffbeb]"
+          onClick={() => handleTabChange('upcoming')}
         />
-        <StatCard
+        <MetricCard
           label={t('trips.completed')}
           value={stats.completed}
           icon={CheckCircle2}
           color="text-success-600"
           bg="bg-success-50"
+          onClick={() => handleTabChange('done')}
         />
       </div>
 
@@ -186,71 +214,49 @@ export default function TripListPage() {
       </div>
 
       {/* Trip cards grid */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          {trips.length === 0 ? t('trips.noTrips') : t('trips.noTripsFiltered')}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
-          {filtered.map((trip) => (
-            <TripCard
-              key={trip.id}
-              trip={trip}
-              onClick={() => navigate(`/trips/${trip.id}`)}
-              onDelete={() => setDeletingTripId(trip.id)}
-            />
-          ))}
-        </div>
-      )}
+      <TabTransition tabKey={activeTab}>
+        {filtered.length === 0 ? (
+          <EmptyState
+            icon={Inbox}
+            title={trips.length === 0 ? t('trips.noTrips') : t('trips.noTripsFiltered')}
+            className="py-16"
+          />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+            {filtered.map((trip) => (
+              <TripCard
+                key={trip.id}
+                trip={trip}
+                onClick={() => navigate(`/trips/${trip.id}`)}
+                onDelete={() => setDeletingTripId(trip.id)}
+              />
+            ))}
+          </div>
+        )}
+      </TabTransition>
 
       {/* Delete Trip Confirm Modal */}
-      <AnimatePresence>
-        {deletingTrip && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-gray-950/40 backdrop-blur-[2px] z-[80] flex items-center justify-center p-6"
-            onClick={() => setDeletingTripId(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 8 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 8 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
-            >
-              <div className="w-12 h-12 bg-danger-50 rounded-2xl flex items-center justify-center mb-4">
-                <Trash2 size={20} className="text-danger-600" />
-              </div>
-              <h3 className="font-bold text-gray-950 mb-1">
-                {t('trips.deleteTrip')}
-              </h3>
-              <p className="text-sm text-gray-500 mb-6">
-                <span className="font-semibold">"{deletingTrip.name}"</span>{' '}
-                {t('trips.deleteTripConfirm')}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setDeletingTripId(null)}
-                  className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  onClick={async () => {
-                    await deleteTrip(deletingTrip.id)
-                    setDeletingTripId(null)
-                  }}
-                  className="flex-1 h-10 rounded-xl bg-danger-600 text-white text-sm font-medium hover:bg-danger-600/90 active:scale-[0.98] transition-all"
-                >
-                  {t('common.delete')}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmDialog
+        open={!!deletingTrip}
+        title={t('trips.deleteTrip')}
+        description={
+          deletingTrip ? (
+            <>
+              <span className="font-semibold">"{deletingTrip.name}"</span>{' '}
+              {t('trips.deleteTripConfirm')}
+            </>
+          ) : null
+        }
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        loading={deleting}
+        error={deleteError || null}
+        onConfirm={handleDeleteTrip}
+        onCancel={() => {
+          setDeletingTripId(null)
+          setDeleteError('')
+        }}
+      />
 
       {/* Create Trip Modal */}
       <AnimatePresence>
@@ -353,30 +359,6 @@ export default function TripListPage() {
   )
 }
 
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  color,
-  bg,
-}: {
-  label: string
-  value: number
-  icon: React.ElementType
-  color: string
-  bg: string
-}) {
-  return (
-    <div className="bg-white p-5 rounded-2xl shadow-card ring-1 ring-gray-100 hover:shadow-card-hover hover:-translate-y-0.5 transition-all">
-      <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center mb-4', bg)}>
-        <Icon size={20} className={color} />
-      </div>
-      <p className="text-sm font-medium text-gray-600">{label}</p>
-      <p className="text-3xl font-extrabold text-navy-900 tracking-tight">{value}</p>
-    </div>
-  )
-}
-
 interface TripCardProps {
   trip: {
     id: string
@@ -447,10 +429,10 @@ function TripCard({ trip, onClick, onDelete }: TripCardProps) {
               {t('trips.activeNow')}
             </div>
           ) : highlight === 'approaching' ? (
-            <Badge
-              variant="IN_PROGRESS"
-              label={t('trips.startingSoon', { count: daysToStart })}
-            />
+            <Badge variant="IN_PROGRESS" className="gap-1">
+              <Zap size={11} />
+              {t('trips.startingSoon', { count: daysToStart })}
+            </Badge>
           ) : (
             <Badge variant={status as BadgeVariant} label={t(`status.${status}`)} />
           )}

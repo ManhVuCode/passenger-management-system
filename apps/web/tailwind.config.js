@@ -77,6 +77,19 @@ export default {
         'card-hover': '0 4px 8px rgba(15,23,42,0.06), 0 16px 32px rgba(15,23,42,0.10)',
         glow: '0 0 0 1px rgba(3,105,161,0.08), 0 8px 24px rgba(3,105,161,0.18)',
       },
+      keyframes: {
+        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        shimmer: { '100%': { transform: 'translateX(100%)' } },
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.2s ease-out',
+        'slide-up': 'slideUp 0.2s ease-out',
+        shimmer: 'shimmer 1.5s infinite',
+      },
     },
   },
   plugins: [],

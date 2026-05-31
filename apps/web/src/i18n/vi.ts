@@ -376,6 +376,8 @@ export const vi: TranslationKeys = {
     connecting: 'Đang kết nối…',
     liveFeed: 'Cập nhật trực tiếp',
     waitingUpdates: 'Chờ cập nhật…',
+    totalLabel: 'Tổng',
+    markedStatus: 'Đã ghi nhận {{status}}',
   },
 
   notifications: {

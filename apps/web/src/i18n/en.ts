@@ -374,6 +374,8 @@ export const en = {
     connecting: 'Connecting…',
     liveFeed: 'Live Feed',
     waitingUpdates: 'Waiting for updates…',
+    totalLabel: 'Total',
+    markedStatus: 'Marked {{status}}',
   },
 
   notifications: {

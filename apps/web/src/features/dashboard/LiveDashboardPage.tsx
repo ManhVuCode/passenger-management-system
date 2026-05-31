@@ -11,12 +11,19 @@ import {
 } from '../../hooks/useAttendanceSocket'
 import { Badge, type BadgeVariant } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
+import { MetricCard } from '../../components/ui/metric-card'
+import { EmptyState } from '../../components/ui/empty-state'
+import { TabTransition } from '../../components/ui/tab-transition'
 import {
   ArrowLeft,
   CheckCircle2,
   XCircle,
   Bus as BusIcon,
   MessageSquare,
+  Check,
+  X,
+  Clock,
+  Users,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { RoundStatus } from '@pms/shared'
@@ -81,25 +88,20 @@ export default function LiveDashboardPage() {
                 {trip?.name ?? '…'} — {t('trips.liveDashboard')}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <div
-                  className={cn(
-                    'w-1.5 h-1.5 rounded-full',
-                    isConnected ? 'bg-success-600 animate-pulse' : 'bg-gray-300',
-                  )}
-                />
-                <span
-                  className={cn(
-                    'text-[10px] font-bold uppercase tracking-widest',
-                    isConnected ? 'text-success-600' : 'text-gray-400',
-                  )}
-                >
-                  {isConnected ? t('attendance.liveTitle') : t('attendance.connecting')}
-                </span>
-              </div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                • {isConnected ? t('attendance.connected') : t('attendance.connecting')}
+            <div className="flex items-center gap-1.5">
+              <div
+                className={cn(
+                  'w-1.5 h-1.5 rounded-full',
+                  isConnected ? 'bg-success-600 animate-pulse' : 'bg-gray-300',
+                )}
+              />
+              <span
+                className={cn(
+                  'text-[10px] font-bold uppercase tracking-widest',
+                  isConnected ? 'text-success-600' : 'text-gray-400',
+                )}
+              >
+                {isConnected ? t('attendance.connected') : t('attendance.connecting')}
               </span>
             </div>
           </div>
@@ -176,10 +178,12 @@ export default function LiveDashboardPage() {
 
         <main className="flex-1 p-6 overflow-y-auto bg-gray-50 space-y-6">
           {activeRoundId ? (
-            <RoundBreakdown tripId={tripId!} roundId={activeRoundId} />
+            <TabTransition tabKey={activeRoundId}>
+              <RoundBreakdown tripId={tripId!} roundId={activeRoundId} />
+            </TabTransition>
           ) : (
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-12 text-center text-gray-400">
-              {t('attendance.waitingUpdates')}
+            <div className="bg-white rounded-2xl shadow-card border border-gray-100">
+              <EmptyState icon={Clock} title={t('attendance.waitingUpdates')} />
             </div>
           )}
         </main>
@@ -237,7 +241,7 @@ export default function LiveDashboardPage() {
                       </span>
                     </div>
                     <p className="text-[10px] font-medium text-gray-500 mt-0.5">
-                      Marked {log.status}
+                      {t('attendance.markedStatus', { status: log.status })}
                     </p>
                     <p className="text-[9px] font-bold text-primary-600 uppercase tracking-widest mt-1">
                       Bus {log.busId.slice(0, 6)}
@@ -290,14 +294,49 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
 
   if (Object.keys(byBus).length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-12 text-center text-gray-400 text-sm">
-        {t('allocation.noPassengersAllocated')}
+      <div className="bg-white rounded-2xl shadow-card border border-gray-100">
+        <EmptyState icon={Users} title={t('allocation.noPassengersAllocated')} />
       </div>
     )
   }
 
+  const totalJoined = allocations.filter((a) => a.attendanceRecord?.status === 'JOIN').length
+  const totalAbsent = allocations.filter((a) => a.attendanceRecord?.status === 'ABSENT').length
+  const totalPending = allocations.filter((a) => !a.attendanceRecord).length
+
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MetricCard
+          label={t('attendance.totalLabel')}
+          value={allocations.length}
+          icon={Users}
+          color="text-primary-600"
+          bg="bg-primary-50"
+        />
+        <MetricCard
+          label={t('attendance.join')}
+          value={totalJoined}
+          icon={CheckCircle2}
+          color="text-success-600"
+          bg="bg-success-50"
+        />
+        <MetricCard
+          label={t('attendance.absent')}
+          value={totalAbsent}
+          icon={XCircle}
+          color="text-warning-600"
+          bg="bg-warning-50"
+        />
+        <MetricCard
+          label={t('attendance.pending')}
+          value={totalPending}
+          icon={Clock}
+          color="text-gray-500"
+          bg="bg-gray-100"
+        />
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       {Object.entries(byBus).map(([busId, rows]) => {
         const joined = rows.filter((r) => r.attendanceRecord?.status === 'JOIN').length
         const absent = rows.filter((r) => r.attendanceRecord?.status === 'ABSENT').length
@@ -322,7 +361,7 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
                   <h3 className="text-sm font-bold text-gray-950">
                     {busInfo?.name ?? `Bus ${busId.slice(0, 8)}`}
                   </h3>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  <p className="text-[10px] font-bold text-gray-400 tracking-wide font-mono">
                     {busInfo?.licensePlate ?? busId.slice(0, 8)}
                   </p>
                 </div>
@@ -354,19 +393,25 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     {t('attendance.join')}
                   </span>
-                  <span className="text-sm font-bold text-success-600">✓ {joined}</span>
+                  <span className="text-sm font-bold text-success-600 flex items-center gap-1">
+                    <Check size={13} /> {joined}
+                  </span>
                 </div>
                 <div className="flex flex-col text-center">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     {t('attendance.absent')}
                   </span>
-                  <span className="text-sm font-bold text-danger-600">✗ {absent}</span>
+                  <span className="text-sm font-bold text-danger-600 flex items-center justify-center gap-1">
+                    <X size={13} /> {absent}
+                  </span>
                 </div>
                 <div className="flex flex-col text-right">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     {t('attendance.pending')}
                   </span>
-                  <span className="text-sm font-bold text-gray-400">? {pending}</span>
+                  <span className="text-sm font-bold text-gray-400 flex items-center justify-end gap-1">
+                    <Clock size={13} /> {pending}
+                  </span>
                 </div>
               </div>
 
@@ -413,6 +458,7 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
           </div>
         )
       })}
+      </div>
     </div>
   )
 }

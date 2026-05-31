@@ -529,7 +529,10 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
   const roundId = round.id
   const { data: passengers = [] } = useGetPassengersQuery(tripId)
   const { data: allocations = [], isLoading } = useGetAllocationsByRoundQuery({ tripId, roundId })
-  const { data: roundBuses = [] } = useGetRoundBusesQuery({ tripId, roundId })
+  const { data: roundBuses = [], refetch: refetchRoundBuses } = useGetRoundBusesQuery({
+    tripId,
+    roundId,
+  })
   const { data: buses = [] } = useGetBusesQuery()
   const { data: busManagers = [] } = useGetBusManagersQuery()
 
@@ -546,6 +549,7 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
   const [targetBusId, setTargetBusId] = useState('')
   const [warning, setWarning] = useState<string | null>(null)
   const [addingBusId, setAddingBusId] = useState('')
+  const [driverError, setDriverError] = useState<string | null>(null)
 
   const assignedBusIds = new Set(roundBuses.map((rb) => rb.busId))
   const availableBuses = buses.filter((b) => !assignedBusIds.has(b.id))
@@ -559,6 +563,18 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
     acc[bid].push(a)
     return acc
   }, {})
+
+  // R4: a driver may manage at most one bus per round. Map assigned driver -> bus so the
+  // dropdown can disable a driver already taken on a different bus in this round.
+  const driverBusMap = new Map<string, string>()
+  for (const rb of roundBuses) {
+    const uid = rb.busManagerAssignment?.userId
+    if (uid) driverBusMap.set(uid, rb.busId)
+  }
+  const isDriverTaken = (driverId: string, currentBusId: string) => {
+    const assignedBus = driverBusMap.get(driverId)
+    return assignedBus != null && assignedBus !== currentBusId
+  }
 
   async function handleAssignBus() {
     if (!addingBusId) return
@@ -595,6 +611,21 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
           {t('buses.busesInRound')}
         </p>
 
+        {driverError && (
+          <div className="p-3 bg-danger-50 rounded-xl border border-danger-500/20 flex gap-2">
+            <AlertCircle size={14} className="text-danger-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-[11px] text-danger-600">{driverError}</p>
+              <button
+                onClick={() => setDriverError(null)}
+                className="text-[10px] text-danger-600 underline"
+              >
+                {t('allocation.dismiss')}
+              </button>
+            </div>
+          </div>
+        )}
+
         {roundBuses.length === 0 && (
           <p className="text-xs text-gray-400">{t('buses.noBusesInRound')}</p>
         )}
@@ -624,9 +655,10 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
                   <div className="flex items-center gap-2">
                     <select
                       className={cn(selectClass, 'h-9 text-xs')}
-                      defaultValue=""
+                      value={rb.busManagerAssignment?.userId ?? ''}
                       onChange={async (e) => {
                         if (!e.target.value) return
+                        setDriverError(null)
                         try {
                           await assignDriver({
                             tripId,
@@ -634,19 +666,29 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
                             busId: rb.busId,
                             userId: e.target.value,
                           }).unwrap()
-                        } catch {
-                          alert(t('buses.failedAssignDriver'))
+                        } catch (err: unknown) {
+                          const status = (err as { status?: number }).status
+                          if (status === 409) {
+                            setDriverError(t('buses.driverAlreadyAssigned'))
+                            refetchRoundBuses()
+                          } else {
+                            setDriverError(t('buses.failedAssignDriver'))
+                          }
                         }
                       }}
                     >
                       <option value="" disabled>
                         {t('buses.assignDriver')}
                       </option>
-                      {busManagers.map((bm) => (
-                        <option key={bm.id} value={bm.id}>
-                          {bm.name}
-                        </option>
-                      ))}
+                      {busManagers.map((bm) => {
+                        const taken = isDriverTaken(bm.id, rb.busId)
+                        return (
+                          <option key={bm.id} value={bm.id} disabled={taken}>
+                            {bm.name}
+                            {taken ? ` — ${t('buses.alreadyAssignedShort')}` : ''}
+                          </option>
+                        )
+                      })}
                     </select>
                   </div>
                 )}

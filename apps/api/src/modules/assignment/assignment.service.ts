@@ -78,6 +78,18 @@ export class AssignmentService {
     })
     if (!user) throw new NotFoundException('BusManager not found in this tenant')
 
+    // R4: a BusManager may manage at most ONE bus per round. The tripId/roundId here
+    // are already tenant-validated via the RoundBusAssignment check above, so a direct
+    // lookup is tenant-safe. Reject if this driver is already on a different bus.
+    const otherBus = await this.prisma.busManagerAssignment.findFirst({
+      where: { tripId, roundId, userId: dto.userId, NOT: { busId } },
+    })
+    if (otherBus) {
+      throw new ConflictException(
+        'Driver is already assigned to another bus in this round',
+      )
+    }
+
     return this.prisma.busManagerAssignment.upsert({
       where: { tripId_roundId_busId: { tripId, roundId, busId } },
       update: { userId: dto.userId },

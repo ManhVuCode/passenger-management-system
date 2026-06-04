@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 
-/** Stable keys persisted on NotificationLog.templateKey. */
+/** Các key ổn định được lưu trên NotificationLog.templateKey. */
 export type TemplateKey =
   | 'round.started'
   | 'round.cancelled'
@@ -9,7 +9,7 @@ export type TemplateKey =
 
 export type TemplateLocale = 'vi' | 'en'
 
-/** Variables a template may interpolate. All optional — missing ones render empty. */
+/** Các biến mà template có thể nội suy. Tất cả đều tuỳ chọn — thiếu thì render thành rỗng. */
 export interface TemplateVars {
   passengerName?: string
   tripName?: string
@@ -39,7 +39,7 @@ const TEMPLATES: Record<TemplateKey, Record<TemplateLocale, string>> = {
 
 @Injectable()
 export class TemplateService {
-  /** Render a template to text, substituting {{var}} placeholders. */
+  /** Render template ra text, thay thế các placeholder {{var}}. */
   render(key: TemplateKey, vars: TemplateVars, locale: TemplateLocale = 'vi'): string {
     const template = TEMPLATES[key][locale]
     return template.replace(/\{\{(\w+)\}\}/g, (_, name: string) => {

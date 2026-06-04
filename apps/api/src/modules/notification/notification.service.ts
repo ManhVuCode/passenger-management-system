@@ -29,13 +29,13 @@ export interface NotificationResult {
   recipients: string[]
 }
 
-/** Summary returned by the automated/event-driven send path. */
+/** Tóm tắt trả về bởi nhánh gửi tự động/theo sự kiện. */
 export interface DispatchResult {
   sent: number
   skipped: number
 }
 
-/** C5 — boarding-intent tally for the voice broadcast (per trip / round). */
+/** C5 — thống kê ý định lên xe cho broadcast voice (theo trip / round). */
 export interface VoiceIntentSummary {
   total: number
   answered: number
@@ -88,7 +88,7 @@ export class NotificationService {
     }
   }
 
-  /** Teams = single aggregate card to the staff/ops channel; one log row. */
+  /** Teams = một card tổng hợp duy nhất gửi tới kênh staff/ops; một dòng log. */
   private async sendTeams(ctx: SendContext, recipients: Recipient[]): Promise<NotificationResult> {
     const provider = this.registry.get('TEAMS')
     const result = provider
@@ -117,7 +117,7 @@ export class NotificationService {
     }
   }
 
-  /** In-app/broadcast = single WebSocket alert to drivers in the trip room. */
+  /** In-app/broadcast = một cảnh báo WebSocket duy nhất tới các tài xế trong phòng trip. */
   private async sendInApp(
     ctx: SendContext,
     recipients: Recipient[],
@@ -129,8 +129,8 @@ export class NotificationService {
         tenantId: ctx.tenantId,
         tripId: ctx.tripId,
         roundId: ctx.roundId,
-        // BROADCAST is a legacy alias of IN_APP — persist the canonical channel
-        // so a ?channel=IN_APP history filter matches both.
+        // BROADCAST là tên cũ (alias) của IN_APP — lưu kênh chuẩn (canonical)
+        // để bộ lọc lịch sử ?channel=IN_APP khớp cả hai.
         channel: 'IN_APP',
         trigger: ctx.trigger,
         messageText: ctx.message,
@@ -143,14 +143,14 @@ export class NotificationService {
       sent: recipients.length,
       skipped: 0,
       channel,
-      // The WebSocket broadcast fires regardless of any key — never a dev-mode stub.
+      // Broadcast WebSocket luôn được kích hoạt bất kể key nào — không bao giờ là stub dev-mode.
       devMode: false,
-      // No per-recipient delivery here; report names (never raw phones) like the Teams path.
+      // Không gửi theo từng người nhận ở đây; trả về tên (không bao giờ số điện thoại thô) như nhánh Teams.
       recipients: recipients.map((r) => r.name),
     }
   }
 
-  /** SMS/Voice/Zalo = per-recipient, filtered, queued for async delivery. */
+  /** SMS/Voice/Zalo = theo từng người nhận, có lọc, đưa vào hàng đợi để gửi bất đồng bộ. */
   private async sendPerRecipient(
     ctx: SendContext,
     recipients: Recipient[],
@@ -160,8 +160,8 @@ export class NotificationService {
     let skipped = 0
     let capped = 0
     const accepted: string[] = []
-    // C4 — cost guard: cap voice fan-out so one broadcast can't dial an unbounded
-    // number of paid calls. SMS/Zalo are uncapped.
+    // C4 — kiểm soát chi phí: giới hạn fan-out voice để một broadcast không thể quay
+    // số lượng cuộc gọi tính phí không giới hạn. SMS/Zalo không bị giới hạn.
     const cap = channel === NotificationChannel.VOICE ? this.voiceFanoutCap() : Number.POSITIVE_INFINITY
 
     for (const r of recipients) {
@@ -170,7 +170,7 @@ export class NotificationService {
         capped++
         continue
       }
-      // `||` (not `??`) so an empty-string zaloId also falls back to the phone.
+      // Dùng `||` (không phải `??`) để zaloId là chuỗi rỗng cũng quay về dùng phone.
       const contact = channel === NotificationChannel.ZALO ? (r.zaloId || r.phone) : r.phone
       const reason = this.rejectReason(r, contact, channel)
       if (reason) {
@@ -222,18 +222,18 @@ export class NotificationService {
     return { sent, skipped, channel, devMode: this.isMockMode(channel), recipients: accepted }
   }
 
-  /** C4 — max voice calls per broadcast (cost guard). Env-tunable, default 50. */
+  /** C4 — số cuộc gọi voice tối đa mỗi broadcast (kiểm soát chi phí). Tinh chỉnh qua env, mặc định 50. */
   private voiceFanoutCap(): number {
     const raw = Number(this.config.get<string>('VOICE_MAX_FANOUT'))
     return Number.isFinite(raw) && raw > 0 ? raw : 50
   }
 
-  /** Returns a rejection reason for A5 recipient filtering, or null if valid. */
+  /** Trả về lý do từ chối cho bộ lọc người nhận A5, hoặc null nếu hợp lệ. */
   private rejectReason(r: Recipient, contact: string | null, channel: NotificationChannel): string | null {
     if (r.contactOptOut) return 'OPT_OUT'
     if (!contact) return 'NO_CONTACT'
-    // Zalo accepts a numeric OA user id (longer than a phone) or a phone fallback;
-    // SMS/voice only accept a phone.
+    // Zalo chấp nhận OA user id dạng số (dài hơn số điện thoại) hoặc dùng phone dự phòng;
+    // SMS/voice chỉ chấp nhận số điện thoại.
     const valid =
       channel === NotificationChannel.ZALO
         ? ZALO_ID_RE.test(contact) || PHONE_RE.test(contact)
@@ -247,17 +247,17 @@ export class NotificationService {
         attempts: 3,
         backoff: { type: 'exponential', delay: 2000 },
         removeOnComplete: true,
-        // Evict failed jobs immediately — their payload carries the raw contact, and the
-        // FAILED NotificationLog row already doubles as the dead-letter record.
+        // Xóa các job thất bại ngay lập tức — payload của chúng mang contact thô, và
+        // dòng NotificationLog FAILED đã đóng vai trò bản ghi dead-letter.
         removeOnFail: true,
       })
     } catch (e) {
-      // Redis/queue unavailable — degrade to synchronous send so the demo still works.
+      // Redis/queue không khả dụng — chuyển sang gửi đồng bộ để demo vẫn hoạt động.
       this.logger.warn(`Queue unavailable, sending inline: ${(e as Error).message}`)
       try {
         await this.sender.deliver(job)
       } catch {
-        /* deliver() already marked the log row FAILED */
+        /* deliver() đã đánh dấu dòng log là FAILED */
       }
     }
   }
@@ -273,13 +273,13 @@ export class NotificationService {
   }
 
   /**
-   * B2/B5 — automated, per-passenger templated send for a round.
+   * B2/B5 — gửi tự động theo template cho từng hành khách trong một round.
    *
-   * Used by the event-driven dispatcher and the boarding-reminder scheduler.
-   * Unlike sendToRound it NEVER throws on an empty round (automation must stay
-   * silent), renders a personalized message per passenger, and goes out over SMS
-   * — the canonical passenger reach channel. Caller is responsible for the
-   * autoRules gate; this method always sends. Never writes AttendanceRecord.
+   * Được dùng bởi dispatcher theo sự kiện và scheduler nhắc lên xe (boarding-reminder).
+   * Khác với sendToRound, nó KHÔNG BAO GIỜ ném lỗi khi round rỗng (automation phải im
+   * lặng), render tin nhắn cá nhân hóa cho từng hành khách, và gửi qua SMS — kênh
+   * tiếp cận hành khách chuẩn. Bên gọi chịu trách nhiệm kiểm tra cổng autoRules;
+   * method này luôn gửi. Không bao giờ ghi AttendanceRecord.
    */
   async sendAutomated(params: {
     tripId: string
@@ -368,8 +368,8 @@ export class NotificationService {
     return { sent, skipped }
   }
 
-  /** Dedup guard for repeating triggers (boarding reminder): true if a non-FAILED
-   * row already exists for this recipient + trigger today. */
+  /** Cơ chế chống trùng lặp cho các trigger lặp lại (boarding reminder): true nếu đã
+   * tồn tại một dòng non-FAILED cho recipient + trigger này trong hôm nay. */
   private async alreadySentToday(
     tenantId: string,
     roundId: string,
@@ -389,7 +389,7 @@ export class NotificationService {
     return existing !== null
   }
 
-  /** A8 — notification history for a trip, tenant-scoped (R10). */
+  /** A8 — lịch sử thông báo của một trip, giới hạn theo tenant (R10). */
   async getHistory(
     tripId: string,
     tenantId: string,
@@ -408,13 +408,13 @@ export class NotificationService {
     })
   }
 
-  /** B4 — read the tenant's automation toggles (all-false default). */
+  /** B4 — đọc các công tắc automation của tenant (mặc định tất cả là false). */
   async getAutoRules(tenantId: string): Promise<AutoRules> {
     const config = await this.prisma.tenantNotificationConfig.findUnique({ where: { tenantId } })
     return resolveAutoRules(config?.autoRules)
   }
 
-  /** B4 — merge a partial toggle update over current rules and persist (R10). */
+  /** B4 — gộp một cập nhật công tắc một phần lên rules hiện tại và lưu lại (R10). */
   async updateAutoRules(tenantId: string, patch: Partial<AutoRules>): Promise<AutoRules> {
     const current = await this.getAutoRules(tenantId)
     const next: AutoRules = { ...current, ...patch }
@@ -427,16 +427,16 @@ export class NotificationService {
   }
 
   /**
-   * C3 — record a passenger's IVR press-1 reply as an RSVP INTENT on the voice
-   * log row. Tenant-scoped (R10) and restricted to VOICE rows. This is the
-   * "simulate press-1" hook for the demo and the shape a real IVR webhook would
-   * call. It ONLY updates NotificationLog.rsvp — it NEVER creates or mutates an
-   * AttendanceRecord (domain rules #5/#6: attendance stays with the BusManager).
+   * C3 — ghi phản hồi nhấn phím 1 qua IVR của hành khách thành một RSVP INTENT trên
+   * dòng log voice. Giới hạn theo tenant (R10) và chỉ áp dụng cho các dòng VOICE. Đây là
+   * hook "mô phỏng nhấn phím 1" cho demo và đúng hình dạng mà một webhook IVR thật sẽ
+   * gọi. Nó CHỈ cập nhật NotificationLog.rsvp — KHÔNG BAO GIỜ tạo hay thay đổi một
+   * AttendanceRecord (domain rules #5/#6: điểm danh thuộc về BusManager).
    */
   async setRsvpIntent(tenantId: string, logId: string, rsvp: RsvpIntent): Promise<NotificationLog> {
-    // A press-1 reply can only exist for a call that was actually answered, so
-    // restrict the write to answered rows. This keeps getVoiceIntent consistent
-    // (willBoard + wontBoard can never exceed the answered count).
+    // Phản hồi nhấn phím 1 chỉ có thể tồn tại với cuộc gọi thực sự được nghe máy, nên
+    // chỉ cho phép ghi vào các dòng đã được trả lời. Điều này giữ getVoiceIntent nhất quán
+    // (willBoard + wontBoard không bao giờ vượt quá số lượng answered).
     const log = await this.prisma.notificationLog.findFirst({
       where: { id: logId, tenantId, channel: 'VOICE', status: { in: ['DELIVERED', 'SENT'] } },
       select: { id: true },
@@ -445,7 +445,7 @@ export class NotificationService {
     return this.prisma.notificationLog.update({ where: { id: logId }, data: { rsvp } })
   }
 
-  /** C5 — boarding-intent tally over a trip's (or round's) voice calls (R10). */
+  /** C5 — thống kê ý định lên xe trên các cuộc gọi voice của một trip (hoặc round) (R10). */
   async getVoiceIntent(
     tripId: string,
     tenantId: string,
@@ -471,7 +471,7 @@ export class NotificationService {
       if (r.status === 'NO_ANSWER') s.noAnswer++
       else if (r.status === 'QUEUED') s.pending++
       else if (r.status === 'FAILED' || r.status === 'BOUNCED') s.failed++
-      else s.answered++ // SENT | DELIVERED
+      else s.answered++ // SENT | DELIVERED (đã trả lời)
     }
     return s
   }
@@ -512,7 +512,7 @@ interface SendContext {
   trigger: NotificationTrigger
 }
 
-/** Format a departure time as `HH:mm DD/MM` for templates. */
+/** Định dạng thời gian khởi hành thành `HH:mm DD/MM` cho template. */
 function formatTime(date: Date): string {
   const p = (n: number) => String(n).padStart(2, '0')
   return `${p(date.getHours())}:${p(date.getMinutes())} ${p(date.getDate())}/${p(date.getMonth() + 1)}`

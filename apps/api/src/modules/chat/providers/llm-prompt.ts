@@ -1,10 +1,10 @@
 import type { ChatContext, ChatLang } from '../chat.types'
 
-/** System prompt shared by the LLM providers. The model gets NO tools and NO DB
- *  access — it may only restate facts from the DATA block, which makes counts
- *  un-hallucinable and neutralises prompt-injection (worst case: a mis-phrased
- *  sentence about the caller's own already-authorised data). */
-/** Concise domain primer so the model always has baseline framing of the system. */
+/** System prompt dùng chung cho các LLM provider. Model KHÔNG được cấp tool và KHÔNG có
+ *  quyền truy cập DB — nó chỉ được nhắc lại các sự kiện trong khối DATA, nhờ đó số liệu
+ *  không thể bị bịa (hallucinate) và vô hiệu hóa prompt-injection (trường hợp xấu nhất: một câu
+ *  diễn đạt sai về chính dữ liệu mà người gọi vốn đã được phép xem). */
+/** Đoạn giới thiệu domain ngắn gọn để model luôn có khung hiểu cơ bản về hệ thống. */
 const DOMAIN_PRIMER =
   'Domain: MPMS tracks passenger attendance on multi-leg tourist bus tours, separately per operator (multi-tenant). ' +
   'A tour (Trip) has rounds (legs); a round is PLANNED → IN_PROGRESS → DONE or CANCELLED, and a tour’s status is derived from its rounds. ' +
@@ -24,7 +24,7 @@ export function systemPrompt(lang: ChatLang): string {
   ].join(' ')
 }
 
-/** Render the snapshot as compact, readable text for the prompt. */
+/** Kết xuất bản chụp dữ liệu thành văn bản ngắn gọn, dễ đọc cho prompt. */
 export function serializeContext(ctx: ChatContext): string {
   const c = ctx.statusCounts
   const lines = [

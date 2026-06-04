@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex bg-gray-50">
-      {/* Left hero panel — 60% on desktop, hidden on mobile */}
+      {/* Panel hero bên trái — chiếm 60% trên desktop, ẩn trên mobile */}
       <div
         className="hidden lg:flex relative w-[60%] overflow-hidden"
         style={{
@@ -102,7 +102,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right form panel — 40% on desktop, full width on mobile */}
+      {/* Panel form bên phải — chiếm 40% trên desktop, full width trên mobile */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 bg-gray-50">
         <motion.div
           initial={{ opacity: 0, y: 16 }}

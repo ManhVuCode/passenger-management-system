@@ -6,9 +6,9 @@ import { RoundEvents, type RoundEventPayload } from '../../common/events/round.e
 import { resolveAutoRules, type AutoRuleKey } from './notification.config'
 
 /**
- * B2 — turns committed round-status events into automated passenger notifications.
- * Each handler is gated by the tenant's autoRules (default OFF — automation is
- * strictly opt-in). Pure consumer: it never mutates round/attendance state.
+ * B2 — biến các sự kiện thay đổi round-status đã commit thành thông báo tự động gửi hành khách.
+ * Mỗi handler được kiểm soát bởi autoRules của tenant (mặc định TẮT — tự động hóa
+ * bắt buộc phải bật thủ công). Chỉ là consumer thuần túy: không bao giờ thay đổi state của round/attendance.
  */
 @Injectable()
 export class NotificationDispatcher {
@@ -52,7 +52,7 @@ export class NotificationDispatcher {
         `${trigger} → ${payload.roundId}: sent ${result.sent}, skipped ${result.skipped}`,
       )
     } catch (e) {
-      // Automation must never bubble up into the request that emitted the event.
+      // Tự động hóa không bao giờ được phép lan ngược lên request đã phát ra sự kiện.
       this.logger.error(`${trigger} dispatch failed for ${payload.roundId}: ${(e as Error).message}`)
     }
   }

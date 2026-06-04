@@ -11,11 +11,11 @@ export interface RollCallPassenger {
 }
 
 /**
- * Phase E — TTS roll-call. The system reads each roster name aloud (browser
- * SpeechSynthesis, vi-VN — free, ON-DEVICE so it works offline, and robust in
- * noise) and the BusManager taps Present / Absent / Skip per name. Like the STT
- * mode it NEVER auto-marks: every passenger needs a deliberate driver tap, so
- * attendance authority stays with the BusManager.
+ * Phase E — Điểm danh bằng TTS. Hệ thống đọc to từng tên trong danh sách (dùng
+ * SpeechSynthesis của trình duyệt, vi-VN — miễn phí, chạy ON-DEVICE nên hoạt động
+ * offline và ổn định trong môi trường ồn) còn BusManager bấm Có mặt / Vắng / Bỏ qua
+ * cho từng tên. Giống chế độ STT, nó KHÔNG BAO GIỜ tự động điểm danh: mỗi hành khách
+ * đều cần một thao tác bấm chủ động của tài xế, nhờ đó quyền điểm danh vẫn thuộc về BusManager.
  */
 export default function RollCall({
   passengers,
@@ -41,7 +41,7 @@ export default function RollCall({
     window.speechSynthesis.speak(u)
   }
 
-  // Read the current name aloud whenever the cursor moves.
+  // Đọc to tên hiện tại mỗi khi con trỏ di chuyển.
   useEffect(() => {
     if (active && current) speak(current.name)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -52,7 +52,7 @@ export default function RollCall({
     if (supported) window.speechSynthesis.cancel()
   }
 
-  // Guard: if the roster shrinks (peer refetch) past the cursor, end gracefully.
+  // Bảo vệ: nếu danh sách bị thu nhỏ (do peer refetch) vượt quá con trỏ thì kết thúc một cách an toàn.
   useEffect(() => {
     if (active && !current) stop()
     // eslint-disable-next-line react-hooks/exhaustive-deps

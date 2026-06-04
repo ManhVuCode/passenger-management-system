@@ -1,6 +1,6 @@
 import { IsBoolean, IsOptional } from 'class-validator'
 
-/** Partial update of a tenant's automation toggles — any omitted rule is left as-is. */
+/** Cập nhật một phần các công tắc tự động hóa của tenant — quy tắc nào không truyền sẽ được giữ nguyên. */
 export class UpdateAutoRulesDto {
   @IsOptional()
   @IsBoolean()

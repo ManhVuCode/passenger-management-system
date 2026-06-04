@@ -8,7 +8,7 @@ export interface SectionCardProps extends Omit<React.HTMLAttributes<HTMLDivEleme
   bodyClassName?: string
 }
 
-/** Container card with an optional titled header row and a padded body. */
+/** Thẻ container với hàng tiêu đề tùy chọn và phần thân có padding. */
 export function SectionCard({
   title, subtitle, headerAction, bodyClassName, className, children, ...props
 }: SectionCardProps) {

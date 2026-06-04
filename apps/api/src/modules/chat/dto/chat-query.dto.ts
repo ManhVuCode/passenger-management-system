@@ -1,7 +1,7 @@
 import { IsString, IsNotEmpty, IsOptional, IsIn, MaxLength } from 'class-validator'
 
 export class ChatQueryDto {
-  // Length cap doubles as an abuse / prompt-injection size guard.
+  // Giới hạn độ dài đồng thời cũng là hàng rào kích thước chống lạm dụng / prompt-injection.
   @IsString()
   @IsNotEmpty()
   @MaxLength(500)

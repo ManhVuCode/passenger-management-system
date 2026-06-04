@@ -5,8 +5,8 @@ import { NotificationSender } from './notification.sender'
 import type { SendJobData } from './notification.types'
 
 /**
- * Consumes `send-notification` jobs with concurrency 5 (don't hammer providers).
- * Retry/backoff is configured per-job by the service when it enqueues.
+ * Tiêu thụ các job `send-notification` với concurrency 5 (tránh dồn dập provider).
+ * Retry/backoff được cấu hình theo từng job bởi service khi đưa vào hàng đợi.
  */
 @Processor(NOTIFICATION_QUEUE, { concurrency: 5 })
 export class NotificationProcessor extends WorkerHost {

@@ -4,14 +4,14 @@ import { cn } from '../../lib/utils'
 export interface PageHeaderProps {
   title: React.ReactNode
   subtitle?: React.ReactNode
-  /** Optional element above the title, e.g. a back link or breadcrumb. */
+  /** Phần tử tùy chọn phía trên tiêu đề, ví dụ link quay lại hoặc breadcrumb. */
   leading?: React.ReactNode
-  /** Right-aligned actions, e.g. buttons. */
+  /** Các hành động căn phải, ví dụ các nút. */
   actions?: React.ReactNode
   className?: string
 }
 
-/** Consistent page title block: optional breadcrumb/back + title + subtitle + actions. */
+/** Khối tiêu đề trang đồng nhất: breadcrumb/back tùy chọn + tiêu đề + phụ đề + hành động. */
 export function PageHeader({ title, subtitle, leading, actions, className }: PageHeaderProps) {
   return (
     <div className={cn('flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between', className)}>

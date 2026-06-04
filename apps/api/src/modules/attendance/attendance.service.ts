@@ -68,8 +68,8 @@ export class AttendanceService {
       throw new NotFoundException('Bus not assigned to this round')
     }
 
-    // Domain rule #6: a CANCELLED round's attendance is terminal — block
-    // re-marking so a cascade-cancelled record cannot be reverted to JOIN/ABSENT.
+    // Domain rule #6: điểm danh của một chặng đã CANCELLED là trạng thái cuối — chặn
+    // việc điểm danh lại để bản ghi đã bị huỷ theo cascade không thể quay về JOIN/ABSENT.
     const round = await this.prisma.round.findFirst({
       where: { id: roundId, tripId, tenantId },
       select: { status: true },

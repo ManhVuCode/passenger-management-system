@@ -5,9 +5,9 @@ import { MockChatProvider } from './mock.provider'
 import { OllamaChatProvider } from './ollama.provider'
 
 /**
- * Resolves CHAT_PROVIDER (MOCK | OLLAMA | GEMINI) to a provider, defaulting to
- * MOCK. GEMINI is a documented future drop-in: register a GeminiChatProvider
- * here and it works with no controller/frontend change. Unknown keys → MOCK.
+ * Phân giải CHAT_PROVIDER (MOCK | OLLAMA | GEMINI) thành một provider, mặc định là
+ * MOCK. GEMINI là phương án bổ sung trong tương lai đã được ghi chú: chỉ cần đăng ký một GeminiChatProvider
+ * ở đây là chạy được mà không phải đổi controller/frontend. Key không hợp lệ → MOCK.
  */
 @Injectable()
 export class ChatProviderRegistry {

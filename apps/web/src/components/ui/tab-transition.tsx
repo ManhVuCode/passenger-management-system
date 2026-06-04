@@ -2,16 +2,16 @@ import * as React from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 
 export interface TabTransitionProps {
-  /** Unique key for the active tab/panel. Changing it triggers the transition. */
+  /** Key duy nhất cho tab/panel đang active. Thay đổi nó sẽ kích hoạt hiệu ứng chuyển. */
   tabKey: string | number
   children: React.ReactNode
   className?: string
 }
 
 /**
- * Wraps tab/panel content so switching tabs animates consistently across Web + PWA:
- * opacity 0→1, translateY 8px→0, 200ms ease-out. `mode="wait"` lets the outgoing
- * panel finish exiting before the incoming one enters.
+ * Bọc nội dung tab/panel để việc chuyển tab có hiệu ứng nhất quán trên Web + PWA:
+ * opacity 0→1, translateY 8px→0, 200ms ease-out. `mode="wait"` cho phép panel đi ra
+ * hoàn tất thoát trước khi panel đi vào xuất hiện.
  */
 export function TabTransition({ tabKey, children, className }: TabTransitionProps) {
   return (

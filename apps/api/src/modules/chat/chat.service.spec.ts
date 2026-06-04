@@ -19,7 +19,7 @@ describe('ChatService.buildContext (R10 snapshot, PII-light)', () => {
       },
     ]),
   }
-  // One grouped count query, counts only — no PII source at all.
+  // Một truy vấn đếm gom nhóm, chỉ đếm số lượng — hoàn toàn không có nguồn PII.
   const passengers = { countByTripForTenant: jest.fn().mockResolvedValue({ t1: 2 }) }
   const buses = { countForTenant: jest.fn().mockResolvedValue(3) }
   const registry = { resolve: () => ({ key: 'MOCK', answer: jest.fn().mockResolvedValue({ answer: 'A' }) }) }
@@ -44,12 +44,12 @@ describe('ChatService.buildContext (R10 snapshot, PII-light)', () => {
     expect(hnhp.roundCount).toBe(2)
     expect(hnhp.roundsInProgress).toBe(1)
     const sapa = ctx.trips.find((t) => t.name === 'sapa')!
-    expect(sapa.passengerCount).toBe(0) // not in the count map → 0
+    expect(sapa.passengerCount).toBe(0) // không có trong map đếm → 0
   })
 
   it('NEVER leaks passenger PII into the snapshot', async () => {
     const ctx = await service.buildContext('tenant-1')
-    // No phone/idCard-like long digit run anywhere in the serialized snapshot.
+    // Không có chuỗi số dài kiểu phone/idCard ở bất kỳ đâu trong snapshot đã serialize.
     expect(JSON.stringify(ctx)).not.toMatch(/\d{9,}/)
   })
 

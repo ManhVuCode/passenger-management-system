@@ -1,7 +1,7 @@
 import { IsIn, IsUUID } from 'class-validator'
 
-/** C3 — body for "simulate IVR press-1": record a passenger's boarding intent on
- *  a voice NotificationLog row. Intent only — never writes an AttendanceRecord. */
+/** C3 — body cho "simulate IVR press-1": ghi nhận ý định lên xe của một hành khách vào
+ *  một dòng NotificationLog dạng voice. Chỉ là ý định — không bao giờ ghi AttendanceRecord. */
 export class SimulateRsvpDto {
   @IsUUID()
   logId!: string

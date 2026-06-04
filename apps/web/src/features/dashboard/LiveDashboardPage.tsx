@@ -72,9 +72,9 @@ export default function LiveDashboardPage() {
 
   const [sendBroadcast, { isLoading: broadcasting }] = useSendNotificationMutation()
   const [broadcastResult, setBroadcastResult] = useState<string | null>(null)
-  // C5 — boarding-intent tally for the active round's voice calls. Poll ONLY while
-  // calls are still settling to DELIVERED/NO_ANSWER in the worker (which emits no
-  // cache invalidation), then stop; send/sim mutations refetch via the Notification tag.
+  // C5 — thống kê ý định lên xe cho các cuộc gọi thoại của round đang active. CHỈ poll
+  // trong khi các cuộc gọi còn đang chuyển sang DELIVERED/NO_ANSWER trong worker (worker này
+  // không phát cache invalidation), sau đó dừng; các mutation send/sim refetch qua tag Notification.
   const [pollIntent, setPollIntent] = useState(false)
   const { data: intent } = useGetVoiceIntentQuery(
     { tripId: tripId!, roundId: activeRoundId! },

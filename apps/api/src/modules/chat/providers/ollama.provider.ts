@@ -6,11 +6,11 @@ import { MockChatProvider } from './mock.provider'
 import { serializeContext, systemPrompt } from './llm-prompt'
 
 /**
- * Open-source LLM backend via a local Ollama server (CHAT_PROVIDER=OLLAMA).
- * Calls /api/chat with native fetch (no SDK). The snapshot is stuffed into the
- * system prompt so the model only phrases server-computed numbers. Any failure
- * (no OLLAMA_URL, timeout, non-200, empty) silently falls back to the mock — so
- * the assistant always answers, accurately, even if the model is down.
+ * Backend LLM mã nguồn mở thông qua một server Ollama chạy cục bộ (CHAT_PROVIDER=OLLAMA).
+ * Gọi /api/chat bằng fetch gốc (không dùng SDK). Snapshot được nhồi vào system prompt
+ * để mô hình chỉ diễn đạt thành câu các con số do server tính sẵn. Mọi lỗi
+ * (thiếu OLLAMA_URL, timeout, mã không phải 200, rỗng) đều âm thầm quay về dùng mock — nhờ đó
+ * trợ lý luôn trả lời chính xác, kể cả khi mô hình ngừng hoạt động.
  */
 @Injectable()
 export class OllamaChatProvider implements IChatProvider {

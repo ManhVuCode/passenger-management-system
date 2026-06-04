@@ -44,8 +44,8 @@ export default function TripListPage() {
   const [formError, setFormError] = useState('')
   const [nameError, setNameError] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
-  // Trip.status is DERIVED (R7); the list filters on the status the API returns.
-  // URL is the single source of truth for the active filter (?status=IN_PROGRESS|PLANNED|DONE).
+  // Trip.status được SUY RA (R7); danh sách lọc theo trạng thái mà API trả về.
+  // URL là nguồn dữ liệu duy nhất cho bộ lọc đang áp dụng (?status=IN_PROGRESS|PLANNED|DONE).
   const tabToStatus: Record<Tab, string | null> = {
     all: null,
     active: 'IN_PROGRESS',
@@ -155,7 +155,7 @@ export default function TripListPage() {
         }
       />
 
-      {/* Stats row */}
+      {/* Hàng thống kê */}
       <div className="grid grid-cols-4 gap-6 mb-10">
         <MetricCard
           label={t('trips.totalTrips')}
@@ -191,7 +191,7 @@ export default function TripListPage() {
         />
       </div>
 
-      {/* Filter tabs */}
+      {/* Tab lọc */}
       <div className="flex items-center gap-4 mb-6 border-b border-gray-200">
         {(['all', 'active', 'upcoming', 'done'] as Tab[]).map((tab) => (
           <button
@@ -213,7 +213,7 @@ export default function TripListPage() {
         ))}
       </div>
 
-      {/* Trip cards grid */}
+      {/* Lưới các thẻ chuyến đi */}
       <TabTransition tabKey={activeTab}>
         {filtered.length === 0 ? (
           <EmptyState
@@ -235,7 +235,7 @@ export default function TripListPage() {
         )}
       </TabTransition>
 
-      {/* Delete Trip Confirm Modal */}
+      {/* Modal xác nhận xóa chuyến đi */}
       <ConfirmDialog
         open={!!deletingTrip}
         title={t('trips.deleteTrip')}
@@ -258,7 +258,7 @@ export default function TripListPage() {
         }}
       />
 
-      {/* Create Trip Modal */}
+      {/* Modal tạo chuyến đi */}
       <AnimatePresence>
         {showForm && (
           <>

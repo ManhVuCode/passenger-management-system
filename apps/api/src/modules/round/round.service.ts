@@ -94,8 +94,8 @@ export class RoundService {
       status: dto.status,
     })
 
-    // Side-effect only — emit AFTER the status change is committed. Existing
-    // behavior is untouched; the NotificationDispatcher reacts to these.
+    // Chỉ là side-effect — emit SAU KHI thay đổi status đã được commit. Hành vi
+    // hiện có không bị động đến; NotificationDispatcher sẽ phản ứng với các sự kiện này.
     const event = this.statusEvent(dto.status)
     if (event) {
       const payload: RoundEventPayload = { tenantId, tripId: round.tripId, roundId: id }

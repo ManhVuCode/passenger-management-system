@@ -1,18 +1,18 @@
 import type { ChatLang, KnowledgeChunk } from './chat.types'
 
 interface KnowledgeDoc {
-  /** Extra search terms (both languages) to broaden matching. */
+  /** Các từ khoá tìm kiếm bổ sung (cả hai ngôn ngữ) để mở rộng phạm vi khớp. */
   keywords: string
   title: { en: string; vi: string }
   body: { en: string; vi: string }
 }
 
 /**
- * Small, in-code bilingual knowledge base about how the system works. Kept in
- * code (like the message templates) so it bundles cleanly and needs no fs/DB.
- * Retrieval is lexical (term overlap) — fully local, zero dependency, works in
- * MOCK and OLLAMA tiers alike. A semantic/embedding retriever (e.g. Ollama
- * nomic-embed-text) is a drop-in future upgrade.
+ * Cơ sở tri thức song ngữ nhỏ gọn, viết thẳng trong code, mô tả cách hệ thống hoạt động.
+ * Giữ trong code (giống như các template tin nhắn) để đóng gói gọn gàng và không cần fs/DB.
+ * Việc truy hồi dựa trên từ vựng (độ trùng từ) — hoàn toàn cục bộ, không phụ thuộc gì, chạy được
+ * ở cả tier MOCK và OLLAMA. Một bộ truy hồi ngữ nghĩa/embedding (ví dụ Ollama
+ * nomic-embed-text) có thể thay thế trực tiếp như một bản nâng cấp tương lai.
  */
 const KB: KnowledgeDoc[] = [
   {
@@ -89,8 +89,8 @@ function tokenize(s: string): string[] {
     .filter((w) => w.length >= 2 && !STOP.has(w))
 }
 
-// Pre-index each doc once. Keyword/title terms are "strong" (weight 2); body
-// terms are "weak" (weight 1) so a topical keyword beats an incidental mention.
+// Lập chỉ mục trước cho mỗi doc một lần. Từ trong keyword/title là "mạnh" (trọng số 2); từ trong body
+// là "yếu" (trọng số 1) để một keyword đúng chủ đề thắng một lần xuất hiện tình cờ.
 const INDEX = KB.map((doc) => ({
   doc,
   strong: new Set(tokenize([doc.keywords, doc.title.en, doc.title.vi].join(' '))),
@@ -98,8 +98,8 @@ const INDEX = KB.map((doc) => ({
 }))
 
 /**
- * Lexical retrieval: score each doc by query-token overlap (keyword/title hits
- * weighted higher than body hits), return the top-k localized chunks. Deterministic.
+ * Truy hồi theo từ vựng: chấm điểm mỗi doc theo độ trùng token của truy vấn (lần khớp keyword/title
+ * có trọng số cao hơn lần khớp body), trả về top-k chunk theo ngôn ngữ. Tất định.
  */
 export function retrieveKnowledge(query: string, lang: ChatLang, k = 2): KnowledgeChunk[] {
   const qTokens = Array.from(new Set(tokenize(query)))

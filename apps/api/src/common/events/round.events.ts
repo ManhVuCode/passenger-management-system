@@ -1,7 +1,7 @@
 /**
- * Domain events emitted as side-effects AFTER a round status change is durably
- * committed. RoundService is the only emitter; NotificationDispatcher is the only
- * consumer. Kept in common/ so neither module depends on the other.
+ * Các domain event được phát ra như tác động phụ SAU KHI thay đổi trạng thái round
+ * đã được lưu bền vững. RoundService là nơi phát duy nhất; NotificationDispatcher là
+ * nơi tiêu thụ duy nhất. Đặt trong common/ để hai module không phụ thuộc lẫn nhau.
  */
 export const RoundEvents = {
   STARTED: 'round.started',

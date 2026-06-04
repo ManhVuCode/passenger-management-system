@@ -78,9 +78,9 @@ export class AssignmentService {
     })
     if (!user) throw new NotFoundException('BusManager not found in this tenant')
 
-    // R4: a BusManager may manage at most ONE bus per round. The tripId/roundId here
-    // are already tenant-validated via the RoundBusAssignment check above, so a direct
-    // lookup is tenant-safe. Reject if this driver is already on a different bus.
+    // R4: một BusManager chỉ được quản lý TỐI ĐA MỘT bus mỗi round. tripId/roundId ở đây
+    // đã được xác thực tenant qua bước kiểm tra RoundBusAssignment phía trên, nên truy vấn
+    // trực tiếp là an toàn về tenant. Từ chối nếu tài xế này đã ở một bus khác.
     const otherBus = await this.prisma.busManagerAssignment.findFirst({
       where: { tripId, roundId, userId: dto.userId, NOT: { busId } },
     })

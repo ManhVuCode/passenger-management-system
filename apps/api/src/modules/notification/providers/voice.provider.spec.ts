@@ -8,7 +8,7 @@ describe('VoiceProvider (C — deterministic call simulator)', () => {
   let provider: VoiceProvider
 
   const payload = (to: string) => ({ to, body: 'Xin mời quý khách lên xe', tenantId: 't1' })
-  // Spread-out numbers so the 0–99 outcome bucket is well sampled.
+  // Dải số trải đều để bucket kết quả 0–99 được lấy mẫu tốt.
   const numbers = Array.from({ length: 120 }, (_, i) => `+84${900000000 + i * 1234567}`)
 
   beforeEach(() => {

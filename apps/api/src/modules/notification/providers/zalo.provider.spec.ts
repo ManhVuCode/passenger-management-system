@@ -21,7 +21,7 @@ describe('ZaloProvider (D — ZNS with mock default)', () => {
   })
 
   it('falls back to mock when ZALO_PROVIDER=ZNS but credentials are missing', async () => {
-    const provider = make({ ZALO_PROVIDER: 'ZNS' }) // no token / template id
+    const provider = make({ ZALO_PROVIDER: 'ZNS' }) // chưa có token / template id
     const res = await provider.send(payload)
     expect(mock.send).toHaveBeenCalledWith('ZALO', payload)
     expect(res).toEqual(mockResult)

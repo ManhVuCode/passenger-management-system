@@ -4,7 +4,7 @@ import type { ChatContext, ChatLang, ChatTripSummary } from '../chat.types'
 
 type StatusKey = 'PLANNED' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'
 
-/** Lowercase + strip Vietnamese diacritics so matching is accent-insensitive. */
+/** Chuyển về chữ thường + loại bỏ dấu tiếng Việt để việc so khớp không phân biệt dấu. */
 function normalize(s: string): string {
   return s
     .toLowerCase()
@@ -13,8 +13,8 @@ function normalize(s: string): string {
     .replace(/[đĐ]/g, 'd')
 }
 
-/** Word-bounded so 'account'/'discount' (substring 'count') and 'máy bay'/'may i'
- *  don't false-trigger; the VN counter 'may' is only matched before a noun. */
+/** Giới hạn theo biên từ để 'account'/'discount' (chứa chuỗi con 'count') và 'máy bay'/'may i'
+ *  không kích hoạt nhầm; lượng từ tiếng Việt 'may' chỉ được khớp khi đứng trước một danh từ. */
 function isCountQuestion(q: string): boolean {
   return /(how many|number of|\bcount\b|bao nhieu|may (chuyen|chang|khach|nguoi)|tong so|so luong)/.test(q)
 }
@@ -23,8 +23,8 @@ function wantsList(q: string): boolean {
   return /(list|show|liet ke|danh sach|cac chuyen|tat ca chuyen|all tour)/.test(q)
 }
 
-/** Detect an intended trip status. PLANNED/DONE/CANCELLED phrases are checked
- *  before IN_PROGRESS so "đang lên kế hoạch" (planning) doesn't match "đang". */
+/** Nhận diện trạng thái chuyến mà người dùng muốn hỏi. Các cụm PLANNED/DONE/CANCELLED được kiểm tra
+ *  trước IN_PROGRESS để "đang lên kế hoạch" không bị khớp nhầm với "đang". */
 function detectStatus(q: string): StatusKey | null {
   if (/(planned|upcoming|to come|chua di|chua khoi hanh|sap |sap toi|ke hoach|du kien)/.test(q))
     return 'PLANNED'
@@ -73,12 +73,12 @@ function listTours(trips: ChatTripSummary[], lang: ChatLang, status: StatusKey |
 }
 
 /**
- * Deterministic, offline, accent-insensitive rule-based provider — the default
- * and the fallback for the LLM tiers. Every answer is templated from the
- * server-built snapshot, so counts are exact. A specifically-named trip is
- * resolved BEFORE a bare status word, and an explicit "list" verb beats a
- * status count, so "how many passengers on the planned tour X?" and "list
- * planned tours" route correctly.
+ * Provider dựa trên luật, hoạt động xác định, ngoại tuyến, không phân biệt dấu — là mặc định
+ * và cũng là phương án dự phòng cho các tầng LLM. Mọi câu trả lời đều được dựng từ mẫu dựa trên
+ * snapshot do server tạo, nên các con số đếm là chính xác tuyệt đối. Chuyến được nêu tên cụ thể sẽ
+ * được xử lý TRƯỚC một từ trạng thái đơn lẻ, và động từ "list" tường minh được ưu tiên hơn việc
+ * đếm theo trạng thái, để "how many passengers on the planned tour X?" và "list
+ * planned tours" được định tuyến đúng.
  */
 @Injectable()
 export class MockChatProvider implements IChatProvider {
@@ -99,7 +99,7 @@ export class MockChatProvider implements IChatProvider {
     const wantsMost = /(most|biggest|largest|dong nhat|nhieu nhat|lon nhat|dong khach)/.test(q)
     const trip = matchTrip(q, ctx.trips)
 
-    // 0) Overall summary / digest
+    // 0) Tổng quan / tóm lược chung
     if (wantsSummary) {
       const c = ctx.statusCounts
       const activeRounds = ctx.trips.reduce((s, t) => s + t.roundsInProgress, 0)
@@ -111,7 +111,7 @@ export class MockChatProvider implements IChatProvider {
       }
     }
 
-    // 1) Rounds in progress
+    // 1) Các chặng đang diễn ra
     if (aboutRounds && (status === 'IN_PROGRESS' || /progress|dang/.test(q))) {
       const active = ctx.trips.filter((t) => t.roundsInProgress > 0)
       const total = active.reduce((s, t) => s + t.roundsInProgress, 0)
@@ -120,8 +120,8 @@ export class MockChatProvider implements IChatProvider {
       return { answer: vi ? `Có ${total} chặng đang diễn ra:\n${lines}` : `${total} round(s) in progress:\n${lines}` }
     }
 
-    // 2) A specifically-named trip — passenger count or introduction
-    //    (takes precedence over a bare status word so "passengers on the planned tour X" is correct)
+    // 2) Một chuyến được nêu tên cụ thể — đếm số khách hoặc giới thiệu
+    //    (được ưu tiên hơn một từ trạng thái đơn lẻ để "passengers on the planned tour X" trả về đúng)
     if (trip) {
       if (aboutPassengers && wantsCount) {
         return {
@@ -139,7 +139,7 @@ export class MockChatProvider implements IChatProvider {
       }
     }
 
-    // 3) Next / upcoming tour (earliest-starting planned tour)
+    // 3) Chuyến kế tiếp / sắp tới (chuyến PLANNED khởi hành sớm nhất)
     if (wantsNext && !wantsCount && !list) {
       const upcoming = ctx.trips
         .filter((t) => t.status === 'PLANNED')
@@ -153,7 +153,7 @@ export class MockChatProvider implements IChatProvider {
       }
     }
 
-    // 4) Tour with the most passengers
+    // 4) Chuyến có nhiều khách nhất
     if (wantsMost && (aboutPassengers || aboutTrips)) {
       const top = [...ctx.trips].sort((a, b) => b.passengerCount - a.passengerCount)[0]
       if (!top || top.passengerCount === 0) return { answer: vi ? 'Chưa có chuyến nào có khách.' : 'No tour has passengers yet.' }
@@ -164,55 +164,55 @@ export class MockChatProvider implements IChatProvider {
       }
     }
 
-    // 5) Fleet size
+    // 5) Quy mô đội xe
     if (aboutBuses && !aboutPassengers) {
       return { answer: vi ? `Bạn có ${ctx.busCount} xe trong đội.` : `You have ${ctx.busCount} bus(es) in your fleet.` }
     }
 
-    // 6) Explicit "list" verb — enumerate (filtered by status if one was named)
+    // 6) Động từ "list" tường minh — liệt kê (lọc theo trạng thái nếu có nêu)
     if (list) {
       const subset = status ? ctx.trips.filter((t) => t.status === status) : ctx.trips
       return listTours(subset, lang, status)
     }
 
-    // 4) Total trips
+    // 4) Tổng số chuyến
     if (wantsCount && aboutTrips && /(total|all|tat ca|tong)/.test(q)) {
       return { answer: vi ? `Bạn đang có tổng cộng ${ctx.operatorTripCount} chuyến.` : `You have ${ctx.operatorTripCount} tour(s) in total.` }
     }
 
-    // 5) Status count
+    // 5) Đếm theo trạng thái
     if (status && (wantsCount || aboutTrips)) {
       const n = ctx.statusCounts[status]
       const label = STATUS_LABEL[lang][status]
       return { answer: vi ? `Có ${n} chuyến ${label}.` : `There ${n === 1 ? 'is' : 'are'} ${n} tour(s) ${label}.` }
     }
 
-    // 6) Total passengers across all tours
+    // 6) Tổng số khách trên tất cả các chuyến
     if (aboutPassengers && wantsCount) {
       const total = ctx.trips.reduce((s, t) => s + t.passengerCount, 0)
       return { answer: vi ? `Tổng cộng có ${total} khách trên tất cả các chuyến.` : `There are ${total} passenger(s) across all tours.` }
     }
 
-    // 7) A strong knowledge match → answer a how/what/why question about the system
+    // 7) Khớp mạnh với cơ sở tri thức → trả lời câu hỏi how/what/why về hệ thống
     if (ctx.knowledge && ctx.knowledge[0] && ctx.knowledge[0].score >= 2) {
       return { answer: ctx.knowledge[0].content }
     }
 
-    // 8) Generic "tours" mention → list everything
+    // 8) Đề cập chung chung tới "tours" → liệt kê tất cả
     if (aboutTrips) return listTours(ctx.trips, lang, null)
 
-    // 9) Bare status word → its count
+    // 9) Từ trạng thái đơn lẻ → số lượng tương ứng
     if (status) {
       const n = ctx.statusCounts[status]
       return { answer: vi ? `Có ${n} chuyến ${STATUS_LABEL.vi[status]}.` : `There are ${n} tour(s) ${STATUS_LABEL.en[status]}.` }
     }
 
-    // 10) Weak knowledge match → still better than a generic reply
+    // 10) Khớp yếu với cơ sở tri thức → vẫn tốt hơn một câu trả lời chung chung
     if (ctx.knowledge && ctx.knowledge[0]) {
       return { answer: ctx.knowledge[0].content }
     }
 
-    // 11) Fallback — list what it can do
+    // 11) Phương án dự phòng — liệt kê những gì có thể làm
     return {
       answer: vi
         ? 'Mình có thể trả lời về các chuyến của bạn. Ví dụ: “Có bao nhiêu chuyến đang lên kế hoạch?”, “Liệt kê các chuyến”, “Giới thiệu chuyến hn-hp”, “Chuyến hn-hp có bao nhiêu khách?”.'

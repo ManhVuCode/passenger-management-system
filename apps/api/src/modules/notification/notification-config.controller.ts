@@ -5,7 +5,7 @@ import { Roles } from '../../common/decorators/roles.decorator'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
 import { Role, JwtPayload } from '@pms/shared'
 
-/** B4 — per-tenant automation rules (R10: always scoped to the caller's tenant). */
+/** B4 — quy tắc tự động hóa theo từng tenant (R10: luôn giới hạn trong tenant của người gọi). */
 @Controller('notification-config')
 export class NotificationConfigController {
   constructor(private notificationService: NotificationService) {}

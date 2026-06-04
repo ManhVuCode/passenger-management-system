@@ -9,10 +9,10 @@ const WINDOW_OPEN_MIN = 25
 const WINDOW_CLOSE_MIN = 35
 
 /**
- * B5 — fires a boarding reminder ~30 min before departure. Runs every 5 minutes;
- * the T+25..35 window guarantees each round is caught at least once, and the
- * per-recipient dedup in sendAutomated() keeps overlapping runs from re-sending.
- * Gated per tenant by autoRules.boardingReminder (default off).
+ * B5 — gửi nhắc lên xe khoảng 30 phút trước giờ khởi hành. Chạy mỗi 5 phút;
+ * cửa sổ T+25..35 đảm bảo mỗi round được bắt ít nhất một lần, và việc khử trùng lặp
+ * theo từng người nhận trong sendAutomated() ngăn các lần chạy chồng lấn gửi lại.
+ * Bật/tắt theo từng tenant qua autoRules.boardingReminder (mặc định tắt).
  */
 @Injectable()
 export class BoardingReminderScheduler {
@@ -38,7 +38,7 @@ export class BoardingReminderScheduler {
     })
     if (rounds.length === 0) return
 
-    // One config lookup per tenant, not per round.
+    // Chỉ tra cấu hình một lần cho mỗi tenant, không tra theo từng round.
     const enabledByTenant = new Map<string, boolean>()
     for (const round of rounds) {
       let enabled = enabledByTenant.get(round.tenantId)

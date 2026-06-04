@@ -133,7 +133,7 @@ export default function DashboardLayout() {
         <Outlet />
       </main>
 
-      {/* Tour assistant — Admin only (the /chat endpoint is ADMIN-scoped) */}
+      {/* Trợ lý tour — chỉ dành cho Admin (endpoint /chat giới hạn theo ADMIN) */}
       {role === 'ADMIN' && <ChatWidget />}
     </div>
   )

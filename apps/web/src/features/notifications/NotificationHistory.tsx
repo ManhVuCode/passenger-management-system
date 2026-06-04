@@ -19,8 +19,8 @@ function statusVariant(status: string): BadgeVariant {
 
 export default function NotificationHistory({ tripId }: { tripId: string }) {
   const { t } = useTranslation()
-  // SMS/Voice/Zalo rows start QUEUED and settle to SENT/FAILED later in the worker, which
-  // emits no invalidation. Poll only while a row is still pending, then stop.
+  // Các dòng SMS/Voice/Zalo bắt đầu ở trạng thái QUEUED rồi mới chuyển sang SENT/FAILED sau đó
+  // trong worker, vốn không phát tín hiệu invalidation. Chỉ poll khi còn dòng đang chờ xử lý, sau đó dừng.
   const [poll, setPoll] = useState(false)
   const [simulateRsvp, { isLoading: simulating }] = useSimulateRsvpMutation()
   const { data: logs = [], isLoading } = useGetNotificationHistoryQuery(
@@ -85,8 +85,8 @@ export default function NotificationHistory({ tripId }: { tripId: string }) {
             />
           )
         }
-        // Manual control: simulate a passenger pressing 1 / 2 on an answered call.
-        // Intent only — the backend records it on the log, never on attendance.
+        // Điều khiển thủ công: mô phỏng hành khách bấm 1 / 2 trong một cuộc gọi đã được trả lời.
+        // Chỉ là ý định — backend ghi nhận vào log, không bao giờ ghi vào dữ liệu điểm danh.
         const answered = r.status === 'DELIVERED' || r.status === 'SENT'
         if (r.channel === 'VOICE' && answered && r.roundId) {
           const roundId = r.roundId

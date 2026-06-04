@@ -3,8 +3,8 @@ import { IsEnum, IsString, IsOptional, IsArray, IsUUID, IsNotEmpty } from 'class
 export enum NotificationChannel {
   SMS = 'SMS',
   TEAMS = 'TEAMS',
-  BROADCAST = 'BROADCAST', // legacy alias of IN_APP (existing NotificationPanel)
-  IN_APP = 'IN_APP', // in-app WebSocket alert to drivers
+  BROADCAST = 'BROADCAST', // bí danh cũ của IN_APP (NotificationPanel hiện có)
+  IN_APP = 'IN_APP', // cảnh báo WebSocket trong ứng dụng gửi tới tài xế
   ZALO = 'ZALO',
   VOICE = 'VOICE',
 }

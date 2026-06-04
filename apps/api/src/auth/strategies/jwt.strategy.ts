@@ -26,8 +26,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (user.tenant.status !== 'ACTIVE') {
       throw new UnauthorizedException('Tenant is suspended')
     }
-    // Source role/tenant from the DB, not the token, so a demoted or moved
-    // user cannot keep stale privileges for the remaining life of the token.
+    // Lấy role/tenant từ DB chứ không từ token, để người dùng bị hạ quyền hoặc
+    // chuyển tenant không thể giữ quyền cũ trong suốt thời gian token còn hiệu lực.
     return { userId: user.id, tenantId: user.tenantId, role: user.role }
   }
 }

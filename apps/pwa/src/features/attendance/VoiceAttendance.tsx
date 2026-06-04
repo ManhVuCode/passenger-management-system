@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Mic } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 
-/** Minimal Web Speech API typings (not in the DOM lib) — avoids `any`. */
+/** Khai báo kiểu tối thiểu cho Web Speech API (không có sẵn trong DOM lib) — tránh dùng `any`. */
 interface SpeechAlternative {
   transcript: string
 }
@@ -35,11 +35,12 @@ export interface VoicePassenger {
 }
 
 /**
- * Voice check-in MVP (post-MVP per report §7.7): the BusManager speaks a name,
- * we fuzzy-match it against the bus roster and PROPOSE a JOIN. The driver always
- * confirms — we never auto-mark, so BusManager attendance authority is preserved.
- * Uses the free, on-device browser Web Speech API (vi-VN); a cloud ASR is the
- * documented upgrade path for noisy environments.
+ * Điểm danh bằng giọng nói (MVP, thuộc giai đoạn post-MVP theo báo cáo §7.7): BusManager
+ * đọc một cái tên, hệ thống so khớp gần đúng (fuzzy-match) với danh sách hành khách trên xe
+ * và ĐỀ XUẤT trạng thái JOIN. Tài xế luôn là người xác nhận — ta không bao giờ tự động điểm danh,
+ * nhờ đó quyền điểm danh của BusManager được bảo toàn. Sử dụng Web Speech API miễn phí, chạy
+ * on-device của trình duyệt (vi-VN); dùng ASR đám mây là hướng nâng cấp đã được ghi nhận cho
+ * các môi trường ồn ào.
  */
 export default function VoiceAttendance({
   passengers,
@@ -157,7 +158,7 @@ export default function VoiceAttendance({
                   onClick={() => setMatch(null)}
                   className="h-11 flex-1 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
                 >
-                  {/* reuse common cancel label from shared i18n namespace */}
+                  {/* dùng lại nhãn cancel chung từ namespace i18n dùng chung */}
                   {t('common.cancel')}
                 </button>
                 <button

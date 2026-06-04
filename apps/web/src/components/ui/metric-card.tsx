@@ -7,9 +7,9 @@ export interface MetricCardProps {
   label: string
   value: number | string
   icon: React.ElementType
-  /** text color class for the icon, e.g. 'text-primary-600' */
+  /** class màu chữ cho icon, ví dụ 'text-primary-600' */
   color: string
-  /** background class for the icon tile, e.g. 'bg-primary-50' */
+  /** class nền cho ô icon, ví dụ 'bg-primary-50' */
   bg: string
   trend?: string
   onClick?: () => void
@@ -17,9 +17,9 @@ export interface MetricCardProps {
 }
 
 /**
- * Single large figure + label + icon tile. Used on Dashboard, Trip and Attendance pages.
- * When `onClick` is provided the card becomes a keyboard-accessible button and reveals
- * an ArrowUpRight affordance on hover.
+ * Một con số lớn + nhãn + ô icon. Dùng ở trang Dashboard, Trip và Attendance.
+ * Khi truyền `onClick`, thẻ trở thành nút có thể thao tác bằng bàn phím và hiển thị
+ * gợi ý ArrowUpRight khi hover.
  */
 export function MetricCard({ label, value, icon: Icon, color, bg, trend, onClick, className }: MetricCardProps) {
   const clickable = !!onClick

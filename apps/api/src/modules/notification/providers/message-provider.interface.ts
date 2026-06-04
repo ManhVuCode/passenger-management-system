@@ -1,29 +1,29 @@
 import type { NotificationStatus, RsvpIntent } from '../notification.types'
 
-/** Result of a single send attempt by a channel provider. */
+/** Kết quả của một lần thử gửi bởi provider của một kênh. */
 export interface SendResult {
   success: boolean
   providerId?: string
   error?: string
   costMicro?: number
-  /** Optional terminal status override (e.g. a voice call's NO_ANSWER). Wins over
-   *  the default success→SENT / failure→FAILED mapping in NotificationSender. */
+  /** Ghi đè trạng thái kết thúc tùy chọn (ví dụ NO_ANSWER của một cuộc gọi voice). Ưu tiên hơn
+   *  ánh xạ mặc định success→SENT / failure→FAILED trong NotificationSender. */
   status?: NotificationStatus
-  /** Optional captured IVR intent (voice press-1). Recorded on NotificationLog.rsvp
-   *  only — NEVER written to an AttendanceRecord. */
+  /** Ý định IVR ghi nhận tùy chọn (nhấn phím 1 voice). Chỉ ghi trên NotificationLog.rsvp
+   *  — KHÔNG BAO GIỜ ghi vào một AttendanceRecord. */
   rsvp?: RsvpIntent
 }
 
-/** A rendered message destined for one recipient on one channel. */
+/** Một tin nhắn đã render gửi tới một người nhận trên một kênh. */
 export interface MessagePayload {
-  to: string // phone number or zaloId (or webhook label for staff channels)
-  body: string // rendered message text
+  to: string // số điện thoại hoặc zaloId (hoặc nhãn webhook cho các kênh staff)
+  body: string // nội dung tin nhắn đã render
   tenantId: string
   templateKey?: string
 }
 
-/** Strategy interface: one adapter per delivery channel. */
+/** Interface theo mẫu Strategy: một adapter cho mỗi kênh gửi. */
 export interface IMessageProvider {
-  readonly channel: string // 'SMS' | 'ZALO' | 'VOICE' | 'TEAMS'
+  readonly channel: string // 'SMS' | 'ZALO' | 'VOICE' | 'TEAMS' (kênh gửi)
   send(payload: MessagePayload): Promise<SendResult>
 }

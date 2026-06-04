@@ -14,7 +14,7 @@ export class BusService {
     })
   }
 
-  /** Tenant-scoped fleet size (for aggregate views like the chat snapshot). */
+  /** Số lượng xe theo tenant (dùng cho các báo cáo tổng hợp như chat snapshot). */
   async countForTenant(tenantId: string): Promise<number> {
     return this.prisma.bus.count({ where: { tenantId } })
   }

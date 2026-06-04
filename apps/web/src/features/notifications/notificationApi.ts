@@ -51,7 +51,7 @@ export interface AutoRules {
 
 export type RsvpIntent = 'WILL_BOARD' | 'WONT_BOARD'
 
-/** C5 — boarding-intent tally over a round's voice calls. */
+/** C5 — thống kê ý định lên xe qua các cuộc gọi thoại của một round. */
 export interface VoiceIntentSummary {
   total: number
   answered: number

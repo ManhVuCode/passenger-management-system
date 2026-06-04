@@ -5,11 +5,11 @@ import type { NotificationStatus, RsvpIntent } from '../notification.types'
 import { MockProvider } from './mock.provider'
 
 /**
- * Voice adapter (outbound call). For the thesis demo this is a deterministic
- * call SIMULATOR — it "plays" the Vietnamese TTS script and returns a realistic
- * call result. A real provider (Stringee / Twilio Voice + IVR) drops in behind
- * the same seam: set VOICE_PROVIDER and implement the branch — the dispatcher,
- * queue, sender, and NotificationLog pipeline stay unchanged.
+ * Adapter Voice (cuộc gọi đi). Trong demo đồ án, đây là một BỘ MÔ PHỎNG cuộc gọi mang
+ * tính tất định — nó "phát" kịch bản TTS tiếng Việt và trả về kết quả cuộc gọi như thật.
+ * Một provider thật (Stringee / Twilio Voice + IVR) có thể gắn vào cùng điểm nối đó:
+ * đặt VOICE_PROVIDER và hiện thực nhánh tương ứng — dispatcher, queue, sender và pipeline
+ * NotificationLog giữ nguyên không đổi.
  */
 @Injectable()
 export class VoiceProvider implements IMessageProvider {
@@ -24,23 +24,23 @@ export class VoiceProvider implements IMessageProvider {
   async send(payload: MessagePayload): Promise<SendResult> {
     const backend = (this.config.get<string>('VOICE_PROVIDER') ?? 'MOCK').toUpperCase()
     if (backend !== 'MOCK') {
-      // No real telephony wired for the thesis — fall back to the simulator rather
-      // than silently dropping the call.
+      // Đồ án chưa nối dây tổng đài thật — quay về bộ mô phỏng thay vì âm thầm
+      // bỏ qua cuộc gọi.
       this.logger.warn(`VOICE_PROVIDER=${backend} not implemented; using call simulator`)
     }
     return this.simulateCall(payload)
   }
 
   /**
-   * Deterministic outbound-call simulator: the same phone always yields the same
-   * outcome (reproducible tests + demos). Outcomes:
-   *  - ~8%  BUSY  → transient failure (queue retries, then settles FAILED)
-   *  - ~22% NO_ANSWER → terminal call result (no retry)
-   *  - ~70% ANSWERED (DELIVERED), TTS played; a slice auto-register a press-1 RSVP
-   *         INTENT — recorded on NotificationLog.rsvp ONLY, never as attendance.
+   * Bộ mô phỏng cuộc gọi đi mang tính tất định: cùng một số điện thoại luôn cho ra cùng
+   * kết quả (test + demo tái lập được). Các kết quả:
+   *  - ~8%  BUSY  → lỗi tạm thời (queue retry, sau đó chốt FAILED)
+   *  - ~22% NO_ANSWER → kết quả cuộc gọi cuối cùng (không retry)
+   *  - ~70% ANSWERED (DELIVERED), đã phát TTS; một phần tự đăng ký press-1 RSVP
+   *         INTENT — chỉ ghi vào NotificationLog.rsvp, không bao giờ tính là điểm danh.
    */
   private async simulateCall(payload: MessagePayload): Promise<SendResult> {
-    // Reuse the mock for the "[MOCK VOICE] speaking …" log line + dial delay.
+    // Tái sử dụng mock cho dòng log "[MOCK VOICE] speaking …" + độ trễ quay số.
     await this.mock.send('VOICE', payload)
     const seed = seedFromContact(payload.to)
     const providerId = `mock-voice-${seed}`
@@ -58,14 +58,14 @@ export class VoiceProvider implements IMessageProvider {
   }
 }
 
-/** Stable 0–99 bucket from a contact string (no RNG → reproducible). */
+/** Bucket 0–99 ổn định từ chuỗi liên hệ (không dùng RNG → tái lập được). */
 function seedFromContact(contact: string): number {
   let h = 0
   for (const ch of contact) h = (h * 31 + ch.charCodeAt(0)) >>> 0
   return h % 100
 }
 
-/** Auto-simulated IVR press: a minority of answered calls confirm their intent. */
+/** Mô phỏng tự động phím IVR: một số ít cuộc gọi được nghe máy sẽ xác nhận ý định. */
 function autoRsvp(seed: number): RsvpIntent | null {
   if (seed % 5 === 0) return 'WILL_BOARD'
   if (seed % 5 === 1) return 'WONT_BOARD'

@@ -16,7 +16,7 @@ export interface ConfirmDialogProps {
   variant?: 'danger' | 'default'
 }
 
-/** Confirmation modal for destructive / irreversible actions. Replaces fire-and-forget. */
+/** Hộp thoại xác nhận cho các hành động phá huỷ / không thể hoàn tác. Thay thế kiểu fire-and-forget. */
 export function ConfirmDialog({
   open, title, description, confirmLabel, cancelLabel,
   onConfirm, onCancel, loading = false, error, variant = 'danger',

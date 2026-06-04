@@ -35,8 +35,8 @@ export class PassengerService {
     })
   }
 
-  /** Tenant-scoped passenger count per trip in ONE query (for aggregate views
-   *  like the chat snapshot) — avoids an N+1 of per-trip roster fetches. */
+  /** Đếm số hành khách theo từng trip trong phạm vi tenant chỉ bằng MỘT query (cho các view tổng hợp
+   *  như chat snapshot) — tránh tình trạng N+1 khi fetch danh sách theo từng trip. */
   async countByTripForTenant(tenantId: string): Promise<Record<string, number>> {
     const groups = await this.prisma.tripPassengerAssignment.groupBy({
       by: ['tripId'],

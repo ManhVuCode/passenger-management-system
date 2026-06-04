@@ -1,12 +1,12 @@
-/** Only letters (including Vietnamese), digits, spaces, hyphens. */
+/** Chỉ cho phép chữ cái (bao gồm tiếng Việt), chữ số, khoảng trắng và dấu gạch nối. */
 export const SIMPLE_TEXT_REGEX = /^[a-zA-ZÀ-ỹ0-9\s\-]+$/
 export const SIMPLE_TEXT_MSG = 'Only letters, numbers, spaces, and hyphens (-) are allowed'
 
-/** Exactly 10 digits. */
+/** Đúng 10 chữ số. */
 export const PHONE_REGEX = /^\d{10}$/
 export const PHONE_MSG = 'Phone number must be exactly 10 digits'
 
-/** License plate: letters, digits, hyphen, dot (case-insensitive). */
+/** Biển số xe: chữ cái, chữ số, dấu gạch nối, dấu chấm (không phân biệt hoa thường). */
 export const LICENSE_PLATE_REGEX = /^[A-Z0-9\-\.]+$/i
 export const LICENSE_PLATE_MSG = 'Only letters, numbers, hyphens and dots'
 

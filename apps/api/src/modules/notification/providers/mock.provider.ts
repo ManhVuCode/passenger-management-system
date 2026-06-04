@@ -2,10 +2,10 @@ import { Injectable, Logger } from '@nestjs/common'
 import type { MessagePayload, SendResult } from './message-provider.interface'
 
 /**
- * Default delivery backend used whenever a real provider is not configured
- * (no API keys / NODE_ENV=test). Logs the message and returns success, so the
- * whole pipeline (queue, logging, history UI) is fully demoable with zero
- * paid accounts. Other providers delegate here when in mock mode.
+ * Backend gửi mặc định được dùng mỗi khi chưa cấu hình một provider thật
+ * (không có API keys / NODE_ENV=test). Ghi log tin nhắn và trả về thành công, để
+ * toàn bộ pipeline (queue, logging, history UI) có thể demo đầy đủ mà không cần
+ * tài khoản trả phí nào. Các provider khác ủy quyền về đây khi ở chế độ mock.
  */
 @Injectable()
 export class MockProvider {

@@ -12,7 +12,7 @@ export interface ChatStatusCounts {
 export interface ChatTripSummary {
   name: string
   status: TripStatus | string
-  startDate: string // YYYY-MM-DD
+  startDate: string // định dạng YYYY-MM-DD
   endDate: string
   roundCount: number
   roundsInProgress: number
@@ -21,12 +21,12 @@ export interface ChatTripSummary {
 }
 
 /**
- * PII-light, tenant-scoped snapshot fed to the chat provider. Contains ONLY
- * trip metadata + aggregate counts — NEVER passenger phone/idCard/name/note.
- * Every number here is computed by deterministic tenant-scoped queries so the
- * provider (mock or LLM) only has to phrase it, never compute it.
+ * Bản chụp dữ liệu hạn chế PII, giới hạn theo tenant, đưa vào chat provider. CHỈ chứa
+ * metadata của trip + các số liệu tổng hợp — KHÔNG BAO GIỜ chứa phone/idCard/name/note của hành khách.
+ * Mọi con số ở đây đều được tính bằng các truy vấn tất định giới hạn theo tenant, nên
+ * provider (mock hoặc LLM) chỉ việc diễn đạt lại, không bao giờ phải tự tính.
  */
-/** A retrieved knowledge-base chunk (static domain docs — never live/PII data). */
+/** Một đoạn (chunk) lấy từ knowledge-base (tài liệu domain tĩnh — không bao giờ là dữ liệu live/PII). */
 export interface KnowledgeChunk {
   title: string
   content: string
@@ -38,7 +38,7 @@ export interface ChatContext {
   busCount: number
   statusCounts: ChatStatusCounts
   trips: ChatTripSummary[]
-  /** RAG: relevant domain-knowledge chunks retrieved for the current question. */
+  /** RAG: các đoạn kiến thức domain liên quan được lấy về cho câu hỏi hiện tại. */
   knowledge?: KnowledgeChunk[]
   generatedAt: string
 }

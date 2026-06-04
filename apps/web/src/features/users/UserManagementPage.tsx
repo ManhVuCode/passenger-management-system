@@ -176,7 +176,7 @@ export default function UserManagementPage() {
 
   return (
     <div className="p-8">
-      {/* Header */}
+      {/* Tiêu đề trang */}
       <PageHeader
         className="mb-8"
         title={t('users.title')}
@@ -188,7 +188,7 @@ export default function UserManagementPage() {
         }
       />
 
-      {/* Stats */}
+      {/* Thống kê */}
       <div className="grid grid-cols-3 gap-6 mb-8">
         <MetricCard
           label={t('users.totalUsers')}
@@ -213,7 +213,7 @@ export default function UserManagementPage() {
         />
       </div>
 
-      {/* Search */}
+      {/* Tìm kiếm */}
       <div className="relative mb-4">
         <Search
           size={14}
@@ -229,7 +229,7 @@ export default function UserManagementPage() {
         />
       </div>
 
-      {/* Table */}
+      {/* Bảng */}
       <DataTable
         columns={columns}
         data={filtered}
@@ -242,7 +242,7 @@ export default function UserManagementPage() {
         }
       />
 
-      {/* Create/Edit slide-in panel */}
+      {/* Panel trượt vào để tạo/sửa */}
       <AnimatePresence>
         {isPanelOpen && (
           <>
@@ -294,7 +294,7 @@ export default function UserManagementPage() {
         )}
       </AnimatePresence>
 
-      {/* Delete confirm */}
+      {/* Xác nhận xóa */}
       <ConfirmDialog
         open={!!deletingUser}
         title={t('users.deleteTitle')}
@@ -320,7 +320,7 @@ export default function UserManagementPage() {
   )
 }
 
-// ── UserForm ────────────────────────────────────────────────
+// ── Form người dùng ────────────────────────────────────────────────
 function UserForm({
   user,
   onSubmit,

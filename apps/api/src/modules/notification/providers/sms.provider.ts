@@ -4,9 +4,9 @@ import type { IMessageProvider, MessagePayload, SendResult } from './message-pro
 import { MockProvider } from './mock.provider'
 
 /**
- * SMS adapter. Picks the backend from SMS_PROVIDER (ESMS | TWILIO | MOCK).
- * Defaults to MOCK so dev/thesis demos send nothing real. The real branches
- * are wired but inert until credentials are set per the env.
+ * Adapter SMS. Chọn backend dựa trên SMS_PROVIDER (ESMS | TWILIO | MOCK).
+ * Mặc định là MOCK để bản dev/demo đồ án không gửi gì thật. Các nhánh thật đã
+ * được nối dây nhưng nằm im cho tới khi cấu hình credentials trong env.
  */
 @Injectable()
 export class SmsProvider implements IMessageProvider {

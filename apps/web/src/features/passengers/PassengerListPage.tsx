@@ -102,8 +102,8 @@ export default function PassengerListPage() {
     setEditingId(null)
   }
 
-  // D — simulate an inbound opt-out (SMS STOP / Zalo opt-out). Enforced on send:
-  // an opted-out passenger is skipped with an OPT_OUT log row.
+  // D — mô phỏng việc hành khách chủ động từ chối nhận tin (SMS STOP / Zalo opt-out). Được áp dụng khi gửi:
+  // hành khách đã opt-out sẽ bị bỏ qua kèm một dòng log OPT_OUT.
   function handleToggleOptOut(p: { id: string; contactOptOut?: boolean }) {
     void updatePassenger({ id: p.id, tripId: tripId!, body: { contactOptOut: !p.contactOptOut } })
   }

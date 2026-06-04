@@ -8,8 +8,8 @@ import { retrieveKnowledge } from './chat.knowledge'
 import type { ChatAnswer, ChatContext, ChatLang, ChatStatusCounts, ChatTripSummary } from './chat.types'
 
 function isoDate(d: Date | string): string {
-  // Format from the date's own components (not UTC) so a local-midnight DateTime
-  // can't shift the displayed calendar date by a day.
+  // Định dạng từ chính các thành phần của ngày (không phải UTC) để một DateTime nửa đêm theo giờ địa phương
+  // không làm lệch ngày hiển thị đi một ngày.
   const dt = new Date(d)
   const p = (n: number) => String(n).padStart(2, '0')
   return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`
@@ -27,7 +27,7 @@ export class ChatService {
   async ask(tenantId: string, dto: ChatQueryDto): Promise<ChatAnswer> {
     const lang: ChatLang = dto.lang ?? 'vi'
     const context = await this.buildContext(tenantId)
-    // RAG: attach relevant domain-knowledge chunks (static docs, no PII/live data).
+    // RAG: đính kèm các chunk tri thức nghiệp vụ liên quan (tài liệu tĩnh, không có PII/dữ liệu trực tiếp).
     context.knowledge = retrieveKnowledge(dto.message, lang)
     const provider = this.registry.resolve()
     const { answer } = await provider.answer(dto.message, context, lang)
@@ -35,10 +35,10 @@ export class ChatService {
   }
 
   /**
-   * Build the tenant-scoped (R10), PII-light snapshot. Every number is computed
-   * here by deterministic queries; only aggregate counts + trip metadata are
-   * included — passenger phone/idCard/name/note NEVER enter the snapshot (we use
-   * only roster .length).
+   * Dựng snapshot theo phạm vi tenant (R10), hạn chế PII. Mọi con số đều được tính
+   * tại đây bằng các truy vấn tất định; chỉ gồm số liệu tổng hợp + metadata của chuyến —
+   * phone/idCard/name/note của hành khách KHÔNG BAO GIỜ lọt vào snapshot (ta chỉ dùng
+   * .length của danh sách).
    */
   async buildContext(tenantId: string): Promise<ChatContext> {
     const [trips, passengerCounts, busCount] = await Promise.all([

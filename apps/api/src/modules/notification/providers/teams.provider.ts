@@ -3,13 +3,13 @@ import { ConfigService } from '@nestjs/config'
 import type { IMessageProvider, MessagePayload, SendResult } from './message-provider.interface'
 
 /**
- * Teams adapter (staff/ops channel). Posts a MessageCard to TEAMS_WEBHOOK_URL.
- * Falls back to a dev log when the webhook is unset. Logic moved verbatim from
- * the former NotificationService.sendTeams().
+ * Adapter Teams (kênh nội bộ nhân viên/vận hành). Gửi một MessageCard tới TEAMS_WEBHOOK_URL.
+ * Quay về ghi log dev khi webhook chưa được cấu hình. Logic được chuyển nguyên văn từ
+ * NotificationService.sendTeams() trước đây.
  *
- * Note: this is a STAFF channel, never a passenger-reach channel. The MessageCard
- * webhook is a legacy Microsoft connector (being retired in favour of Workflows /
- * Adaptive Cards) — fine for the thesis demo, flag for production.
+ * Lưu ý: đây là kênh dành cho NHÂN VIÊN, không bao giờ là kênh tiếp cận hành khách. Webhook
+ * MessageCard là connector cũ của Microsoft (đang bị khai tử, thay bằng Workflows /
+ * Adaptive Cards) — đủ dùng cho demo đồ án, cần lưu ý khi lên production.
  */
 @Injectable()
 export class TeamsProvider implements IMessageProvider {

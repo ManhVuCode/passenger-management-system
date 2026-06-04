@@ -34,7 +34,7 @@ describe('MockChatProvider (deterministic intents)', () => {
   it('introduces a specific trip with its facts', async () => {
     const a = await ask('introduce hn-hp')
     expect(a).toContain('hn-hp')
-    expect(a).toContain('14') // passenger count
+    expect(a).toContain('14') // số lượng hành khách
   })
 
   it('answers passenger count for a specific trip', async () => {
@@ -60,7 +60,7 @@ describe('MockChatProvider (deterministic intents)', () => {
   })
 
   it('a named trip beats a status word: passenger count, not status count (#7)', async () => {
-    // "planned" would trigger a status count (2); da-nang has 8 passengers.
+    // "planned" lẽ ra sẽ kích hoạt đếm theo trạng thái (2); da-nang có 8 hành khách.
     const a = await ask('how many passengers on the planned tour da-nang?')
     expect(a).toContain('da-nang')
     expect(a).toContain('8')
@@ -71,7 +71,7 @@ describe('MockChatProvider (deterministic intents)', () => {
     const a = await ask('list planned tours')
     expect(a).toContain('da-nang')
     expect(a).toContain('sapa')
-    expect(a).not.toContain('hn-hp') // hn-hp is IN_PROGRESS, excluded from the planned list
+    expect(a).not.toContain('hn-hp') // hn-hp đang IN_PROGRESS, bị loại khỏi danh sách planned
   })
 
   it('uses retrieved knowledge for a how/what question (RAG)', async () => {
@@ -91,13 +91,13 @@ describe('MockChatProvider (deterministic intents)', () => {
 
   it('gives an overall summary/digest', async () => {
     const a = await ask('give me a summary')
-    expect(a).toContain('3') // total tours
-    expect(a).toContain('22') // total passengers (14+8+0)
-    expect(a).toContain('5') // buses
+    expect(a).toContain('3') // tổng số tour
+    expect(a).toContain('22') // tổng số hành khách (14+8+0)
+    expect(a).toContain('5') // số xe buýt
   })
 
   it('answers the next/upcoming tour (earliest-starting planned)', async () => {
-    expect(await ask('what is the next tour?')).toContain('da-nang') // 2026-07-01 < sapa 2026-08-01
+    expect(await ask('what is the next tour?')).toContain('da-nang') // 2026-07-01 < sapa 2026-08-01 (sapa khởi hành muộn hơn)
   })
 
   it('answers the tour with the most passengers', async () => {

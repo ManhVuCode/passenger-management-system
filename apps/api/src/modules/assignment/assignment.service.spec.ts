@@ -28,7 +28,7 @@ describe('AssignmentService.assignBusManager (R4: 1 driver per round)', () => {
     }).compile()
     service = moduleRef.get(AssignmentService)
 
-    // happy-path defaults
+    // giá trị mặc định cho luồng happy-path
     mockPrisma.roundBusAssignment.findUnique.mockResolvedValue({ tenantId })
     mockPrisma.user.findFirst.mockResolvedValue({ id: 'driver-1', role: Role.BUS_MANAGER })
     mockPrisma.busManagerAssignment.findFirst.mockResolvedValue(null)

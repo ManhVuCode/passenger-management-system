@@ -17,8 +17,8 @@ export const baseApi = createApi({
 
     const result = await rawBaseQuery(args, api, extraOptions)
 
-    // Session expired or revoked (token invalid / tenant suspended): clear auth
-    // so ProtectedRoute redirects to /login instead of leaving broken pages.
+    // Phiên đăng nhập hết hạn hoặc bị thu hồi (token không hợp lệ / tenant bị đình chỉ): xóa trạng thái xác thực
+    // để ProtectedRoute chuyển hướng về /login thay vì để lại các trang bị lỗi.
     if (result.error?.status === 401) {
       api.dispatch(logout())
     }

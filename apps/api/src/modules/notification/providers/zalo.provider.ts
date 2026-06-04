@@ -4,10 +4,10 @@ import type { IMessageProvider, MessagePayload, SendResult } from './message-pro
 import { MockProvider } from './mock.provider'
 
 /**
- * Zalo ZNS adapter. Picks the backend from ZALO_PROVIDER (ZNS | MOCK), defaulting
- * to MOCK so dev/thesis demos send nothing real. The real ZNS branch is wired but
- * inert until a Zalo OA access token + an approved ZNS template id are configured
- * — same shape as SmsProvider's eSMS/Twilio branches.
+ * Adapter cho Zalo ZNS. Chọn backend từ ZALO_PROVIDER (ZNS | MOCK), mặc định
+ * là MOCK để bản dev/demo đồ án không gửi gì thật. Nhánh ZNS thật đã được nối dây
+ * nhưng chưa hoạt động cho tới khi cấu hình access token của Zalo OA + một ZNS template id
+ * đã được duyệt — cùng kiểu với các nhánh eSMS/Twilio của SmsProvider.
  */
 @Injectable()
 export class ZaloProvider implements IMessageProvider {
@@ -26,11 +26,11 @@ export class ZaloProvider implements IMessageProvider {
   }
 
   /**
-   * Real Zalo Notification Service send. ZNS only delivers PRE-APPROVED templates
-   * (no freeform text) to a phone number linked to Zalo, so `template_data` must
-   * match the approved template's params — here the body is mapped to a `content`
-   * param as an illustrative default. Credentials are read from env only (never
-   * committed); missing creds fall back to mock.
+   * Gửi qua Zalo Notification Service thật. ZNS chỉ gửi các template ĐÃ ĐƯỢC DUYỆT
+   * (không cho text tự do) tới một số điện thoại đã liên kết Zalo, nên `template_data` phải
+   * khớp với các tham số của template đã duyệt — ở đây body được ánh xạ sang tham số `content`
+   * như một mặc định minh hoạ. Thông tin xác thực chỉ đọc từ env (không bao giờ
+   * commit); nếu thiếu thông tin xác thực thì quay về dùng mock.
    */
   private async sendZns(payload: MessagePayload): Promise<SendResult> {
     const accessToken = this.config.get<string>('ZALO_OA_ACCESS_TOKEN')

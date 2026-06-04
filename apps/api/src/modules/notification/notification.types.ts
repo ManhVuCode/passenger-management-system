@@ -1,4 +1,4 @@
-/** What caused a notification to be sent. */
+/** Nguyên nhân khiến một thông báo được gửi. */
 export type NotificationTrigger =
   | 'MANUAL'
   | 'ROUND_STARTED'
@@ -6,7 +6,7 @@ export type NotificationTrigger =
   | 'ROUND_COMPLETED'
   | 'BOARDING_REMINDER'
 
-/** Delivery lifecycle status persisted on NotificationLog. */
+/** Trạng thái vòng đời gửi được lưu trên NotificationLog. */
 export type NotificationStatus =
   | 'QUEUED'
   | 'SENT'
@@ -15,26 +15,26 @@ export type NotificationStatus =
   | 'BOUNCED'
   | 'NO_ANSWER'
 
-/** Passenger reply captured by a voice IVR press-1 (or, later, a Zalo button) —
- *  INTENT ONLY. Stored on NotificationLog.rsvp; NEVER written to an
- *  AttendanceRecord (which is JOIN | ABSENT | CANCELLED, set by BusManager/Admin). */
+/** Phản hồi của hành khách ghi nhận qua nhấn phím 1 trên IVR voice (hoặc sau này là nút Zalo) —
+ *  CHỈ LÀ Ý ĐỊNH. Lưu trên NotificationLog.rsvp; KHÔNG BAO GIỜ ghi vào một
+ *  AttendanceRecord (vốn là JOIN | ABSENT | CANCELLED, do BusManager/Admin đặt). */
 export type RsvpIntent = 'WILL_BOARD' | 'WONT_BOARD'
 
-/** Payload carried on a queued send job. `payload.to` is the REAL contact
- * (the NotificationLog row stores only a redacted form). */
+/** Payload mang theo trên một job gửi đã vào hàng đợi. `payload.to` là contact THẬT
+ * (dòng NotificationLog chỉ lưu dạng đã che bớt). */
 export interface SendJobData {
   logId: string
   channel: string
   payload: { to: string; body: string; tenantId: string; templateKey?: string }
 }
 
-/** Phone shape accepted for SMS/voice recipients. */
+/** Định dạng số điện thoại chấp nhận cho người nhận SMS/voice. */
 export const PHONE_RE = /^\+?[0-9]{9,15}$/
 
-/** Zalo OA user-id shape — a numeric id routinely longer than a phone (18-19 digits). */
+/** Định dạng Zalo OA user-id — một id dạng số thường dài hơn số điện thoại (18-19 chữ số). */
 export const ZALO_ID_RE = /^[0-9]{6,32}$/
 
-/** Mask a contact for storage/display — keep only the last 3 chars. */
+/** Che bớt contact để lưu trữ/hiển thị — chỉ giữ lại 3 ký tự cuối. */
 export function redactContact(contact: string): string {
   const trimmed = (contact ?? '').trim()
   if (!trimmed) return ''

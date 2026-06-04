@@ -78,9 +78,9 @@ export default function AttendancePage() {
     onBroadcastAlert: useCallback((msg: string) => setBroadcastAlert(msg), []),
   })
 
-  // Offline marks fail to reach the server but are queued by the service worker
-  // and replayed on reconnect — the offline banner already signals that, so we
-  // stay quiet. Only a real server rejection surfaces an error.
+  // Các lần điểm danh khi offline không gửi đến được server nhưng được service worker
+  // xếp hàng và phát lại khi kết nối trở lại — banner offline đã báo điều đó rồi nên ta
+  // giữ im lặng. Chỉ khi server thực sự từ chối mới hiển thị lỗi.
   function surfaceMarkError(err: unknown) {
     const e = err as { status?: unknown; data?: { message?: string } }
     if (e.status === 'FETCH_ERROR' || e.status === 'TIMEOUT_ERROR') return

@@ -73,9 +73,9 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body: { roundPassengerAssignmentIds: rpaIds, status, ...(note && { note }) },
       }),
-      // Optimistically reflect the mark so the toggle updates instantly — and
-      // stays visible while offline, where the service-worker background-sync
-      // queue replays the request on reconnect.
+      // Cập nhật lạc quan trạng thái điểm danh để nút bật/tắt đổi ngay tức thì — và
+      // vẫn hiển thị khi offline, lúc đó hàng đợi background-sync của service-worker
+      // sẽ phát lại request khi kết nối trở lại.
       async onQueryStarted(
         { tripId, roundId, busId, rpaIds, status, note },
         { dispatch, queryFulfilled },
@@ -101,9 +101,9 @@ export const attendanceApi = baseApi.injectEndpoints({
         try {
           await queryFulfilled
         } catch (err) {
-          // Keep the optimistic state when the request merely failed to reach
-          // the server (offline) — it is queued and will sync. Roll back only
-          // on a real server rejection (e.g. cancelled round).
+          // Giữ nguyên trạng thái lạc quan khi request chỉ đơn thuần không gửi đến được
+          // server (offline) — nó đã được xếp hàng và sẽ đồng bộ sau. Chỉ hoàn tác (roll back)
+          // khi server thực sự từ chối (ví dụ round đã bị huỷ).
           const queryStatus = (err as { error?: { status?: unknown } })?.error?.status
           if (queryStatus !== 'FETCH_ERROR' && queryStatus !== 'TIMEOUT_ERROR') {
             patch.undo()

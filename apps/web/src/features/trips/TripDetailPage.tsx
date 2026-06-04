@@ -585,8 +585,8 @@ function AllocationPanel({ tripId, round }: { tripId: string; round: Round }) {
     return acc
   }, {})
 
-  // R4: a driver may manage at most one bus per round. Map assigned driver -> bus so the
-  // dropdown can disable a driver already taken on a different bus in this round.
+  // R4: mỗi tài xế chỉ được quản lý tối đa một xe trong mỗi round. Ánh xạ tài xế đã gán -> xe để
+  // dropdown có thể vô hiệu hóa tài xế đã được gán cho một xe khác trong round này.
   const driverBusMap = new Map<string, string>()
   for (const rb of roundBuses) {
     const uid = rb.busManagerAssignment?.userId

@@ -11,8 +11,8 @@ interface Msg {
   provider?: string
 }
 
-/** Local slash/keyword commands handled client-side (no API call). Accepts an
- *  optional leading "/" and is accent-insensitive (e.g. "clear", "/clear", "xoá"). */
+/** Các lệnh slash/keyword xử lý phía client (không gọi API). Chấp nhận dấu
+ *  "/" đứng đầu tuỳ chọn và bỏ qua dấu tiếng Việt (vd: "clear", "/clear", "xoá"). */
 function asCommand(raw: string): 'clear' | 'help' | null {
   const c = raw
     .trim()
@@ -25,7 +25,7 @@ function asCommand(raw: string): 'clear' | 'help' | null {
   return null
 }
 
-/** Quick-reply suggestions (i18n keys) — each maps to a known-good intent. */
+/** Gợi ý trả lời nhanh (i18n keys) — mỗi key ứng với một intent đã được kiểm chứng. */
 const SUGGESTIONS = ['chat.s1', 'chat.s2', 'chat.s3', 'chat.s4'] as const
 
 export default function ChatWidget() {
@@ -36,7 +36,7 @@ export default function ChatWidget() {
   const [sendChat, { isLoading }] = useSendChatMutation()
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Seed the greeting the first time the panel opens.
+  // Hiển thị lời chào lần đầu tiên khi panel được mở.
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([{ role: 'assistant', text: t('chat.greeting') }])
@@ -52,7 +52,7 @@ export default function ChatWidget() {
     if (!message || isLoading) return
     setInput('')
 
-    // Local commands — handled client-side, no API call.
+    // Các lệnh cục bộ — xử lý phía client, không gọi API.
     const command = asCommand(message)
     if (command === 'clear') {
       setMessages([{ role: 'assistant', text: t('chat.greeting') }])
@@ -78,7 +78,7 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Collapsed circular FAB */}
+      {/* Nút FAB tròn khi thu gọn */}
       <AnimatePresence>
         {!open && (
           <motion.button
@@ -95,7 +95,7 @@ export default function ChatWidget() {
         )}
       </AnimatePresence>
 
-      {/* Expanded chat panel */}
+      {/* Panel chat khi mở rộng */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -108,7 +108,7 @@ export default function ChatWidget() {
             aria-label={t('chat.title')}
             className="fixed bottom-6 right-6 z-[90] flex h-[70vh] max-h-[560px] w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-card-hover"
           >
-            {/* Header */}
+            {/* Phần đầu */}
             <div className="flex items-center gap-2.5 bg-gradient-to-br from-navy-900 to-navy-800 px-4 py-3 text-white">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 shadow-glow">
                 <Bot size={16} />
@@ -126,7 +126,7 @@ export default function ChatWidget() {
               </button>
             </div>
 
-            {/* Messages */}
+            {/* Danh sách tin nhắn */}
             <div
               ref={scrollRef}
               role="log"
@@ -169,7 +169,7 @@ export default function ChatWidget() {
               )}
             </div>
 
-            {/* Quick-reply suggestions — shown at the greeting; the free-text input always stays */}
+            {/* Gợi ý trả lời nhanh — hiển thị ở màn hình chào; ô nhập tự do luôn được giữ lại */}
             {messages.length <= 1 && !isLoading && (
               <div className="flex flex-wrap gap-1.5 bg-white px-3 pt-2">
                 {SUGGESTIONS.map((key) => (
@@ -184,7 +184,7 @@ export default function ChatWidget() {
               </div>
             )}
 
-            {/* Input */}
+            {/* Ô nhập */}
             <div className="flex items-center gap-2 border-t border-gray-100 bg-white p-3">
               <input
                 value={input}

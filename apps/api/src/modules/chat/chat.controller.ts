@@ -9,7 +9,7 @@ import { Role, JwtPayload } from '@pms/shared'
 export class ChatController {
   constructor(private readonly chat: ChatService) {}
 
-  /** Ask the tour assistant. Tenant-scoped via the JWT (R10); ADMIN only. */
+  /** Hỏi trợ lý tour. Phạm vi theo tenant qua JWT (R10); chỉ ADMIN. */
   @Post()
   @Roles(Role.ADMIN)
   ask(@Body() dto: ChatQueryDto, @CurrentUser() user: JwtPayload) {

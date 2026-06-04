@@ -1,7 +1,7 @@
 /**
- * Shape and safe parsing of TenantNotificationConfig.autoRules (stored as Json).
- * Every rule defaults to false — automation is opt-in, so a missing or malformed
- * config never auto-sends to passengers.
+ * Định nghĩa cấu trúc và phân tích an toàn TenantNotificationConfig.autoRules (lưu dưới dạng Json).
+ * Mọi quy tắc mặc định là false — tự động hóa phải được bật thủ công, nên một
+ * config bị thiếu hoặc sai định dạng sẽ không bao giờ tự động gửi cho hành khách.
  */
 export interface AutoRules {
   roundStarted: boolean
@@ -19,7 +19,7 @@ export const DEFAULT_AUTO_RULES: AutoRules = {
   boardingReminder: false,
 }
 
-/** Coerce an unknown Json value into a fully-populated AutoRules (all-false default). */
+/** Ép một giá trị Json không xác định thành AutoRules đầy đủ (mặc định tất cả là false). */
 export function resolveAutoRules(raw: unknown): AutoRules {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_AUTO_RULES }
   const obj = raw as Record<string, unknown>

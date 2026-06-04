@@ -14,8 +14,8 @@ describe('NotificationService — RSVP intent (C3/C5, intent-only)', () => {
     update: jest.fn(),
     findMany: jest.fn(),
   }
-  // Deliberately NO attendanceRecord on the mock: if the code ever touched it,
-  // these tests would throw — proving rsvp never reaches attendance.
+  // Cố ý KHÔNG có attendanceRecord trong mock: nếu code có chạm vào nó,
+  // các test này sẽ ném lỗi — chứng minh rsvp không bao giờ chạm tới attendance.
   const prisma = { notificationLog } as unknown as PrismaService
 
   const service = new NotificationService(

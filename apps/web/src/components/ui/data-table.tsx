@@ -7,7 +7,7 @@ export interface Column<T> {
   key: string
   header: React.ReactNode
   render: (row: T) => React.ReactNode
-  /** Provide to make the column sortable client-side. */
+  /** Cung cấp để cho phép sắp xếp cột phía client. */
   sortValue?: (row: T) => string | number
   align?: 'left' | 'center' | 'right'
   className?: string
@@ -20,7 +20,7 @@ export interface DataTableProps<T> {
   rowKey: (row: T) => string | number
   loading?: boolean
   skeletonRows?: number
-  /** Rendered when there are no rows (and not loading). */
+  /** Hiển thị khi không có dòng nào (và không trong trạng thái loading). */
   empty?: React.ReactNode
   onRowClick?: (row: T) => void
   className?: string
@@ -28,7 +28,7 @@ export interface DataTableProps<T> {
 
 const alignClass = { left: 'text-left', center: 'text-center', right: 'text-right' } as const
 
-/** Generic table with sticky header, client-side sort, skeleton loading and empty state. */
+/** Bảng dùng chung với header dính (sticky), sắp xếp phía client, skeleton loading và trạng thái rỗng. */
 export function DataTable<T>({
   columns, data, rowKey, loading = false, skeletonRows = 5, empty, onRowClick, className,
 }: DataTableProps<T>) {

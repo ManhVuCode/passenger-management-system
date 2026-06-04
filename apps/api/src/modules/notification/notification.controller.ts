@@ -21,7 +21,7 @@ export class NotificationController {
     return this.notificationService.sendToRound(tripId, roundId, user.tenantId, dto)
   }
 
-  /** C5 — boarding-intent tally for this round's voice calls. */
+  /** C5 — thống kê ý định lên xe từ các cuộc gọi thoại của round này. */
   @Get('intent')
   @Roles(Role.ADMIN)
   intent(
@@ -32,7 +32,7 @@ export class NotificationController {
     return this.notificationService.getVoiceIntent(tripId, user.tenantId, roundId)
   }
 
-  /** C3 — simulate an IVR press-1 reply (intent only, never writes attendance). */
+  /** C3 — mô phỏng phản hồi nhấn phím 1 trên IVR (chỉ ghi ý định, không bao giờ ghi điểm danh). */
   @Post('rsvp')
   @Roles(Role.ADMIN)
   rsvp(@Body() dto: SimulateRsvpDto, @CurrentUser() user: JwtPayload) {

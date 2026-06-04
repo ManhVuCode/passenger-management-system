@@ -6,9 +6,9 @@ import { VoiceProvider } from './voice.provider'
 import { ZaloProvider } from './zalo.provider'
 
 /**
- * Resolves a channel string to its provider. IN_APP/BROADCAST are NOT here —
- * those are an in-app WebSocket alert handled directly by NotificationService
- * (the gateway), not a per-recipient outbound provider.
+ * Phân giải chuỗi channel thành provider tương ứng. IN_APP/BROADCAST KHÔNG nằm ở đây —
+ * đó là cảnh báo WebSocket trong ứng dụng do NotificationService (gateway) xử lý trực
+ * tiếp, không phải provider gửi ra theo từng người nhận.
  */
 @Injectable()
 export class ProviderRegistry {

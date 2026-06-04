@@ -77,9 +77,9 @@ export class AttendanceGateway implements OnGatewayConnection, OnGatewayDisconne
       return { error: 'Unauthorized' }
     }
 
-    // Enforce tenant isolation (domain rule #10): only join a trip room when
-    // the trip belongs to the connected user's tenant. Without this, any
-    // authenticated user could subscribe to another tenant's live feed.
+    // Bắt buộc cô lập tenant (domain rule #10): chỉ cho tham gia phòng của trip khi
+    // trip thuộc về tenant của người dùng đang kết nối. Nếu thiếu, bất kỳ người dùng
+    // đã xác thực nào cũng có thể đăng ký nhận luồng dữ liệu trực tiếp của tenant khác.
     const trip = await this.prisma.trip.findFirst({
       where: { id: data.tripId, tenantId: user.tenantId },
       select: { id: true },

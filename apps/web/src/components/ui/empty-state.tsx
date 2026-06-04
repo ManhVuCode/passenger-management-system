@@ -9,7 +9,7 @@ export interface EmptyStateProps {
   className?: string
 }
 
-/** Shown when a list/table is empty: muted icon + message + optional CTA. */
+/** Hiển thị khi danh sách/bảng rỗng: icon mờ + thông báo + CTA tùy chọn. */
 export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
   return (
     <div className={cn('flex flex-col items-center justify-center px-6 py-12 text-center', className)}>

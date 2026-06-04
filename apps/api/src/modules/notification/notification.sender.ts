@@ -4,12 +4,12 @@ import { ProviderRegistry } from './providers/provider.registry'
 import type { SendJobData } from './notification.types'
 
 /**
- * Performs one delivery and records its outcome on the existing NotificationLog
- * row (created as QUEUED by the service). Shared by the BullMQ processor and the
- * synchronous fallback path, so behaviour is identical whether queued or inline.
+ * Thực hiện một lần gửi và ghi lại kết quả lên dòng NotificationLog đã tồn tại
+ * (được service tạo với trạng thái QUEUED). Dùng chung bởi processor BullMQ và
+ * nhánh gửi đồng bộ dự phòng, nên hành vi giống nhau dù qua hàng đợi hay inline.
  *
- * Throws on provider failure so BullMQ retries; the log row is left FAILED, which
- * doubles as the dead-letter record after the final attempt.
+ * Ném lỗi khi provider thất bại để BullMQ retry; dòng log được để ở trạng thái FAILED,
+ * đồng thời đóng vai trò bản ghi dead-letter sau lần thử cuối cùng.
  */
 @Injectable()
 export class NotificationSender {
@@ -32,13 +32,13 @@ export class NotificationSender {
     await this.prisma.notificationLog.update({
       where: { id: data.logId },
       data: {
-        // A provider may report a terminal status (e.g. voice NO_ANSWER); otherwise
-        // fall back to the success→SENT / failure→FAILED default.
+        // Provider có thể báo một trạng thái kết thúc (ví dụ voice NO_ANSWER); nếu không
+        // thì dùng mặc định success→SENT / failure→FAILED.
         status: result.status ?? (result.success ? 'SENT' : 'FAILED'),
         providerId: result.providerId,
         costMicro: result.costMicro,
         errorReason: result.error,
-        // An IVR press-1 reply is intent only — recorded here, never on attendance.
+        // Phản hồi nhấn phím 1 qua IVR chỉ là ý định — ghi tại đây, không bao giờ ghi vào điểm danh.
         ...(result.rsvp ? { rsvp: result.rsvp } : {}),
       },
     })

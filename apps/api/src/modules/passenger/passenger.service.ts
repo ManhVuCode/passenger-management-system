@@ -35,6 +35,17 @@ export class PassengerService {
     })
   }
 
+  /** Tenant-scoped passenger count per trip in ONE query (for aggregate views
+   *  like the chat snapshot) — avoids an N+1 of per-trip roster fetches. */
+  async countByTripForTenant(tenantId: string): Promise<Record<string, number>> {
+    const groups = await this.prisma.tripPassengerAssignment.groupBy({
+      by: ['tripId'],
+      where: { tenantId },
+      _count: { _all: true },
+    })
+    return Object.fromEntries(groups.map((g) => [g.tripId, g._count._all]))
+  }
+
   async findOne(id: string, tenantId: string) {
     const passenger = await this.prisma.tripPassengerAssignment.findFirst({
       where: { id, tenantId },

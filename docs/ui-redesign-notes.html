@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI Redesign — Working Notes (PROMPT_2_UI_REDESIGN_MASTER) | MPMS Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html"><span class="brand-mark">MPMS</span> Docs</a>
+    <nav class="topnav">
+      <a href="index.html">Overview</a>
+      <a href="ui-redesign-notes.html">UI Redesign</a>
+      <a href="feature-plan-comms-automation-voice.html">Comms &amp; Voice Plan</a>
+    </nav>
+  </header>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">On this page</div>
+      <nav class="toc">
+        <ul>
+          <li><a href="#direction-phase-1-locked">Direction (PHASE 1 — LOCKED)</a></li>
+          <li><a href="#locked-requirement-user">LOCKED requirement (user)</a></li>
+          <li><a href="#route-corrections-prompt-s-assumptions-were-wrong">Route corrections (prompt's assumptions were wrong)</a></li>
+          <li><a href="#phase-2-design-system-foundation-done-web-build-clean">PHASE 2 — Design System Foundation ✅ DONE (web build clean)</a></li>
+          <li><a href="#phase-3-page-elevation-in-progress">PHASE 3 — Page elevation (in progress)</a></li>
+          <li><a href="#all-8-web-pages-done-phase-2-foundation-phase-3-pages">ALL 8 WEB PAGES DONE ✅ (PHASE 2 foundation + PHASE 3 pages)</a></li>
+          <li><a href="#not-yet-done-original-prompt-2-scope-beyond-the-8-web-pages">NOT YET DONE (original PROMPT_2 scope beyond the 8 web pages)</a></li>
+          <li><a href="#next-needs-claude-code-restart-so-chrome-devtools-mcp-tools-load">NEXT (needs Claude Code restart so chrome-devtools MCP tools load)</a></li>
+          <li><a href="#constraints-do-not-violate">Constraints (do not violate)</a></li>
+        </ul>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="page-head">
+        <h1 class="page-title">UI Redesign — Working Notes (PROMPT_2_UI_REDESIGN_MASTER)</h1>
+        <p class="page-subtitle">The "Minimal Precision" redesign log — shared UI primitives, the locked tab-transition requirement, and per-page elevation status.</p>
+      </div>
+      <p>Running log for the master frontend UI redesign. Read this + <code>../CLAUDE.md</code> to resume.</p>
+
+      <h2 id="direction-phase-1-locked">Direction (PHASE 1 — LOCKED)</h2>
+      <ul>
+        <li><strong>Option C — Minimal Precision</strong>, adapted: <strong>keep the existing sky/navy brand</strong> (<code>primary #0369A1</code>) as the interactive accent (swapping to indigo would ripple through every component for no gain). Express "minimal precision" via composition, whitespace, defined type rhythm in primitives — not by overriding global <code>fontSize</code>/<code>spacing</code> tokens.</li>
+        <li>App is <strong>light-mode only</strong>; <code>.glass</code>/<code>.glass-dark</code> utils are defined but unused (dormant). Options A/B in the prompt assumed dark/glass — corrected.</li>
+      </ul>
+
+      <h2 id="locked-requirement-user">LOCKED requirement (user)</h2>
+      <ul>
+        <li><strong>Tab transitions</strong> across <strong>Web + PWA</strong>: <code>opacity 0→1, translateY 8px→0, 200ms ease-out</code> via Framer <code>AnimatePresence</code>. Implemented as <code>&lt;TabTransition tabKey=…&gt;</code> (<code>components/ui/tab-transition.tsx</code>). Apply to every tab group: TripDetail (Overview/Rounds/Passengers/Buses/Allocation), PassengerList (list/add/sheet), TripList filter tabs, and any PWA tabs (PWA has none yet — apply if added).</li>
+      </ul>
+
+      <h2 id="route-corrections-prompt-s-assumptions-were-wrong">Route corrections (prompt's assumptions were wrong)</h2>
+      <ul>
+        <li>Live Attendance dashboard = <strong><code>/trips/:id/dashboard</code></strong> (<code>features/dashboard/LiveDashboardPage.tsx</code>), NOT <code>/trips/:id/attendance</code>.</li>
+        <li>No <code>/settings</code> page. Instead <code>/users</code> (UserManagement) + <code>/system</code> (SystemAdmin, SYSTEM_ADMIN only).</li>
+        <li>PWA "Round Status" actions live inside <code>AttendancePage.tsx</code> (<code>ConfirmCompleteModal</code>), not a separate page.</li>
+      </ul>
+
+      <h2 id="phase-2-design-system-foundation-done-web-build-clean">PHASE 2 — Design System Foundation ✅ DONE (web build clean)</h2>
+      <p>New shared primitives in <code>apps/web/src/components/ui/</code>:</p>
+      <ul>
+        <li><code>skeleton.tsx</code> — loading placeholder (animate-pulse)</li>
+        <li><code>metric-card.tsx</code> — extracted from inline <code>StatCard</code> (1:1 API: label/value/icon/color/bg/trend?/onClick?)</li>
+        <li><code>page-header.tsx</code> — title/subtitle/leading/actions</li>
+        <li><code>section-card.tsx</code> — titled container card (note: extends <code>Omit&lt;HTMLAttributes,'title'&gt;</code>)</li>
+        <li><code>empty-state.tsx</code> — icon/title/description/action</li>
+        <li><code>confirm-dialog.tsx</code> — Framer modal for destructive actions (open/title/desc/confirm/cancel/loading/error/variant)</li>
+        <li><code>data-table.tsx</code> — generic <code>&lt;DataTable&lt;T&gt;&gt;</code>: sticky header, client-side sort, skeleton rows, empty slot</li>
+        <li><code>tab-transition.tsx</code> — the locked tab animation</li>
+      </ul>
+      <p>Config: added <code>fade-in</code>/<code>slide-up</code>/<code>shimmer</code> keyframes+animation to BOTH <code>tailwind.config.js</code> (kept byte-identical). No token removals.</p>
+      <p><strong>Not yet wired into pages</strong> — primitives are built but pages still use inline patterns. That swap is PHASE 3.</p>
+
+      <h2 id="phase-3-page-elevation-in-progress">PHASE 3 — Page elevation (in progress)</h2>
+      <p>chrome-devtools MCP is live (run <code>start-chrome-devtools</code> first). Demo login: <code>admin@demo.com</code> / <code>password123</code>. IN_PROGRESS trip for live views: <code>d35a07c8-7ea3-4eeb-9583-dbc6af329cb5</code>.</p>
+      <p>Also fixed: <code>PageHeader</code> h1 bumped to text-3xl (was text-2xl) to avoid downgrading existing pages.</p>
+      <ul>
+        <li>✅ <strong>Dashboard</strong> — StatCards→MetricCard, greeting→PageHeader, 2 info cards→SectionCard, Recent Trips→DataTable (sortable, skeleton, EmptyState). Build+console clean.</li>
+        <li>✅ <strong>TripList</strong> — StatCards→MetricCard, <code>&lt;TabTransition&gt;</code> on All/Active/Upcoming/Done, delete→ConfirmDialog (loading+error), EmptyState, <code>⚡</code> emoji→Zap icon (i18n cleaned en+vi, <code>trips.failedDelete</code> added). Verified live (filter + dialog).</li>
+        <li>✅ <strong>Users</strong> — header→PageHeader, 3 StatCards→MetricCard, table→DataTable&lt;UserItem&gt; (sortable, avatar, YOU badge, role Badge, actions), delete→ConfirmDialog. Build+render clean.</li>
+        <li>✅ <strong>Buses</strong> — PageHeader, EmptyState (w/ Register CTA), plate+capacity as Badge (plate mono), delete→ConfirmDialog. Also PhotoUploadInput: <code>✓</code>→CheckCircle2 + i18n'd "Image loaded" (<code>buses.imageLoaded</code>).</li>
+        <li>✅ <strong>Passengers</strong> — emoji 🔍⚠✓✗→Lucide; window.alert→inline auto-dismiss success banner (stripped <code>✓</code> from importedCount); added delete ConfirmDialog (was fire-and-forget!); EmptyState. KEPT custom table (dynamic per-round attendance cols + inline note edit don't fit DataTable); skipped TabTransition (list/add/sheet are additive panels above a persistent table, not a tab strip).</li>
+        <li>✅ <strong>LiveDashboard (P1)</strong> — hero MetricCard row (Total/Joined/Absent/Pending, round totals); count emoji ✓✗?→Lucide Check/X/Clock; mono plate; TabTransition on round change; EmptyState×2; simplified connection indicator; i18n'd "Marked {status}" (attendance.markedStatus) + attendance.totalLabel. KEPT custom sticky header + bus cards (PageHeader/SectionCard don't fit a compact live toolbar / icon-header card). All WebSocket logic untouched. Verified populated (Round 2, 7 pax).</li>
+        <li>✅ <strong>TripDetail (P2)</strong> — title→text-3xl; Quick Actions→SectionCard; no-rounds→EmptyState (w/ Add Round CTA); bus-assign window.alert→inline dismissible banner (busError state); remove-allocation <code>✕</code>→Lucide X. KEPT custom header (back-arrow-left) + rounds timeline + allocation panel structure (per critic: don't wrap sticky panel in SectionCard); R4 driver-guard preserved.</li>
+        <li>✅ <strong>Login (P5)</strong> — inputs focus ring → ring-2 ring-primary-600/30 (more visible/accessible); error banner rounded-xl px-4 py-3. Auth logic untouched.</li>
+      </ul>
+
+      <h2 id="all-8-web-pages-done-phase-2-foundation-phase-3-pages">ALL 8 WEB PAGES DONE ✅ (PHASE 2 foundation + PHASE 3 pages)</h2>
+      <p>Commits: 6198f40b (foundation + Dashboard/Trips/Users), e393f2c7 (Buses+Passengers), a0a6815f (LiveDashboard), ca07b471 (TripDetail+Login); plus c501d12e (R4 guard). All builds clean, consoles clean, verified live in browser.</p>
+
+      <h2 id="not-yet-done-original-prompt-2-scope-beyond-the-8-web-pages">NOT YET DONE (original PROMPT_2 scope beyond the 8 web pages)</h2>
+      <ul>
+        <li><strong>PHASE 4 — PWA elevation</strong> (apps/pwa): attendance page, home/round list, login — mobile-first, offline-first. NOT started. The shared primitives are web-only; PWA has its own components/ui (badge/button/card/input) — would need primitives ported or built there.</li>
+        <li><strong>PHASE 5 polish</strong> partially done (skeletons on Dashboard/DataTables, EmptyState everywhere, TabTransition). Not done: skeletons on every list, staggered list animations, 404 page.</li>
+        <li><strong>PHASE 6 quality gate</strong>: builds clean ✓; Lighthouse audit (perf/a11y ≥80) via chrome-devtools MCP NOT run; mobile 390x844 emulation NOT run.</li>
+        <li>Remaining emoji in i18n VALUES not on the 8 done pages: <code>●</code> trips.activeNowBadge (unused?), <code>▶</code>/<code>✓</code> rounds.startRound/completeRound, <code>✓</code>/<code>⚡</code> attendance.summary/completeRound/offline/passwordChanged (PWA-shared), <code>🗂</code>/<code>🚌</code> SystemAdmin help (also hardcoded VI). SystemAdminPage (/system) not redesigned (SYSTEM_ADMIN only).</li>
+        <li>New i18n keys this batch: attendance.totalLabel, attendance.markedStatus (en+vi). Note existing attendance.total ('{{count}} total') already exists — don't collide.</li>
+        <li>New i18n keys added: buses.imageLoaded, passengers.deletePassengerTitle/deletePassengerConfirm (en+vi).</li>
+        <li>Fix1 (PROMPT 3): MetricCard is now a clickable button (ArrowUpRight affordance); ?status= filter scheme on trips. Committed: 6198f40b (redesign+fix1), c501d12e (R4 guard).</li>
+        <li>Emoji still in i18n values not yet cleared (note for completeness): <code>●</code> activeNowBadge, <code>▶</code>/<code>✓</code> rounds start/complete, <code>✓</code> attendance.summary/passwordChanged/importedCount, <code>⚡</code> attendance.offline, <code>🗂</code>/<code>🚌</code> SystemAdmin help (also hardcoded VI string). Clear when touching those pages.</li>
+      </ul>
+      <p>Spec workflow output (per-page specs + critic verdicts) archived at: tasks/wd7c13prx.output. Critics flagged: agents hallucinated emoji line numbers (use real audit); keep LiveDashboard round items as buttons (a11y); reuse <code>dashboard.recentTrips</code> key; ConfirmDialog onConfirm wraps async delete.</p>
+
+      <h2 id="next-needs-claude-code-restart-so-chrome-devtools-mcp-tools-load">NEXT (needs Claude Code restart so chrome-devtools MCP tools load)</h2>
+      <ol>
+        <li><strong>Restart Claude Code</strong>, then run <code>start-chrome-devtools</code> (see [[chrome-devtools-mcp-setup]] memory).</li>
+        <li>PHASE 0.1 — capture before/after screenshots of all Web + PWA pages as baselines.</li>
+        <li>PHASE 3 page-by-page (priority order): LiveDashboard → TripDetail → Dashboard → Buses → Login. Swap inline patterns for the new primitives + apply <code>&lt;TabTransition&gt;</code>. Replace 3 stray <code>window.alert()</code> (TripDetail ×2, PassengerList ×1) and emoji icons (<code>✓ ✗ 🚌 ▼</code>) with Lucide.</li>
+        <li>PHASE 4 PWA, PHASE 5 polish (skeletons/empty/error), PHASE 6 quality gate (build clean + Lighthouse ≥80 via MCP).</li>
+      </ol>
+
+      <h2 id="constraints-do-not-violate">Constraints (do not violate)</h2>
+      <p>No business-logic/domain-rule changes · no i18n key deletion (add/update only) · no API/RTK signature changes · no new deps · don't break WebSocket · don't commit on build error · commit only when user asks.</p>
+      <footer class="page-footer">Generated 2026-05-31 from the source Markdown &middot; MPMS thesis docs</footer>
+    </main>
+  </div>
+  <button class="to-top" aria-label="Back to top">&uarr;</button>
+  <script src="assets/docs.js" defer></script>
+</body>
+</html>

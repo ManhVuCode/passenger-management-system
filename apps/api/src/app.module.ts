@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
+import { EventEmitterModule } from '@nestjs/event-emitter'
+import { ScheduleModule } from '@nestjs/schedule'
 import { APP_GUARD } from '@nestjs/core'
 import { PrismaModule } from './prisma/prisma.module'
 import { AuthModule } from './auth/auth.module'
@@ -18,6 +20,8 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { MeModule } from './modules/me/me.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { QueueModule } from './modules/queue/queue.module';
 import { SystemAdminModule } from './modules/system-admin/system-admin.module';
 import { UsersModule } from './modules/users/users.module';
 import { HealthModule } from './health/health.module';
@@ -25,6 +29,8 @@ import { HealthModule } from './health/health.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     TripModule,
@@ -36,7 +42,9 @@ import { HealthModule } from './health/health.module';
     AttendanceModule,
     MeModule,
     GatewayModule,
+    QueueModule,
     NotificationModule,
+    ChatModule,
     SystemAdminModule,
     UsersModule,
     HealthModule,

@@ -21,5 +21,15 @@ services:
       EMQX_DASHBOARD__DEFAULT_PASSWORD: dev123
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
 volumes:
   pg_data:
+  redis_data:

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MPMS Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html"><span class="brand-mark">MPMS</span> Docs</a>
+    <nav class="topnav">
+      <a href="index.html">Overview</a>
+      <a href="ui-redesign-notes.html">UI Redesign</a>
+      <a href="feature-plan-comms-automation-voice.html">Comms &amp; Voice Plan</a>
+      <a href="instruction.html">Hướng dẫn test</a>
+    </nav>
+  </header>
+
+  <main class="landing">
+    <section class="hero">
+      <span class="badge badge-sky">MPMS &middot; Thesis Documentation</span>
+      <h1>Project Documentation</h1>
+      <p>
+        Working notes and forward plans for the multi-tenant tourist-bus passenger
+        attendance system. Rendered from the source Markdown for easy reading in the browser.
+      </p>
+    </section>
+
+    <section class="cards">
+      <a class="doc-card" href="ui-redesign-notes.html">
+        <div class="doc-card-kicker">Frontend &middot; In progress</div>
+        <h2>UI Redesign — Working Notes</h2>
+        <p>
+          The "Minimal Precision" redesign log: shared UI primitives, the locked tab-transition
+          requirement, all eight Admin web pages elevated, and what's still open (PWA, quality gate).
+        </p>
+        <span class="doc-card-go">Open &rarr;</span>
+      </a>
+
+      <a class="doc-card" href="feature-plan-comms-automation-voice.html">
+        <div class="doc-card-kicker">Backend &middot; Planning</div>
+        <h2>Comms, Automation &amp; Voice Plan</h2>
+        <p>
+          A code-grounded plan for automated messaging, real SMS/Zalo delivery, outbound voice
+          calls, and post-MVP voice attendance — with target architecture and a phased roadmap.
+        </p>
+        <span class="doc-card-go">Open &rarr;</span>
+      </a>
+
+      <a class="doc-card" href="instruction.html">
+        <div class="doc-card-kicker">Testing &middot; Phase A &middot; B &middot; C</div>
+        <h2>Hướng dẫn kiểm thử (Test Guide)</h2>
+        <p>
+          Step-by-step manual test guide (vi): notifications &amp; history (A), the event-driven
+          auto-send engine (B), and mock outbound voice calls with press-1 RSVP intent (C) — plus
+          direct API/cURL checks and a demo-data reset.
+        </p>
+        <span class="doc-card-go">Open &rarr;</span>
+      </a>
+    </section>
+  </main>
+
+  <script src="assets/docs.js" defer></script>
+</body>
+</html>

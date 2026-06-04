@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hướng dẫn kiểm thử — Phase A · B · C · D · E · Chatbot | MPMS Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html"><span class="brand-mark">MPMS</span> Docs</a>
+    <nav class="topnav">
+      <a href="index.html">Overview</a>
+      <a href="ui-redesign-notes.html">UI Redesign</a>
+      <a href="feature-plan-comms-automation-voice.html">Comms &amp; Voice Plan</a>
+      <a href="instruction.html">Hướng dẫn test</a>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">Mục lục</div>
+      <nav class="toc">
+        <ul>
+          <li><a href="#chuan-bi">0. Chuẩn bị môi trường</a></li>
+          <li><a href="#tong-quan">1. Tổng quan tính năng đã làm</a></li>
+          <li class="toc-group">Phase A — Thông báo &amp; lịch sử</li>
+          <li><a href="#test-a">2. Test A — Gửi thông báo &amp; Lịch sử</a></li>
+          <li><a href="#test-b">3. Test B — Hàng đợi &amp; Retry (BullMQ)</a></li>
+          <li><a href="#test-c">4. Test C — Lọc người nhận (opt-out)</a></li>
+          <li><a href="#test-d">5. Test D — Nút “Driver Alert” (IN_APP)</a></li>
+          <li><a href="#test-e">6. Test E — Teams (kênh nội bộ)</a></li>
+          <li><a href="#test-f">7. Test F — Kiểm thử API trực tiếp</a></li>
+          <li><a href="#test-g">8. Test G — Điểm danh bằng giọng nói</a></li>
+          <li class="toc-group">Phase B — Gửi tự động</li>
+          <li><a href="#phase-b">9. Phase B — Engine tự động theo sự kiện</a></li>
+          <li class="toc-group">Phase C — Gọi thoại (mock)</li>
+          <li><a href="#phase-c">10. Phase C — Gọi thoại &amp; RSVP “bấm 1”</a></li>
+          <li class="toc-group">Phase D — Zalo ZNS</li>
+          <li><a href="#phase-d">11. Phase D — Zalo ZNS &amp; opt-out</a></li>
+          <li class="toc-group">Chatbot — Trợ lý chuyến đi</li>
+          <li><a href="#chatbot">12. Chatbot — Hỏi đáp về tour + RAG</a></li>
+          <li><a href="#reset">13. Dọn dẹp / reset dữ liệu demo</a></li>
+          <li><a href="#teams-note">14. Gửi tự động qua Teams có hợp lý?</a></li>
+          <li><a href="#chua-lam">15. Trạng thái các tính năng</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <div class="page-head">
+        <h1 class="page-title">Hướng dẫn kiểm thử — Phase A · B · C · D · E · Chatbot</h1>
+        <p class="page-subtitle">Thông báo &amp; lịch sử (A), engine gửi tự động theo sự kiện chặng (B), và gọi thoại ra cho hành khách + RSVP “bấm 1” (C). Tất cả chạy ở chế độ MOCK.</p>
+        <div class="page-meta">
+          <span class="badge badge-amber">Phase A</span>
+          <span class="badge badge-amber">Phase B</span>
+          <span class="badge badge-amber">Phase C</span>
+          <span class="badge badge-amber">Phase D</span>
+          <span class="badge badge-amber">Phase E</span>
+          <span class="badge badge-amber">Chatbot</span>
+          <span class="badge badge-sky">Chế độ MOCK (không gửi thật)</span>
+          <span class="badge badge-gray">Cập nhật 2026-06-04</span>
+        </div>
+      </div>
+
+      <blockquote>
+        Tài liệu này hướng dẫn <strong>kiểm thử thủ công</strong> các tính năng đã hoàn thành ở Phase A.
+        Tất cả các kênh gửi mặc định chạy ở <strong>chế độ MOCK</strong> — hệ thống <em>ghi log + lưu lịch sử</em>
+        nhưng <strong>không gửi SMS/cuộc gọi thật</strong>, nên bạn có thể demo trọn vẹn mà không cần tài khoản nhà cung cấp nào.
+      </blockquote>
+
+      <h2 id="chuan-bi">0. Chuẩn bị môi trường</h2>
+      <p>Cần Docker (PostgreSQL + Redis), API, Web và PWA cùng chạy.</p>
+      <pre><code># 1. Hạ tầng: Postgres + Redis (+ EMQX) — Redis là MỚI ở Phase A
+docker compose up -d
+docker compose ps          # redis phải ở trạng thái Up (cổng 6379)
+
+# 2. API (cổng 3000)
+pnpm --filter api dev      # hoặc: node apps/api/dist/src/main.js
+
+# 3. Web Admin (cổng 5173)
+pnpm --filter web dev
+
+# 4. PWA tài xế (cổng 5174) — cho Test G
+pnpm --filter pwa dev</code></pre>
+      <p>Tài khoản demo (mật khẩu chung <code>password123</code>):</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Vai trò</th><th>Email</th><th>Dùng để</th></tr></thead>
+          <tbody>
+            <tr><td>Admin (Demo Tours)</td><td><code>admin@demo.com</code></td><td>Test A–F trên Web</td></tr>
+            <tr><td>BusManager</td><td>xem <code>accounts.txt</code></td><td>Test G trên PWA</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <blockquote>
+        Dữ liệu demo gợi ý: chuyến <strong>“hn-hp”</strong> (<code>d35a07c8-…</code>) có
+        <strong>Chặng 2</strong> (<code>0dab29fe-…</code>) với <strong>7 hành khách</strong> — dùng chặng này để test gửi.
+      </blockquote>
+
+      <h2 id="tong-quan">1. Tổng quan tính năng đã làm</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Mã</th><th>Tính năng</th><th>Mô tả ngắn</th></tr></thead>
+          <tbody>
+            <tr><td>A1</td><td>Hạ tầng hàng đợi</td><td>Redis + BullMQ (cổng 6379), <code>QueueModule</code></td></tr>
+            <tr><td>A2</td><td>Mô hình dữ liệu</td><td><code>NotificationLog</code>, <code>TenantNotificationConfig</code> + 3 cột mới cho hành khách (<code>zaloId</code>, <code>contactOptOut</code>, <code>channelPref</code>)</td></tr>
+            <tr><td>A3</td><td>Lớp trừu tượng nhà cung cấp</td><td><code>MessageProvider</code>: mock / sms (eSMS, Twilio) / teams / voice / zalo</td></tr>
+            <tr><td>A4</td><td>Ghi log mọi lần gửi</td><td>Vòng đời <code>QUEUED → SENT / FAILED</code></td></tr>
+            <tr><td>A5</td><td>Lọc người nhận</td><td>Bỏ qua số trống / sai định dạng / đã opt-out</td></tr>
+            <tr><td>A6</td><td>Sửa nút “Broadcast Call”</td><td>Nút trên Live Dashboard giờ gọi cảnh báo IN_APP qua WebSocket</td></tr>
+            <tr><td>A7</td><td>Hàng đợi gửi bất đồng bộ</td><td>BullMQ: retry 3 lần (backoff), concurrency 5, dead-letter</td></tr>
+            <tr><td>A8</td><td>Lịch sử thông báo</td><td>API <code>GET /trips/:id/notifications</code> + bảng trong trang Chi tiết chuyến</td></tr>
+            <tr><td>QW4</td><td>Điểm danh bằng giọng nói (PWA)</td><td>Web Speech API + fuzzy match (fuse.js) → tài xế xác nhận</td></tr>
+            <tr><td>E1</td><td>Roll-call đọc tên (PWA · Phase E)</td><td><code>SpeechSynthesis</code> đọc tên <strong>offline</strong>; tài xế chạm Có mặt/Vắng/Bỏ qua từng người; không tự điểm danh</td></tr>
+            <tr><td>B1</td><td>Sự kiện miền (EventEmitter2)</td><td><code>round.started/cancelled/completed</code> phát SAU khi commit (side-effect, không đổi hành vi cũ)</td></tr>
+            <tr><td>B2</td><td>Dispatcher gửi tự động</td><td><code>@OnEvent</code> → kiểm <code>autoRules</code> (opt-in) → gửi mẫu cá nhân hoá; lỗi được nuốt, không ảnh hưởng request</td></tr>
+            <tr><td>B3</td><td>Mẫu tin vi/en</td><td>Biến <code>{{passengerName}} {{tripName}} {{roundName}} {{busPlate}} {{departureTime}}</code></td></tr>
+            <tr><td>B4</td><td>Công tắc theo tenant (UI)</td><td>4 toggle trên trang Chi tiết chuyến → <code>TenantNotificationConfig.autoRules</code> (mặc định TẮT)</td></tr>
+            <tr><td>B5</td><td>Nhắc giờ lên xe (cron)</td><td><code>@Cron(*/5)</code> quét chặng khởi hành T+25..35′, dedup theo ngày</td></tr>
+            <tr><td>C1</td><td>Gọi thoại ra (mock)</td><td><code>VoiceProvider</code> mô phỏng tất định: DELIVERED / NO_ANSWER / BUSY + đọc “TTS”</td></tr>
+            <tr><td>C2</td><td>RSVP “bấm 1” (chỉ ý định)</td><td>Ghi vào <code>NotificationLog.rsvp</code> — <strong>KHÔNG BAO GIỜ</strong> ghi <code>AttendanceRecord</code></td></tr>
+            <tr><td>C3</td><td>Bảng “Ý định lên xe”</td><td>Tally SẼ LÊN / KHÔNG / KO NGHE trên Live Dashboard; nút “Voice call round”</td></tr>
+            <tr><td>C4</td><td>Giới hạn fan-out</td><td><code>VOICE_MAX_FANOUT</code> (mặc định 50) — chặn 1 lượt gọi vượt số tối đa (cost guard)</td></tr>
+            <tr><td>D1</td><td>Kênh Zalo ZNS</td><td><code>ZaloProvider</code> mock + nhánh ZNS thật trơ (<code>ZALO_PROVIDER=ZNS</code> + token OA + template); nút Zalo thay link <code>zalo.me</code> chết</td></tr>
+            <tr><td>D2</td><td>Zalo ID hành khách</td><td>Ô <code>zaloId</code> trong form + badge; gửi ZALO ưu tiên Zalo ID, tự lùi về SĐT</td></tr>
+            <tr><td>D3</td><td>Opt-out (consent)</td><td>Toggle <code>contactOptOut</code> trên hành khách; mọi kênh bỏ qua + ghi <code>OPT_OUT</code></td></tr>
+            <tr><td>CB1</td><td>Chatbot hỏi đáp số liệu</td><td>Widget tròn (Admin); snapshot tenant-scoped → đếm/giới thiệu/tóm tắt/đội xe… chính xác; mock mặc định + Ollama</td></tr>
+            <tr><td>CB2</td><td>Chatbot RAG + lệnh</td><td>KB song ngữ + truy hồi lexical (“hệ thống hoạt động ra sao”); chips gợi ý; lệnh <code>clear</code>/<code>help</code>; ô nhập tự do</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="test-a">2. Test A — Gửi thông báo &amp; Lịch sử (A4, A8)</h2>
+      <ol>
+        <li>Đăng nhập Web bằng <code>admin@demo.com</code>.</li>
+        <li>Vào <strong>Trips → hn-hp</strong>, bấm vào thẻ <strong>Chặng 2</strong> để mở panel phân bổ.</li>
+        <li>Trong khối <strong>“Notify Passengers”</strong>, giữ nội dung mặc định, bấm nút <strong>SMS</strong>.</li>
+        <li>Quan sát thông báo thành công (toast) ngay dưới các nút.</li>
+        <li>Cuộn xuống cuối trang đến mục <strong>“Notification History”</strong>.</li>
+      </ol>
+      <p><strong>Kết quả mong đợi:</strong> bảng hiện <strong>7 dòng</strong>, kênh <code>SMS</code>, nguồn <code>MANUAL</code>,
+      người nhận <em>được che số</em> (vd <code>***786</code>), trạng thái chuyển sang <span class="badge badge-sky">SENT</span> (màu xanh).</p>
+      <p>Kiểm tra log server để thấy MOCK đã “gửi” (số thật chỉ hiện trong log server, KHÔNG lưu vào DB):</p>
+      <pre><code>grep "MOCK SMS" /tmp/api-phaseA.log      # nếu chạy bằng node dist
+# → [MOCK SMS] to=0903226786 "Please board the bus…" tenant=demo-tours</code></pre>
+
+      <h2 id="test-b">3. Test B — Hàng đợi &amp; Retry (A7)</h2>
+      <p>Việc gửi SMS/Voice/Zalo đi qua <strong>hàng đợi BullMQ</strong> (bất đồng bộ). Teams và IN_APP gửi ngay (đồng bộ).</p>
+      <ol>
+        <li>Gửi SMS như Test A rồi <strong>tải lại trang ngay</strong>: bạn có thể bắt gặp vài dòng ở trạng thái
+          <code>QUEUED</code> trước khi chuyển <code>SENT</code> — đó là bằng chứng hàng đợi chạy nền.</li>
+        <li>Kiểm tra Redis đang nhận job:</li>
+      </ol>
+      <pre><code>docker exec -it passenger-management-system-redis-1 redis-cli KEYS 'bull:notification:*'</code></pre>
+      <blockquote>
+        <strong>Retry / dead-letter:</strong> mỗi job thử tối đa <strong>3 lần</strong> (backoff luỹ thừa).
+        Nếu nhà cung cấp lỗi, dòng log giữ trạng thái <code>FAILED</code> kèm <code>errorReason</code> — đó chính là bản ghi dead-letter.
+        Ở chế độ MOCK mọi lần gửi đều thành công nên bạn sẽ thấy <code>SENT</code>.
+      </blockquote>
+
+      <h2 id="test-c">4. Test C — Lọc người nhận / opt-out (A5)</h2>
+      <p>Hệ thống bỏ qua hành khách <strong>không có số điện thoại hợp lệ</strong> hoặc <strong>đã từ chối nhận</strong> (<code>contactOptOut</code>).
+      Phase A chưa có giao diện bật opt-out, nên ta tạo trạng thái này bằng SQL để kiểm thử:</p>
+      <pre><code># Cho 1 hành khách trong Chặng 2 từ chối nhận:
+cd apps/api
+echo "UPDATE \"TripPassengerAssignment\" SET \"contactOptOut\" = true
+      WHERE id IN (SELECT \"tripPassengerAssignmentId\" FROM \"RoundPassengerAssignment\"
+                   WHERE \"roundId\" = '0dab29fe-0e89-4f7c-bc2e-5d4cbe24647d' LIMIT 1);" \
+  | ./node_modules/.bin/prisma db execute --schema prisma/schema.prisma --stdin</code></pre>
+      <p>Gửi lại SMS (Test A). <strong>Kết quả mong đợi:</strong> phản hồi API có <code>sent: 6, skipped: 1</code>,
+      và trong Lịch sử xuất hiện <strong>1 dòng</strong> <span class="badge badge-amber">FAILED</span> với
+      <code>errorReason = OPT_OUT</code> (số trống sẽ là <code>NO_CONTACT</code>).</p>
+      <pre><code># Khôi phục lại sau khi test:
+echo "UPDATE \"TripPassengerAssignment\" SET \"contactOptOut\" = false WHERE \"contactOptOut\" = true;" \
+  | ./node_modules/.bin/prisma db execute --schema prisma/schema.prisma --stdin</code></pre>
+
+      <h2 id="test-d">5. Test D — Nút “Driver Alert” (A6, kênh IN_APP)</h2>
+      <p>Trước đây nút này “chết” (không có <code>onClick</code>). Giờ nó gửi cảnh báo <strong>IN_APP</strong> tới tài xế qua WebSocket.</p>
+      <ol>
+        <li>Vào <strong>Live Dashboard</strong> của chuyến (Trips → hn-hp → “Live Dashboard”).</li>
+        <li>Ở thanh phải, bấm nút <strong>“Driver Alert”</strong> (trước đây tên “Broadcast Call” — đã đổi tên ở Phase C để khỏi nhầm với cuộc gọi thoại thật).</li>
+        <li>Nút hiện “Đang gửi…”, sau đó hiện dòng kết quả “Đã gửi cảnh báo đến N hành khách”.</li>
+        <li>(Tùy chọn) Mở PWA của tài xế ở chặng đó → sẽ thấy <strong>modal cảnh báo toàn màn hình</strong> 📢.</li>
+      </ol>
+      <blockquote>Đây là <strong>cảnh báo trong ứng dụng</strong> tới tài xế, <em>không phải</em> cuộc gọi điện thoại thật.
+      Cuộc gọi thoại thật (TTS tiếng Việt, mô phỏng) thuộc <strong>Phase C — xem mục 10</strong>.</blockquote>
+
+      <h2 id="test-e">6. Test E — Teams (kênh nội bộ, gộp 1 thẻ)</h2>
+      <ol>
+        <li>Trong panel “Notify Passengers”, bấm nút <strong>Teams</strong>.</li>
+        <li>Vào Lịch sử: chỉ có <strong>1 dòng</strong> kênh <code>TEAMS</code> (gộp), không phải mỗi hành khách một dòng.</li>
+      </ol>
+      <p>Vì chưa cấu hình <code>TEAMS_WEBHOOK_URL</code>, hệ thống ghi <code>[DEV TEAMS]</code> ra log thay vì đăng thật (devMode).
+      Teams là <strong>kênh nhân viên/điều hành</strong>, không phải kênh tới hành khách — xem mục 9.</p>
+
+      <h2 id="test-f">7. Test F — Kiểm thử API trực tiếp (curl)</h2>
+      <pre><code># Đăng nhập lấy token
+TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@demo.com","password":"password123"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['accessToken'])")
+
+TRIP=d35a07c8-7ea3-4eeb-9583-dbc6af329cb5
+RID=0dab29fe-0e89-4f7c-bc2e-5d4cbe24647d
+
+# Gửi thủ công (channel: SMS | TEAMS | IN_APP | VOICE | ZALO)
+curl -s -X POST http://localhost:3000/trips/$TRIP/rounds/$RID/notify \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"channel":"SMS","message":"Mời quý khách lên xe"}'
+# → {"sent":7,"skipped":0,"channel":"SMS","devMode":true,"recipients":["***786", …]}
+
+# Xem lịch sử (đã scoped theo tenant — R10; số đã được che)
+curl -s "http://localhost:3000/trips/$TRIP/notifications?limit=20" \
+  -H "Authorization: Bearer $TOKEN"</code></pre>
+      <blockquote><strong>Bảo mật:</strong> mọi truy vấn lịch sử đều lọc theo <code>tenantId</code> (cách ly đa khách thuê — R10);
+      cột số điện thoại lưu &amp; trả về đều <strong>được che</strong> (chỉ 3 số cuối). Endpoint chỉ dành cho <code>ADMIN</code>.</blockquote>
+
+      <h2 id="test-g">8. Test G — Điểm danh bằng giọng nói (QW4, PWA)</h2>
+      <blockquote>
+        Cần <strong>Chrome trên máy thật + microphone + có mạng</strong> (Web Speech API gửi âm thanh lên dịch vụ của trình duyệt).
+        Tính năng <strong>không tự điểm danh</strong> — luôn yêu cầu tài xế xác nhận, giữ đúng quyền điểm danh của BusManager.
+      </blockquote>
+      <ol>
+        <li>Đăng nhập PWA (cổng 5174) bằng tài khoản BusManager, mở chặng/xe được phân công.</li>
+        <li>Bấm nút <strong>“Điểm danh giọng nói”</strong> (biểu tượng micro, ngay dưới 2 nút “Điểm danh tất cả”).</li>
+        <li>Khi hiện “Đang nghe…”, <strong>đọc to tên một hành khách</strong> trong danh sách.</li>
+        <li>Nếu khớp, hiện hộp xác nhận với tên hành khách → bấm <strong>“Điểm danh”</strong> để đánh dấu <code>JOIN</code>.</li>
+        <li>Nếu không khớp, hiện “Không khớp hành khách nào với …” để thử lại.</li>
+      </ol>
+      <p>Trình duyệt không hỗ trợ (vd Firefox) sẽ hiện “Trình duyệt không hỗ trợ nhập bằng giọng nói” — đúng như thiết kế (suy biến nhẹ nhàng).</p>
+
+      <!-- ===================== PHASE B ===================== -->
+      <h3>G-2. Roll-call — đọc tên (Phase E · TTS)</h3>
+      <p>Bản nâng cấp <strong>Phase E</strong>: thay vì tài xế <em>nói</em> tên (STT ở G-1), hệ thống <strong>đọc to từng tên</strong>
+      trong danh sách (Web <code>SpeechSynthesis</code> — miễn phí, chạy <strong>offline</strong> trên máy, ổn trong môi trường ồn);
+      tài xế chỉ chạm <strong>Có mặt / Vắng / Bỏ qua</strong> cho từng người.</p>
+      <ol>
+        <li>Trong PWA (cổng 5174, tài khoản BusManager <code>driver@demo.com</code> · <code>password123</code>), mở chặng được phân công.</li>
+        <li>Bấm nút <strong>“Điểm danh đọc tên” / “Roll-call (read names aloud)”</strong> (ngay dưới nút “Voice check-in”).</li>
+        <li>Hộp thoại hiện tên + tiến độ (vd <strong>1 / 7</strong>) và <strong>đọc to tên</strong>; chạm vào tên để đọc lại.</li>
+        <li>Chạm <strong>Có mặt</strong> → đánh dấu <code>JOIN</code>; <strong>Vắng</strong> → <code>ABSENT</code>; <strong>Bỏ qua</strong> → giữ nguyên.
+          Mỗi lựa chọn tự chuyển sang người kế tiếp; hết danh sách hộp thoại tự đóng.</li>
+      </ol>
+      <blockquote><strong>Không bao giờ tự điểm danh:</strong> mỗi người đều cần một thao tác của tài xế — giữ đúng quyền điểm danh
+      của BusManager (rule #5). Thiết bị không đọc được (thiếu giọng vi-VN) vẫn hiển thị tên để chạm — chỉ mất phần đọc.
+      Nâng cấp ASR đám mây vi-VN (môi trường rất ồn) vẫn để mở.</blockquote>
+
+      <h2 id="phase-b">9. Phase B — Engine gửi tự động theo sự kiện</h2>
+      <p>Phase B thêm khả năng <strong>tự động gửi</strong> khi trạng thái chặng đổi. Tính năng
+      <strong>opt-in</strong> (mặc định TẮT), bật/tắt theo <strong>từng nhà xe</strong>, và <strong>không bao giờ</strong>
+      ghi vào <code>AttendanceRecord</code>. Sự kiện phát ra <em>sau khi</em> đã commit DB + bắn WebSocket nên không
+      đổi hành vi cũ; nếu gửi tự động lỗi thì lỗi được “nuốt”, request gốc không bị ảnh hưởng.</p>
+
+      <h3>B-1. Bật công tắc tự động (UI · B4)</h3>
+      <ol>
+        <li>Vào <strong>Trips → hn-hp</strong>, cuộn tới khối <strong>“Automation Rules / Quy tắc tự động”</strong>.</li>
+        <li>Có 4 công tắc, <strong>mặc định TẮT</strong>: Khi chặng khởi hành · Khi chặng huỷ · Khi chặng hoàn thành · Nhắc giờ lên xe.</li>
+        <li>Bật <strong>“Khi chặng khởi hành”</strong>. Trạng thái lưu vào <code>TenantNotificationConfig.autoRules</code> (theo tenant — R10).</li>
+      </ol>
+      <p>API tương ứng (chỉ <code>ADMIN</code>, theo tenant): <code>GET</code> và <code>PUT /notification-config/auto-rules</code>.</p>
+
+      <h3>B-2. Chặng khởi hành → tự gửi SMS (B1, B2, B3)</h3>
+      <ol>
+        <li>Đảm bảo Chặng 2 đang ở <code>PLANNED</code> (nếu đang IN_PROGRESS, xem mục 11 để reset).</li>
+        <li>Bật rule “Khi chặng khởi hành” (B-1), rồi <strong>chuyển Chặng 2 sang “In Progress”</strong>.</li>
+        <li>Mở <strong>Notification History</strong> ở trang Chi tiết chuyến.</li>
+      </ol>
+      <p><strong>Kết quả mong đợi:</strong> xuất hiện <strong>N dòng</strong> (= số hành khách trong chặng), kênh <code>SMS</code>,
+      nguồn <span class="badge badge-amber">ROUND_STARTED</span>, nội dung <em>cá nhân hoá</em>:
+      “<em>Xin chào Đinh Viết Sang, xe 51B-999.99 chuyến hn-hp đang khởi hành. Mời quý khách lên xe.</em>”</p>
+
+      <h3>B-3. Cổng phủ định — chứng minh opt-in</h3>
+      <p><strong>TẮT</strong> rule “Khi chặng hoàn thành”, rồi chuyển một chặng sang <code>Done</code>.
+      <strong>Kết quả:</strong> KHÔNG có dòng <code>ROUND_COMPLETED</code> nào — vì rule đang tắt. Đây là bằng chứng
+      tự động hoá là opt-in, không gửi ngoài ý muốn.</p>
+
+      <h3>B-4. Nhắc giờ lên xe — scheduler (B5)</h3>
+      <p><code>@Cron('*/5 * * * *')</code> mỗi 5 phút quét các chặng có giờ khởi hành trong khoảng
+      <strong>T+25 → T+35 phút</strong> và <strong>chống trùng</strong> (mỗi hành khách 1 lần/ngày). Cách kiểm:</p>
+      <pre><code># Đặt giờ khởi hành Chặng 2 vào ~30 phút tới + bật "Nhắc giờ lên xe", rồi đợi 1 nhịp cron
+cd apps/api
+echo "UPDATE \"Round\" SET \"scheduledDep\" = now() + interval '30 minutes'
+      WHERE id = '0dab29fe-0e89-4f7c-bc2e-5d4cbe24647d';" \
+  | ./node_modules/.bin/prisma db execute --schema prisma/schema.prisma --stdin</code></pre>
+      <p>Sau ≤5 phút, Lịch sử có dòng nguồn <span class="badge badge-amber">BOARDING_REMINDER</span>;
+      chạy lại trong cùng ngày <strong>không nhân đôi</strong> (dedup).</p>
+
+      <!-- ===================== PHASE C ===================== -->
+      <h2 id="phase-c">10. Phase C — Gọi thoại ra cho hành khách + RSVP “bấm 1”</h2>
+      <div class="page-meta" style="margin-bottom:12px">
+        <span class="badge badge-sky">MOCK — không gọi điện thật</span>
+        <span class="badge badge-amber">RSVP = chỉ ý định</span>
+      </div>
+      <p>Phase C đặt <strong>cuộc gọi ra</strong> tới điện thoại hành khách và <strong>đọc TTS tiếng Việt</strong>
+      (“Kính mời quý khách ra xe…”). Trong đồ án chạy ở <strong>chế độ MÔ PHỎNG</strong>: bộ giả lập “gọi” tất định,
+      ghi log đầy đủ, demo được mà <strong>không cần tài khoản/đường truyền</strong>. Nhà cung cấp thật
+      (Stringee / Twilio Voice) cắm sau cùng lớp <code>VoiceProvider</code> mà không phải sửa dispatcher/queue/log.</p>
+      <blockquote><strong>Bất biến miền:</strong> hành khách “bấm 1” chỉ là <strong>RSVP — ý định lên xe</strong>
+      (<code>WILL_BOARD</code>/<code>WONT_BOARD</code>), lưu vào <code>NotificationLog.rsvp</code>. Nó
+      <strong>KHÔNG BAO GIỜ</strong> tạo/sửa <code>AttendanceRecord</code> — quyền điểm danh vẫn của BusManager (rule #5/#6).</blockquote>
+
+      <h3>C-1. Gọi thoại cả lượt</h3>
+      <ul>
+        <li><strong>Panel “Notify Passengers”</strong> (mở Chặng 2) → bấm nút <strong>“Voice Call”</strong>.</li>
+        <li><strong>Live Dashboard</strong> → chọn <strong>Chặng 2</strong> ở cột trái → bấm <strong>“Voice call round”</strong> ở thanh phải.</li>
+      </ul>
+      <p>Mỗi cách tạo cuộc gọi mô phỏng tới <em>từng hành khách</em> qua hàng đợi (kênh <code>VOICE</code>).</p>
+
+      <h3>C-2. Kết quả cuộc gọi (mô phỏng tất định)</h3>
+      <p>Cùng một số điện thoại luôn cho <strong>cùng kết quả</strong> (demo/test lặp lại được):</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Tỉ lệ ~</th><th>Trạng thái</th><th>Ý nghĩa</th></tr></thead>
+        <tbody>
+          <tr><td>70%</td><td><span class="badge badge-sky">DELIVERED</span></td><td>Nghe máy, đã đọc TTS; một phần tự “bấm 1” (RSVP tự động)</td></tr>
+          <tr><td>22%</td><td><span class="badge badge-amber">NO_ANSWER</span></td><td>Không nghe máy (kết thúc, không retry)</td></tr>
+          <tr><td>8%</td><td><span class="badge badge-amber">BUSY → FAILED</span></td><td>Máy bận → hàng đợi thử lại 3 lần rồi FAILED</td></tr>
+        </tbody>
+      </table></div>
+      <p>Mở <strong>Notification History</strong>, nhìn các dòng kênh <code>VOICE</code>: có cột <strong>STATUS</strong> và cột <strong>RSVP</strong>.</p>
+
+      <h3>C-3. Bảng “Ý định lên xe” (Boarding Intent)</h3>
+      <p>Trên <strong>Live Dashboard</strong>, sau khi gọi (C-1) và chọn đúng Chặng 2, thẻ <strong>“BOARDING INTENT”</strong>
+      hiện 3 số: <strong>SẼ LÊN</strong> (WILL_BOARD) · <strong>KHÔNG</strong> (WONT_BOARD) · <strong>KO NGHE</strong> (NO_ANSWER).
+      Thẻ tự cập nhật trong khi cuộc gọi “lắng xuống” (poll khi còn pending, tự dừng khi xong).</p>
+
+      <h3>C-4. Mô phỏng “bấm 1 / bấm 2” thủ công</h3>
+      <ol>
+        <li>Trong <strong>Notification History</strong>, tìm dòng <code>VOICE</code> đã <code>DELIVERED</code> mà cột RSVP còn trống.</li>
+        <li>Cột RSVP hiện 2 nút nhỏ <strong>“Sẽ lên”</strong> / <strong>“Không”</strong> — bấm để ghi ý định.</li>
+        <li>Badge RSVP cập nhật và bảng tally ở Dashboard (C-3) tăng tương ứng.</li>
+      </ol>
+      <p>Chỉ cuộc gọi <strong>đã nghe máy</strong> mới được ghi RSVP — API chặn dòng <code>NO_ANSWER</code>/khác (trả 404),
+      nên tổng “sẽ lên + không” không bao giờ vượt số “đã nghe máy”.</p>
+
+      <h3>C-5. Kiểm chứng bất biến: RSVP ⟂ Điểm danh</h3>
+      <p>Sau khi tạo vài RSVP, kiểm bằng SQL rằng <strong>không có</strong> <code>AttendanceRecord</code> nào sinh ra từ RSVP:</p>
+      <pre><code>PSQL='PGPASSWORD=devpassword psql -h localhost -U dev -d passenger_mgmt -tAc'
+RID=0dab29fe-0e89-4f7c-bc2e-5d4cbe24647d
+# Số "SẼ LÊN/KHÔNG" trong log thoại
+eval $PSQL "\"select status, coalesce(rsvp,'-'), count(*) from \\\"NotificationLog\\\"
+            where channel='VOICE' and \\\"roundId\\\"='$RID' group by 1,2 order by 1,2;\""
+# Điểm danh của chặng — độc lập hoàn toàn với RSVP ở trên
+eval $PSQL "\"select coalesce(ar.status::text,'(chưa có)'), count(*)
+  from \\\"RoundPassengerAssignment\\\" rpa
+  left join \\\"AttendanceRecord\\\" ar on ar.\\\"roundPassengerAssignmentId\\\"=rpa.id
+  where rpa.\\\"roundId\\\"='$RID' group by 1;\""</code></pre>
+      <p><code>WILL_BOARD</code>/<code>WONT_BOARD</code> thậm chí không phải giá trị hợp lệ của enum
+      <code>AttendanceStatus</code> (<code>JOIN | ABSENT | CANCELLED</code>) — về cấu trúc không thể lẫn.</p>
+
+      <h3>C-6. Giới hạn fan-out (cost guard) &amp; API Phase C</h3>
+      <p>Một lượt gọi tối đa <code>VOICE_MAX_FANOUT</code> máy (mặc định 50) — vượt thì bỏ phần dư (ghi cảnh báo log),
+      tránh “nổ” chi phí khi dùng nhà cung cấp thật.</p>
+      <pre><code>TRIP=d35a07c8-7ea3-4eeb-9583-dbc6af329cb5 ; RID=0dab29fe-0e89-4f7c-bc2e-5d4cbe24647d
+# Gọi thoại cả lượt (kênh VOICE)
+curl -s -X POST http://localhost:3000/trips/$TRIP/rounds/$RID/notify \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"channel":"VOICE","message":"Kính mời quý khách ra xe. Nhấn 1 nếu sẽ lên xe."}'
+
+# Bảng ý định lên xe
+curl -s http://localhost:3000/trips/$TRIP/rounds/$RID/notify/intent -H "Authorization: Bearer $TOKEN"
+# → {"total":14,"answered":12,"noAnswer":2,"pending":0,"failed":0,"willBoard":4,"wontBoard":3}
+
+# Mô phỏng "bấm 1" (logId lấy từ GET .../notifications?channel=VOICE)
+curl -s -X POST http://localhost:3000/trips/$TRIP/rounds/$RID/notify/rsvp \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"logId":"&lt;UUID-dòng-VOICE&gt;","rsvp":"WILL_BOARD"}'</code></pre>
+
+      <!-- ===================== RESET ===================== -->
+      <!-- ===================== PHASE D ===================== -->
+      <h2 id="phase-d">11. Phase D — Zalo ZNS cho hành khách &amp; opt-out</h2>
+      <div class="page-meta" style="margin-bottom:12px">
+        <span class="badge badge-sky">MOCK — ZNS thật cần Zalo OA</span>
+        <span class="badge badge-amber">Tôn trọng opt-out</span>
+      </div>
+      <p>Zalo là kênh tiếp cận hành khách phổ biến nhất ở VN. Phase D thêm kênh <code>ZALO</code> (ZNS — Zalo
+      Notification Service). Mặc định <strong>MOCK</strong>; nhánh ZNS thật được nối sẵn nhưng “trơ” cho tới khi
+      cấu hình <code>ZALO_PROVIDER=ZNS</code> + token OA + template id (giống cách <code>SmsProvider</code> nối
+      eSMS/Twilio). ZNS chỉ gửi <strong>template đã duyệt</strong> tới số điện thoại liên kết Zalo.</p>
+
+      <h3>D-1. Nhập Zalo ID cho hành khách</h3>
+      <ol>
+        <li>Vào <strong>Manage Passengers</strong> → tab <strong>Add</strong>: form có thêm ô <strong>“Zalo ID”</strong>
+          (tùy chọn, 6–32 chữ số). Hành khách không có Zalo ID sẽ <strong>tự lùi về số điện thoại</strong> khi gửi ZALO.</li>
+        <li>Trong danh sách, hành khách có Zalo ID hiện badge <strong>“Zalo”</strong> cạnh số điện thoại.</li>
+      </ol>
+
+      <h3>D-2. Gửi Zalo (ZNS)</h3>
+      <p>Panel <strong>“Notify Passengers”</strong> nay có nút kênh <strong>“Zalo”</strong> (thay cho link
+      <code>zalo.me</code> chết trước đây). Bấm để gửi tới cả chặng. Trong Lịch sử, các dòng kênh <code>ZALO</code>
+      của hành khách có Zalo ID hiển thị người nhận là Zalo ID đã che (vd <code>***001</code>); còn lại là số điện thoại.</p>
+
+      <h3>D-3. Opt-out (mô phỏng inbound “STOP” / từ chối Zalo)</h3>
+      <ol>
+        <li>Trong danh sách hành khách, bấm icon <strong>chuông</strong> ở cột thao tác để <strong>bật từ chối nhận</strong>
+          (badge <strong>“Từ chối nhận”</strong> xuất hiện cạnh số điện thoại).</li>
+        <li>Gửi lại bất kỳ kênh nào (SMS/Zalo/Voice): hành khách đó bị <strong>bỏ qua</strong> với dòng
+          <span class="badge badge-amber">FAILED</span> · <code>errorReason=OPT_OUT</code>; phản hồi API có <code>skipped</code> tăng.</li>
+        <li>Bấm icon chuông lần nữa để bật lại liên hệ.</li>
+      </ol>
+      <blockquote>Opt-out được tôn trọng ở <strong>mọi kênh</strong> (consent — bắt buộc trước khi gửi thật).
+      Cấu hình ZNS thật: <code>ZALO_PROVIDER=ZNS</code>, <code>ZALO_OA_ACCESS_TOKEN</code>,
+      <code>ZALO_ZNS_TEMPLATE_ID</code> (secret theo tenant, không commit).</blockquote>
+
+      <!-- ===================== CHATBOT ===================== -->
+      <h2 id="chatbot">12. Chatbot — Trợ lý chuyến đi (hỏi đáp + RAG)</h2>
+      <div class="page-meta" style="margin-bottom:12px">
+        <span class="badge badge-sky">MOCK — không cần LLM</span>
+        <span class="badge badge-amber">Số liệu chính xác (server-side)</span>
+        <span class="badge badge-gray">Chỉ ADMIN</span>
+      </div>
+      <p>Nút <strong>tròn</strong> ở góc <strong>dưới phải</strong> mọi trang Admin. Trợ lý trả lời 2 nhóm:
+      <strong>số liệu sống về tour</strong> (đếm theo trạng thái, số khách, chặng đang chạy…) và
+      <strong>“hệ thống hoạt động ra sao”</strong> (điểm danh, vai trò, kênh liên hệ…). Mọi con số được
+      <strong>tính ở server</strong> rồi đưa cho mô hình diễn đạt → <strong>không bịa số</strong>. Mặc định chạy tier
+      <strong>MOCK</strong> (quy tắc, không cần cài gì); có thể bật LLM mã nguồn mở Ollama (mục CB-6).</p>
+
+      <h3>CB-1. Hỏi số liệu — so khớp Dashboard</h3>
+      <ol>
+        <li>Đăng nhập Web bằng <code>admin@demo.com</code>, mở Dashboard (ghi nhớ số <strong>Upcoming/Planned</strong>).</li>
+        <li>Bấm nút tròn góc dưới phải → bấm <strong>chip gợi ý</strong> hoặc gõ tự do vào ô nhập.</li>
+      </ol>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Câu hỏi</th><th>Kết quả mong đợi</th></tr></thead>
+        <tbody>
+          <tr><td>“Có bao nhiêu chuyến đang lên kế hoạch?”</td><td>= đúng số <strong>Planned</strong> trên Dashboard</td></tr>
+          <tr><td>“Chặng nào đang chạy?”</td><td>Liệt kê chuyến có chặng IN_PROGRESS + số lượng</td></tr>
+          <tr><td>“Liệt kê các chuyến” / “list planned tours”</td><td>Danh sách (lọc theo trạng thái nếu có)</td></tr>
+          <tr><td>“Giới thiệu chuyến hn-hp”</td><td>Trạng thái, ngày, số chặng, số khách</td></tr>
+          <tr><td>“Chuyến hn-hp có bao nhiêu khách?”</td><td>Số khách của đúng chuyến đó</td></tr>
+          <tr><td>“Tóm tắt tình hình”</td><td>Digest: tổng chuyến + phân loại trạng thái + chặng đang chạy + khách + xe</td></tr>
+          <tr><td>“Chuyến sắp tới?” / “next tour”</td><td>Chuyến PLANNED khởi hành sớm nhất</td></tr>
+          <tr><td>“Chuyến đông khách nhất?”</td><td>Chuyến có nhiều khách nhất + số khách</td></tr>
+          <tr><td>“Bao nhiêu xe?”</td><td>Số xe trong đội (khớp “Buses in fleet”)</td></tr>
+        </tbody>
+      </table></div>
+      <blockquote>Hỏi tiếng Anh hay tiếng Việt đều được; trả lời theo ngôn ngữ giao diện đang chọn.</blockquote>
+
+      <h3>CB-2. Hỏi “hệ thống hoạt động ra sao” (RAG)</h3>
+      <p>Trợ lý có <strong>kho tri thức nội bộ</strong> (KB song ngữ) + truy hồi <em>lexical</em> — chạy hoàn toàn local, không cần model nhúng.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Câu hỏi</th><th>Trả lời (từ tài liệu)</th></tr></thead>
+        <tbody>
+          <tr><td>“Điểm danh hoạt động thế nào?”</td><td>JOIN/ABSENT/CANCELLED, do BusManager đặt, không tự điểm danh</td></tr>
+          <tr><td>“Hành khách có đăng nhập được không?”</td><td>Hành khách là dữ liệu, không tài khoản; liên hệ qua SMS/Zalo/Voice</td></tr>
+          <tr><td>“Round (chặng) là gì?”</td><td>Tour gồm các chặng; trạng thái tour suy ra từ chặng</td></tr>
+          <tr><td>“Thông báo &amp; opt-out hoạt động ra sao?”</td><td>Các kênh; tự động mặc định tắt; tôn trọng opt-out</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>CB-3. Gợi ý câu hỏi (chips) + ô nhập tự do</h3>
+      <p>Khi mở chat (hoặc sau khi <code>clear</code>) hiện <strong>4 chip gợi ý</strong> — bấm là gửi ngay (ánh xạ vào intent
+      chắc-chắn-trúng, rất hợp demo). Chip tự ẩn khi bắt đầu hội thoại; <strong>ô nhập tự do luôn còn</strong>.</p>
+
+      <h3>CB-4. Lệnh trong chat</h3>
+      <ol>
+        <li>Gõ <code>clear</code> (hoặc <code>/clear</code>, <code>reset</code>, <code>xoá</code>) → <strong>xoá hội thoại</strong>, về lời chào. Không gọi API.</li>
+        <li>Gõ <code>help</code> (hoặc <code>?</code>) → hiện lại các ví dụ câu hỏi.</li>
+        <li>Lệnh chỉ kích hoạt khi là <strong>cả câu</strong> (vd “how do I clear attendance?” vẫn hỏi bình thường).</li>
+      </ol>
+
+      <h3>CB-5. Bảo mật &amp; độ chính xác</h3>
+      <ul>
+        <li><strong>Số liệu tính ở server</strong> từ chính dữ liệu của tenant → mô hình chỉ diễn đạt, không bịa.</li>
+        <li><strong>R10:</strong> chỉ trả lời dữ liệu của tenant đang đăng nhập; endpoint <code>POST /chat</code> chỉ <code>ADMIN</code>.</li>
+        <li><strong>Không lộ PII:</strong> snapshot chỉ gồm tên/ngày/trạng thái + số đếm — KHÔNG có SĐT/CCCD của khách.</li>
+        <li>Mặc định <code>CHAT_PROVIDER=MOCK</code> → không gọi mạng, không cần secret.</li>
+      </ul>
+
+      <h3>CB-6. Bật LLM mã nguồn mở (Ollama) — tuỳ chọn</h3>
+      <pre><code># Cài + tải model mã nguồn mở (tiếng Việt tốt)
+ollama pull qwen2.5:7b      # hoặc qwen2.5:3b nếu máy yếu
+ollama serve               # bật server :11434</code></pre>
+      <p>Trong <code>apps/api/.env</code>: <code>CHAT_PROVIDER=OLLAMA</code>, <code>OLLAMA_URL=http://localhost:11434</code>,
+      <code>OLLAMA_MODEL=qwen2.5:7b</code>. <strong>Số liệu giữ nguyên</strong> (snapshot vẫn tính ở server) — chỉ câu chữ tự nhiên hơn;
+      Ollama tắt/timeout thì tự <strong>lùi về MOCK</strong>. Không cần “train”: “hiểu hệ thống” đến từ <em>domain primer</em> + <em>RAG</em>.</p>
+
+      <h3>CB-7. Kiểm thử API trực tiếp</h3>
+      <pre><code>TOKEN=$(curl -s -X POST http://localhost:3000/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"admin@demo.com","password":"password123"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['accessToken'])")
+
+curl -s -X POST http://localhost:3000/chat -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"message":"how many tours are still in PLANNED?","lang":"en"}'
+# → {"answer":"There are N tour(s) planned.","provider":"MOCK"}</code></pre>
+
+      <h2 id="reset">13. Dọn dẹp / reset dữ liệu demo</h2>
+      <p>Sau khi test, đưa dữ liệu thông báo về trạng thái sạch để demo lại:</p>
+      <pre><code>PSQL='PGPASSWORD=devpassword psql -h localhost -U dev -d passenger_mgmt -tAc'
+# 1) Xoá log thông báo thử (mọi kênh)
+eval $PSQL "\"delete from \\\"NotificationLog\\\";\""
+# 2) Đưa Chặng 2 về PLANNED
+eval $PSQL "\"update \\\"Round\\\" set status='PLANNED' where id='0dab29fe-0e89-4f7c-bc2e-5d4cbe24647d';\""
+# 3) Tắt toàn bộ autoRules của tenant
+eval $PSQL "\"delete from \\\"TenantNotificationConfig\\\";\""</code></pre>
+      <blockquote>Chỉ xoá <code>NotificationLog</code> / <code>TenantNotificationConfig</code> (dữ liệu thông báo) —
+      <strong>không</strong> đụng tới chuyến / chặng / hành khách / điểm danh.</blockquote>
+
+      <h2 id="teams-note">14. Ghi chú: Gửi tin nhắn tự động qua Teams có hợp lý không?</h2>
+      <p><strong>Kết luận: chỉ hợp lý khi dùng Teams như kênh NỘI BỘ (nhân viên/điều hành), KHÔNG dùng để tiếp cận hành khách.</strong></p>
+      <ul>
+        <li><strong>Sai kênh cho hành khách:</strong> hành khách không có tài khoản và không ở trong kênh Teams của công ty.
+          Webhook Teams chỉ đăng vào kênh nội bộ — auto-gửi “mời lên xe” qua Teams sẽ <em>không tới được hành khách nào</em>.
+          Thông báo tới hành khách phải đi qua <strong>SMS / Zalo / Voice</strong>.</li>
+        <li><strong>Hợp lý cho nhân viên:</strong> tóm tắt sự kiện điều hành (chặng khởi hành/huỷ/hoàn thành), cảnh báo quá tải xe, gán tài xế…</li>
+        <li><strong>Điều kiện bắt buộc (nếu bật ở Phase B):</strong>
+          <ol>
+            <li><strong>Gộp</strong> 1 thẻ/sự kiện, không phải mỗi hành khách một thẻ (tránh spam kênh).</li>
+            <li><strong>Webhook theo từng tenant</strong> (lưu trong <code>TenantNotificationConfig</code>), không dùng 1 webhook chung.</li>
+            <li><strong>Có công tắc bật/tắt</strong> trong <code>autoRules</code>, mặc định TẮT.</li>
+          </ol>
+        </li>
+        <li><strong>Lưu ý:</strong> webhook MessageCard là tích hợp <em>cũ</em> của Microsoft (đang bị khai tử dần) — ổn cho đồ án, nhưng nên chuyển sang Workflows/Adaptive Cards cho sản phẩm thật.</li>
+      </ul>
+      <p>Bạn đã <strong>đồng ý</strong> hướng này: Teams = kênh nhân viên, gộp, opt-in; thông báo tới hành khách không đi qua Teams.</p>
+
+      <h2 id="chua-lam">15. Trạng thái các tính năng</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Phase</th><th>Nội dung</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            <tr><td>B</td><td>Engine tự động (EventEmitter + Dispatcher): chặng khởi hành/huỷ/hoàn thành → tự gửi; templating vi/en; nhắc giờ lên xe; công tắc theo tenant</td><td><span class="badge badge-sky">XONG</span> — xem mục 9</td></tr>
+            <tr><td>C</td><td>Gọi thoại tới hành khách + TTS tiếng Việt; IVR “bấm 1” lưu RSVP (chỉ ý định, không ghi điểm danh); tally ý định lên xe</td><td><span class="badge badge-sky">XONG (mock)</span> — xem mục 10</td></tr>
+            <tr><td>D</td><td>Kênh Zalo ZNS (mock + nhánh ZNS thật trơ); nhập Zalo ID cho hành khách; opt-out tôn trọng mọi kênh</td><td><span class="badge badge-sky">XONG (mock)</span> — xem mục 11</td></tr>
+            <tr><td>E</td><td>Roll-call đọc tên (TTS offline) — tài xế chạm Có mặt/Vắng từng người; nâng cấp ASR đám mây vi-VN vẫn để mở</td><td><span class="badge badge-sky">XONG (roll-call)</span> — xem mục 8 (G-2)</td></tr>
+            <tr><td>Chatbot</td><td>Trợ lý chuyến đi: hỏi đáp số liệu (server-side, chính xác) + RAG “cách hệ thống hoạt động”; chips + lệnh; mock mặc định, Ollama tuỳ chọn</td><td><span class="badge badge-sky">XONG</span> — xem mục 12</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <blockquote>Phase C đang ở <strong>chế độ MOCK</strong>: để chạy thật, cấu hình <code>VOICE_PROVIDER</code> +
+      secret nhà cung cấp theo từng tenant (không commit khoá API) và một webhook công khai cho IVR/DLR.</blockquote>
+      <blockquote>Mọi nhà cung cấp thật đều đứng sau lớp <code>MessageProvider</code> và mặc định ở chế độ MOCK,
+      nên có thể bật từng tenant lên “live” mà không đổi mã nghiệp vụ. Không commit khoá API — chỉ dùng biến môi trường / secret ref.</blockquote>
+
+      <footer class="page-footer">MPMS · Hướng dẫn kiểm thử Phase A · B · C · D · E · Chatbot · cập nhật 2026-06-04</footer>
+    </main>
+  </div>
+
+  <button class="to-top" aria-label="Lên đầu trang">&uarr;</button>
+  <script src="assets/docs.js" defer></script>
+</body>
+</html>

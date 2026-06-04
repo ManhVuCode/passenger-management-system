@@ -82,6 +82,28 @@ export const vi: PWATranslationKeys = {
     noteLabel: '▼ Ghi chú: {{note}}',
   },
 
+  voice: {
+    button: 'Điểm danh giọng nói',
+    listening: 'Đang nghe…',
+    heard: 'Nghe được: "{{text}}"',
+    unsupported: 'Trình duyệt không hỗ trợ nhập bằng giọng nói',
+    noMatch: 'Không khớp hành khách nào với "{{text}}"',
+    error: 'Không thu được giọng nói — thử lại',
+    confirmTitle: 'Điểm danh hành khách này?',
+    confirmJoin: 'Điểm danh',
+  },
+
+  rollcall: {
+    button: 'Điểm danh đọc tên',
+    title: 'Điểm danh bằng giọng',
+    present: 'Có mặt',
+    absent: 'Vắng',
+    skip: 'Bỏ qua',
+    current: 'Hiện tại: {{status}}',
+    replay: 'Chạm vào tên để đọc lại',
+    noAudio: 'Thiết bị không đọc được — chỉ hiển thị tên',
+  },
+
   profile: {
     driver: 'Tài xế',
     appFooter: 'MPMS · v1.0 · Ứng dụng tài xế',

@@ -162,6 +162,9 @@ model TripPassengerAssignment {
   type      String?
   note      String?
   hotelRoom String?
+  zaloId        String?
+  contactOptOut Boolean @default(false)
+  channelPref   String? // SMS | ZALO | VOICE
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -195,4 +198,39 @@ model AttendanceRecord {
 
   roundPassengerAssignment RoundPassengerAssignment @relation(fields: [roundPassengerAssignmentId], references: [id])
   markedByUser             User                     @relation(fields: [markedBy], references: [id])
+}
+
+model NotificationLog {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tripId       String?
+  roundId      String?
+  channel      String // SMS | ZALO | VOICE | TEAMS | IN_APP
+  trigger      String // MANUAL | ROUND_STARTED | ROUND_CANCELLED | BOARDING_REMINDER | ROUND_COMPLETED
+  templateKey  String?
+  messageText  String
+  recipientRef String? // tripPassengerAssignmentId or userId
+  toContact    String? // phone/zaloId — redacted when shown in UI
+  status       String // QUEUED | SENT | DELIVERED | FAILED | BOUNCED | NO_ANSWER
+  providerId   String?
+  costMicro    Int?
+  errorReason  String?
+  rsvp         String? // WILL_BOARD | WONT_BOARD — intent only, NEVER writes AttendanceRecord
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId, tripId, roundId])
+  @@index([tenantId, createdAt])
+}
+
+model TenantNotificationConfig {
+  tenantId      String   @id
+  smsProvider   String? // ESMS | TWILIO | MOCK
+  smsCredsRef   String? // secret reference — NOT the raw key
+  zaloOaId      String?
+  voiceProvider String? // STRINGEE | TWILIO | MOCK
+  voiceCredsRef String?
+  autoRules     Json? // { roundStarted: bool, roundCancelled: bool, boardingReminder: bool }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

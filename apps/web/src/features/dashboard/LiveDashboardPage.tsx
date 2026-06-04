@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { useGetTripQuery } from '../trips/tripsApi'
 import { useGetAllocationsByRoundQuery } from '../allocation/allocationApi'
+import { useSendNotificationMutation, useGetVoiceIntentQuery } from '../notifications/notificationApi'
 import {
   useAttendanceSocket,
   type AttendanceUpdate,
@@ -20,6 +21,7 @@ import {
   XCircle,
   Bus as BusIcon,
   MessageSquare,
+  PhoneCall,
   Check,
   X,
   Clock,
@@ -67,6 +69,52 @@ export default function LiveDashboardPage() {
 
   const rounds = trip?.rounds ?? []
   const activeRoundId = selectedRound ?? rounds[0]?.id ?? null
+
+  const [sendBroadcast, { isLoading: broadcasting }] = useSendNotificationMutation()
+  const [broadcastResult, setBroadcastResult] = useState<string | null>(null)
+  // C5 — boarding-intent tally for the active round's voice calls. Poll ONLY while
+  // calls are still settling to DELIVERED/NO_ANSWER in the worker (which emits no
+  // cache invalidation), then stop; send/sim mutations refetch via the Notification tag.
+  const [pollIntent, setPollIntent] = useState(false)
+  const { data: intent } = useGetVoiceIntentQuery(
+    { tripId: tripId!, roundId: activeRoundId! },
+    { skip: !tripId || !activeRoundId, pollingInterval: pollIntent ? 5000 : 0, skipPollingIfUnfocused: true },
+  )
+  useEffect(() => {
+    setPollIntent((intent?.pending ?? 0) > 0)
+  }, [intent])
+
+  async function handleBroadcast() {
+    if (!tripId || !activeRoundId) return
+    setBroadcastResult(null)
+    try {
+      const res = await sendBroadcast({
+        tripId,
+        roundId: activeRoundId,
+        channel: 'IN_APP',
+        message: t('notifications.broadcastDefault'),
+      }).unwrap()
+      setBroadcastResult(t('notifications.broadcastSent', { count: res.sent }))
+    } catch {
+      setBroadcastResult(t('notifications.broadcastFailed'))
+    }
+  }
+
+  async function handleVoiceCall() {
+    if (!tripId || !activeRoundId) return
+    setBroadcastResult(null)
+    try {
+      const res = await sendBroadcast({
+        tripId,
+        roundId: activeRoundId,
+        channel: 'VOICE',
+        message: t('notifications.voiceScriptDefault'),
+      }).unwrap()
+      setBroadcastResult(t('notifications.voiceCallSent', { count: res.sent }))
+    } catch {
+      setBroadcastResult(t('notifications.voiceCallFailed'))
+    }
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -270,13 +318,63 @@ export default function LiveDashboardPage() {
             )}
           </div>
 
-          <div className="p-4 border-t border-gray-100">
-            <Button variant="outline" className="w-full text-xs gap-2">
-              <MessageSquare size={14} /> {t('notifications.broadcast')}
+          <div className="p-4 border-t border-gray-100 space-y-2">
+            <Button
+              variant="outline"
+              className="w-full text-xs gap-2"
+              onClick={handleBroadcast}
+              disabled={broadcasting || !activeRoundId}
+            >
+              <MessageSquare size={14} />{' '}
+              {broadcasting ? t('notifications.broadcasting') : t('notifications.inApp')}
             </Button>
+            <Button
+              variant="outline"
+              className="w-full text-xs gap-2"
+              onClick={handleVoiceCall}
+              disabled={broadcasting || !activeRoundId}
+            >
+              <PhoneCall size={14} /> {t('notifications.voiceCall')}
+            </Button>
+            {broadcastResult && (
+              <p className="text-[11px] text-center text-gray-500">{broadcastResult}</p>
+            )}
+            {intent && intent.total > 0 && (
+              <div className="mt-2 rounded-lg border border-gray-100 bg-gray-50 p-2">
+                <div className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  {t('notifications.intentTitle')}
+                </div>
+                <div className="grid grid-cols-3 gap-1 text-center">
+                  <IntentStat
+                    label={t('notifications.intentWillBoard')}
+                    value={intent.willBoard}
+                    tone="text-emerald-600"
+                  />
+                  <IntentStat
+                    label={t('notifications.intentWontBoard')}
+                    value={intent.wontBoard}
+                    tone="text-red-600"
+                  />
+                  <IntentStat
+                    label={t('notifications.intentNoAnswer')}
+                    value={intent.noAnswer}
+                    tone="text-gray-500"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </aside>
       </div>
+    </div>
+  )
+}
+
+function IntentStat({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div className="rounded-md bg-white py-1.5">
+      <div className={cn('text-base font-bold tabular-nums', tone)}>{value}</div>
+      <div className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">{label}</div>
     </div>
   )
 }

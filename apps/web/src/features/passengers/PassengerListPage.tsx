@@ -32,6 +32,8 @@ import {
   CheckCircle2,
   Minus,
   Users,
+  Bell,
+  BellOff,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { validatePhone, validateSimpleText } from '../../lib/validators'
@@ -56,6 +58,7 @@ export default function PassengerListPage() {
     type: '',
     note: '',
     hotelRoom: '',
+    zaloId: '',
   })
   const [errors, setErrors] = useState({ name: '', phone: '' })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -85,8 +88,11 @@ export default function PassengerListPage() {
       setErrors({ name: nameErr, phone: phoneErr })
       return
     }
-    await createPassenger({ tripId: tripId!, body: form })
-    setForm({ name: '', phone: '', idCard: '', type: '', note: '', hotelRoom: '' })
+    await createPassenger({
+      tripId: tripId!,
+      body: { ...form, zaloId: form.zaloId.trim() || undefined },
+    })
+    setForm({ name: '', phone: '', idCard: '', type: '', note: '', hotelRoom: '', zaloId: '' })
     setErrors({ name: '', phone: '' })
     setTab('list')
   }
@@ -94,6 +100,12 @@ export default function PassengerListPage() {
   async function handleSaveNote(id: string) {
     await updatePassenger({ id, tripId: tripId!, body: { note: editNote } })
     setEditingId(null)
+  }
+
+  // D — simulate an inbound opt-out (SMS STOP / Zalo opt-out). Enforced on send:
+  // an opted-out passenger is skipped with an OPT_OUT log row.
+  function handleToggleOptOut(p: { id: string; contactOptOut?: boolean }) {
+    void updatePassenger({ id: p.id, tripId: tripId!, body: { contactOptOut: !p.contactOptOut } })
   }
 
   async function handleDeletePassenger() {
@@ -475,6 +487,13 @@ export default function PassengerListPage() {
                     onChange={(e) => setForm({ ...form, hotelRoom: e.target.value })}
                   />
                 </FormField>
+                <FormField label={t('passengers.zaloId')}>
+                  <FormInput
+                    placeholder={t('passengers.zaloIdPlaceholder')}
+                    value={form.zaloId}
+                    onChange={(e) => setForm({ ...form, zaloId: e.target.value })}
+                  />
+                </FormField>
                 <div className="col-span-2">
                   <FormField label={t('passengers.note')}>
                     <FormInput
@@ -609,7 +628,15 @@ export default function PassengerListPage() {
                 >
                   <td className="px-6 py-4 text-xs font-bold text-gray-300">{idx + 1}</td>
                   <td className="px-6 py-4 font-bold text-gray-950 text-sm">{p.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600 font-medium">{p.phone}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600 font-medium">
+                    <div className="flex items-center gap-1.5">
+                      <span>{p.phone}</span>
+                      {p.zaloId && <Badge variant="secondary" label={t('passengers.zalo')} />}
+                      {p.contactOptOut && (
+                        <Badge variant="warning" label={t('passengers.optedOut')} />
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-500 font-mono">{p.idCard ?? '—'}</td>
                   <td className="px-6 py-4">
                     {p.type ? (
@@ -699,6 +726,19 @@ export default function PassengerListPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 group-hover:opacity-100 opacity-0 transition-opacity">
+                      <button
+                        onClick={() => handleToggleOptOut(p)}
+                        className={cn(
+                          'p-2 rounded-lg transition-colors',
+                          p.contactOptOut
+                            ? 'text-warning-500 hover:bg-warning-50'
+                            : 'text-gray-400 hover:text-warning-600 hover:bg-warning-50',
+                        )}
+                        aria-label={t('passengers.toggleOptOut')}
+                        title={t('passengers.toggleOptOut')}
+                      >
+                        {p.contactOptOut ? <BellOff size={16} /> : <Bell size={16} />}
+                      </button>
                       <button
                         onClick={() => {
                           setEditingId(p.id)

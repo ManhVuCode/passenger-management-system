@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useSendNotificationMutation, type NotificationChannel } from './notificationApi'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
-import { MessageSquare, Webhook, Phone, CheckCircle, AlertCircle } from 'lucide-react'
+import { MessageSquare, Webhook, BellRing, PhoneCall, MessageCircle, CheckCircle, AlertCircle } from 'lucide-react'
 
 export default function NotificationPanel({
   tripId,
@@ -29,10 +29,22 @@ export default function NotificationPanel({
     { key: 'SMS', label: t('notifications.sms'), icon: MessageSquare, description: t('notifications.smsDesc') },
     { key: 'TEAMS', label: t('notifications.teams'), icon: Webhook, description: t('notifications.teamsDesc') },
     {
-      key: 'BROADCAST',
-      label: t('notifications.broadcast'),
-      icon: Phone,
-      description: t('notifications.broadcastDesc'),
+      key: 'IN_APP',
+      label: t('notifications.inApp'),
+      icon: BellRing,
+      description: t('notifications.inAppDesc'),
+    },
+    {
+      key: 'VOICE',
+      label: t('notifications.voice'),
+      icon: PhoneCall,
+      description: t('notifications.voiceDesc'),
+    },
+    {
+      key: 'ZALO',
+      label: t('notifications.zalo'),
+      icon: MessageCircle,
+      description: t('notifications.zaloDesc'),
     },
   ]
 
@@ -61,7 +73,7 @@ export default function NotificationPanel({
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {channels.map(({ key, label, icon: Icon, description }) => (
             <button
               key={key}
@@ -74,18 +86,6 @@ export default function NotificationPanel({
               <span className="text-xs text-slate-400 leading-tight">{description}</span>
             </button>
           ))}
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-slate-400 pt-1 border-t border-border">
-          <a
-            href="https://zalo.me/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-500 font-medium hover:underline"
-          >
-            {t('notifications.zalo')}
-          </a>
-          <span>{t('notifications.zaloDesc')}</span>
         </div>
 
         {result && (

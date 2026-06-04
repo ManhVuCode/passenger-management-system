@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, Matches } from 'class-validator'
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, Matches } from 'class-validator'
 import { IsSimpleText } from '../../../common/validators/is-simple-text.validator'
 
 export class CreatePassengerDto {
@@ -27,4 +27,16 @@ export class CreatePassengerDto {
   @IsString()
   @IsOptional()
   hotelRoom?: string
+
+  // D — Zalo OA user id (numeric, 6–32 digits) for ZNS routing; optional, falls
+  // back to phone when absent.
+  @IsString()
+  @IsOptional()
+  @Matches(/^\d{6,32}$/, { message: 'Zalo ID must be 6–32 digits' })
+  zaloId?: string
+
+  // D — consent: when true, all channels skip this passenger (SMS STOP / Zalo opt-out).
+  @IsBoolean()
+  @IsOptional()
+  contactOptOut?: boolean
 }

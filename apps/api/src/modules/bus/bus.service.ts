@@ -14,6 +14,11 @@ export class BusService {
     })
   }
 
+  /** Tenant-scoped fleet size (for aggregate views like the chat snapshot). */
+  async countForTenant(tenantId: string): Promise<number> {
+    return this.prisma.bus.count({ where: { tenantId } })
+  }
+
   async findOne(id: string, tenantId: string) {
     const bus = await this.prisma.bus.findFirst({ where: { id, tenantId } })
     if (!bus) throw new NotFoundException('Bus not found')

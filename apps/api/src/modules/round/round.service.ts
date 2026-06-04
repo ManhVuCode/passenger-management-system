@@ -4,17 +4,20 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { PrismaService } from '../../prisma/prisma.service'
 import { CreateRoundDto } from './dto/create-round.dto'
 import { UpdateRoundStatusDto } from './dto/update-round-status.dto'
 import { RoundStatus, Role, JwtPayload } from '@pms/shared'
 import { AttendanceGateway } from '../../gateway/attendance.gateway'
+import { RoundEvents, type RoundEventPayload } from '../../common/events/round.events'
 
 @Injectable()
 export class RoundService {
   constructor(
     private prisma: PrismaService,
     private gateway: AttendanceGateway,
+    private events: EventEmitter2,
   ) {}
 
   async findAllByTrip(tripId: string, tenantId: string) {
@@ -91,7 +94,28 @@ export class RoundService {
       status: dto.status,
     })
 
+    // Side-effect only — emit AFTER the status change is committed. Existing
+    // behavior is untouched; the NotificationDispatcher reacts to these.
+    const event = this.statusEvent(dto.status)
+    if (event) {
+      const payload: RoundEventPayload = { tenantId, tripId: round.tripId, roundId: id }
+      this.events.emit(event, payload)
+    }
+
     return updated
+  }
+
+  private statusEvent(status: RoundStatus): string | null {
+    switch (status) {
+      case RoundStatus.IN_PROGRESS:
+        return RoundEvents.STARTED
+      case RoundStatus.CANCELLED:
+        return RoundEvents.CANCELLED
+      case RoundStatus.DONE:
+        return RoundEvents.COMPLETED
+      default:
+        return null
+    }
   }
 
   private validateStatusTransition(current: RoundStatus, next: RoundStatus) {

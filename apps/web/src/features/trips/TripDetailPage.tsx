@@ -21,6 +21,8 @@ import {
 } from '../allocation/allocationApi'
 import { useAppSelector } from '../../store/hooks'
 import NotificationPanel from '../notifications/NotificationPanel'
+import NotificationHistory from '../notifications/NotificationHistory'
+import NotificationRules from '../notifications/NotificationRules'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
 import { SectionCard } from '../../components/ui/section-card'
@@ -293,6 +295,17 @@ export default function TripDetailPage() {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      <div className="mt-10">
+        <NotificationRules />
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-lg font-extrabold text-navy-900 tracking-tight mb-4">
+          {t('notifications.historyTitle')}
+        </h2>
+        <NotificationHistory tripId={tripId!} />
       </div>
 
       <AnimatePresence>

@@ -5,6 +5,7 @@ import { logout } from '../features/auth/authSlice'
 import { Bus, MapPin, LogOut, Users, Shield, LayoutDashboard } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { LanguageToggle } from '../components/LanguageToggle'
+import ChatWidget from '../features/chat/components/ChatWidget'
 
 type NavItem = {
   to: string
@@ -131,6 +132,9 @@ export default function DashboardLayout() {
       <main className="flex-1 ml-[220px] min-h-screen">
         <Outlet />
       </main>
+
+      {/* Tour assistant — Admin only (the /chat endpoint is ADMIN-scoped) */}
+      {role === 'ADMIN' && <ChatWidget />}
     </div>
   )
 }

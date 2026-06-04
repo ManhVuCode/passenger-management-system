@@ -6,6 +6,14 @@ dist/
 .DS_Store
 coverage/
 .turbo/
-.claude/settings.local.json
 __pycache__/
 *.pyc
+
+# Claude tooling & session artifacts — keep local, don't push
+.claude/
+CLAUDE.md
+/Resume.md
+/Read
+
+# Rendered design diagrams — kept out of the project repo
+docs/*diagram*.html

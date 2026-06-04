@@ -1,6 +1,12 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+# node_modules was installed by the snap-confined pnpm (store under
+# ~/snap/code/<rev>/.local/share/pnpm/store/v11); a plain-terminal pnpm uses
+# ~/.local/share/pnpm/store/v11. The store mismatch makes pnpm's pre-run deps
+# check want to purge + reinstall node_modules, which aborts without a TTY.
+# The install is valid and self-contained, so skip the pre-run verification.
+verifyDepsBeforeRun: false
 allowBuilds:
   '@nestjs/core': true
   '@prisma/client': true
@@ -8,5 +14,6 @@ allowBuilds:
   '@scarf/scarf': true
   bcrypt: true
   esbuild: true
+  msgpackr-extract: false
   prisma: true
   unrs-resolver: true

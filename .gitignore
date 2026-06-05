@@ -17,3 +17,8 @@ CLAUDE.md
 
 # Rendered design diagrams — kept out of the project repo
 docs/*diagram*.html
+
+# Tài liệu nội bộ — giữ local, không đẩy lên repo
+docs/sprint-*.md
+docs/feature-plan-comms-automation-voice.*
+docs/ui-redesign-notes.*

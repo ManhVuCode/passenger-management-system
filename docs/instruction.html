@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hướng dẫn kiểm thử — Phase A · B · C · D · E · Chatbot | MPMS Docs</title>
+  <title>Hướng dẫn kiểm thử — Phase A · B · C · D · Chatbot | MPMS Docs</title>
   <link rel="stylesheet" href="assets/docs.css">
 </head>
 <body>
@@ -31,7 +31,7 @@
           <li><a href="#test-d">5. Test D — Nút “Driver Alert” (IN_APP)</a></li>
           <li><a href="#test-e">6. Test E — Teams (kênh nội bộ)</a></li>
           <li><a href="#test-f">7. Test F — Kiểm thử API trực tiếp</a></li>
-          <li><a href="#test-g">8. Test G — Điểm danh bằng giọng nói</a></li>
+          <li><a href="#test-g">8. Điểm danh giọng nói (đã gỡ)</a></li>
           <li class="toc-group">Phase B — Gửi tự động</li>
           <li><a href="#phase-b">9. Phase B — Engine tự động theo sự kiện</a></li>
           <li class="toc-group">Phase C — Gọi thoại (mock)</li>
@@ -49,14 +49,13 @@
 
     <main class="content">
       <div class="page-head">
-        <h1 class="page-title">Hướng dẫn kiểm thử — Phase A · B · C · D · E · Chatbot</h1>
+        <h1 class="page-title">Hướng dẫn kiểm thử — Phase A · B · C · D · Chatbot</h1>
         <p class="page-subtitle">Thông báo &amp; lịch sử (A), engine gửi tự động theo sự kiện chặng (B), và gọi thoại ra cho hành khách + RSVP “bấm 1” (C). Tất cả chạy ở chế độ MOCK.</p>
         <div class="page-meta">
           <span class="badge badge-amber">Phase A</span>
           <span class="badge badge-amber">Phase B</span>
           <span class="badge badge-amber">Phase C</span>
           <span class="badge badge-amber">Phase D</span>
-          <span class="badge badge-amber">Phase E</span>
           <span class="badge badge-amber">Chatbot</span>
           <span class="badge badge-sky">Chế độ MOCK (không gửi thật)</span>
           <span class="badge badge-gray">Cập nhật 2026-06-04</span>
@@ -111,8 +110,6 @@ pnpm --filter pwa dev</code></pre>
             <tr><td>A6</td><td>Sửa nút “Broadcast Call”</td><td>Nút trên Live Dashboard giờ gọi cảnh báo IN_APP qua WebSocket</td></tr>
             <tr><td>A7</td><td>Hàng đợi gửi bất đồng bộ</td><td>BullMQ: retry 3 lần (backoff), concurrency 5, dead-letter</td></tr>
             <tr><td>A8</td><td>Lịch sử thông báo</td><td>API <code>GET /trips/:id/notifications</code> + bảng trong trang Chi tiết chuyến</td></tr>
-            <tr><td>QW4</td><td>Điểm danh bằng giọng nói (PWA)</td><td>Web Speech API + fuzzy match (fuse.js) → tài xế xác nhận</td></tr>
-            <tr><td>E1</td><td>Roll-call đọc tên (PWA · Phase E)</td><td><code>SpeechSynthesis</code> đọc tên <strong>offline</strong>; tài xế chạm Có mặt/Vắng/Bỏ qua từng người; không tự điểm danh</td></tr>
             <tr><td>B1</td><td>Sự kiện miền (EventEmitter2)</td><td><code>round.started/cancelled/completed</code> phát SAU khi commit (side-effect, không đổi hành vi cũ)</td></tr>
             <tr><td>B2</td><td>Dispatcher gửi tự động</td><td><code>@OnEvent</code> → kiểm <code>autoRules</code> (opt-in) → gửi mẫu cá nhân hoá; lỗi được nuốt, không ảnh hưởng request</td></tr>
             <tr><td>B3</td><td>Mẫu tin vi/en</td><td>Biến <code>{{passengerName}} {{tripName}} {{roundName}} {{busPlate}} {{departureTime}}</code></td></tr>
@@ -216,35 +213,12 @@ curl -s "http://localhost:3000/trips/$TRIP/notifications?limit=20" \
       <blockquote><strong>Bảo mật:</strong> mọi truy vấn lịch sử đều lọc theo <code>tenantId</code> (cách ly đa khách thuê — R10);
       cột số điện thoại lưu &amp; trả về đều <strong>được che</strong> (chỉ 3 số cuối). Endpoint chỉ dành cho <code>ADMIN</code>.</blockquote>
 
-      <h2 id="test-g">8. Test G — Điểm danh bằng giọng nói (QW4, PWA)</h2>
-      <blockquote>
-        Cần <strong>Chrome trên máy thật + microphone + có mạng</strong> (Web Speech API gửi âm thanh lên dịch vụ của trình duyệt).
-        Tính năng <strong>không tự điểm danh</strong> — luôn yêu cầu tài xế xác nhận, giữ đúng quyền điểm danh của BusManager.
-      </blockquote>
-      <ol>
-        <li>Đăng nhập PWA (cổng 5174) bằng tài khoản BusManager, mở chặng/xe được phân công.</li>
-        <li>Bấm nút <strong>“Điểm danh giọng nói”</strong> (biểu tượng micro, ngay dưới 2 nút “Điểm danh tất cả”).</li>
-        <li>Khi hiện “Đang nghe…”, <strong>đọc to tên một hành khách</strong> trong danh sách.</li>
-        <li>Nếu khớp, hiện hộp xác nhận với tên hành khách → bấm <strong>“Điểm danh”</strong> để đánh dấu <code>JOIN</code>.</li>
-        <li>Nếu không khớp, hiện “Không khớp hành khách nào với …” để thử lại.</li>
-      </ol>
-      <p>Trình duyệt không hỗ trợ (vd Firefox) sẽ hiện “Trình duyệt không hỗ trợ nhập bằng giọng nói” — đúng như thiết kế (suy biến nhẹ nhàng).</p>
+      <h2 id="test-g">8. Điểm danh bằng giọng nói — <em>đã gỡ bỏ</em></h2>
+      <blockquote>Tính năng điểm danh bằng giọng nói (Voice check-in &amp; Roll-call đọc tên) đã được
+      <strong>gỡ khỏi ứng dụng</strong>; điểm danh nay chỉ qua thao tác chạm trên app tài xế.
+      (Gọi điện thoại tới khách &amp; SMS/Zalo vẫn giữ nguyên.)</blockquote>
 
       <!-- ===================== PHASE B ===================== -->
-      <h3>G-2. Roll-call — đọc tên (Phase E · TTS)</h3>
-      <p>Bản nâng cấp <strong>Phase E</strong>: thay vì tài xế <em>nói</em> tên (STT ở G-1), hệ thống <strong>đọc to từng tên</strong>
-      trong danh sách (Web <code>SpeechSynthesis</code> — miễn phí, chạy <strong>offline</strong> trên máy, ổn trong môi trường ồn);
-      tài xế chỉ chạm <strong>Có mặt / Vắng / Bỏ qua</strong> cho từng người.</p>
-      <ol>
-        <li>Trong PWA (cổng 5174, tài khoản BusManager <code>driver@demo.com</code> · <code>password123</code>), mở chặng được phân công.</li>
-        <li>Bấm nút <strong>“Điểm danh đọc tên” / “Roll-call (read names aloud)”</strong> (ngay dưới nút “Voice check-in”).</li>
-        <li>Hộp thoại hiện tên + tiến độ (vd <strong>1 / 7</strong>) và <strong>đọc to tên</strong>; chạm vào tên để đọc lại.</li>
-        <li>Chạm <strong>Có mặt</strong> → đánh dấu <code>JOIN</code>; <strong>Vắng</strong> → <code>ABSENT</code>; <strong>Bỏ qua</strong> → giữ nguyên.
-          Mỗi lựa chọn tự chuyển sang người kế tiếp; hết danh sách hộp thoại tự đóng.</li>
-      </ol>
-      <blockquote><strong>Không bao giờ tự điểm danh:</strong> mỗi người đều cần một thao tác của tài xế — giữ đúng quyền điểm danh
-      của BusManager (rule #5). Thiết bị không đọc được (thiếu giọng vi-VN) vẫn hiển thị tên để chạm — chỉ mất phần đọc.
-      Nâng cấp ASR đám mây vi-VN (môi trường rất ồn) vẫn để mở.</blockquote>
 
       <h2 id="phase-b">9. Phase B — Engine gửi tự động theo sự kiện</h2>
       <p>Phase B thêm khả năng <strong>tự động gửi</strong> khi trạng thái chặng đổi. Tính năng
@@ -523,7 +497,6 @@ eval $PSQL "\"delete from \\\"TenantNotificationConfig\\\";\""</code></pre>
             <tr><td>B</td><td>Engine tự động (EventEmitter + Dispatcher): chặng khởi hành/huỷ/hoàn thành → tự gửi; templating vi/en; nhắc giờ lên xe; công tắc theo tenant</td><td><span class="badge badge-sky">XONG</span> — xem mục 9</td></tr>
             <tr><td>C</td><td>Gọi thoại tới hành khách + TTS tiếng Việt; IVR “bấm 1” lưu RSVP (chỉ ý định, không ghi điểm danh); tally ý định lên xe</td><td><span class="badge badge-sky">XONG (mock)</span> — xem mục 10</td></tr>
             <tr><td>D</td><td>Kênh Zalo ZNS (mock + nhánh ZNS thật trơ); nhập Zalo ID cho hành khách; opt-out tôn trọng mọi kênh</td><td><span class="badge badge-sky">XONG (mock)</span> — xem mục 11</td></tr>
-            <tr><td>E</td><td>Roll-call đọc tên (TTS offline) — tài xế chạm Có mặt/Vắng từng người; nâng cấp ASR đám mây vi-VN vẫn để mở</td><td><span class="badge badge-sky">XONG (roll-call)</span> — xem mục 8 (G-2)</td></tr>
             <tr><td>Chatbot</td><td>Trợ lý chuyến đi: hỏi đáp số liệu (server-side, chính xác) + RAG “cách hệ thống hoạt động”; chips + lệnh; mock mặc định, Ollama tuỳ chọn</td><td><span class="badge badge-sky">XONG</span> — xem mục 12</td></tr>
           </tbody>
         </table>
@@ -533,7 +506,7 @@ eval $PSQL "\"delete from \\\"TenantNotificationConfig\\\";\""</code></pre>
       <blockquote>Mọi nhà cung cấp thật đều đứng sau lớp <code>MessageProvider</code> và mặc định ở chế độ MOCK,
       nên có thể bật từng tenant lên “live” mà không đổi mã nghiệp vụ. Không commit khoá API — chỉ dùng biến môi trường / secret ref.</blockquote>
 
-      <footer class="page-footer">MPMS · Hướng dẫn kiểm thử Phase A · B · C · D · E · Chatbot · cập nhật 2026-06-04</footer>
+      <footer class="page-footer">MPMS · Hướng dẫn kiểm thử Phase A · B · C · D · Chatbot · cập nhật 2026-06-04</footer>
     </main>
   </div>
 

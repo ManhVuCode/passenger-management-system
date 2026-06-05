@@ -80,28 +80,6 @@ export const en = {
     noteLabel: '▼ Note: {{note}}',
   },
 
-  voice: {
-    button: 'Voice check-in',
-    listening: 'Listening…',
-    heard: 'Heard: "{{text}}"',
-    unsupported: 'Voice input is not supported on this browser',
-    noMatch: 'No passenger matched "{{text}}"',
-    error: 'Could not capture voice — try again',
-    confirmTitle: 'Mark this passenger present?',
-    confirmJoin: 'Mark Present',
-  },
-
-  rollcall: {
-    button: 'Roll-call (read names aloud)',
-    title: 'Voice roll-call',
-    present: 'Present',
-    absent: 'Absent',
-    skip: 'Skip',
-    current: 'Currently: {{status}}',
-    replay: 'Tap the name to repeat',
-    noAudio: 'Audio not supported on this device — names shown only',
-  },
-
   profile: {
     driver: 'Driver',
     appFooter: 'MPMS · v1.0 · BusManager App',

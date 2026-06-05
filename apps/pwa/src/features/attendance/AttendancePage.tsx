@@ -10,8 +10,6 @@ import {
 } from './attendanceApi'
 import { useAttendanceSocket, type AttendanceUpdate } from '../../hooks/useAttendanceSocket'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
-import VoiceAttendance from './VoiceAttendance'
-import RollCall from './RollCall'
 import { Button } from '../../components/ui/button'
 import { Badge, type BadgeVariant } from '../../components/ui/badge'
 import {
@@ -285,25 +283,6 @@ export default function AttendancePage() {
           <X size={14} /> {t('attendance.markAllAbsent')}
         </Button>
       </div>
-
-      <VoiceAttendance
-        passengers={passengers.map((p) => ({
-          id: p.id,
-          name: p.tripPassengerAssignment.name,
-        }))}
-        onConfirm={(id) => handleMark(id, 'JOIN')}
-        disabled={!passengers.length || marking}
-      />
-
-      <RollCall
-        passengers={passengers.map((p) => ({
-          id: p.id,
-          name: p.tripPassengerAssignment.name,
-          status: p.attendanceRecord?.status as 'JOIN' | 'ABSENT' | undefined,
-        }))}
-        onMark={handleMark}
-        disabled={!passengers.length || marking}
-      />
 
       <div className="flex-1 overflow-y-auto pb-32">
         <div className="space-y-px">

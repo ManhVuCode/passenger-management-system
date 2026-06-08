@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"pnpm --filter api dev\" \"pnpm --filter web dev\" \"pnpm --filter pwa dev\"",
+    "start": "pnpm --filter shared build && concurrently -k -n api,web,pwa -c green,cyan,magenta \"pnpm --filter api dev\" \"pnpm --filter web dev\" \"pnpm --filter pwa dev\"",
+    "setup": "pnpm --filter api db:generate && pnpm --filter api exec prisma migrate deploy",
     "build": "pnpm --filter shared build && pnpm --filter api build && pnpm --filter web build && pnpm --filter pwa build",
     "test": "pnpm --filter api test",
     "db:migrate": "pnpm --filter api db:migrate",

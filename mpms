@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# mpms — MPMS monorepo dev launcher.
+# Chạy từ thư mục gốc passenger-management-system:  ./mpms start
+#
+#   ./mpms start   → build shared rồi chạy CẢ 3: api(:3000) + web(:5173) + pwa(:5174)
+#   ./mpms api     → chỉ API (NestJS watch)         — gồm cả bot Telegram
+#   ./mpms web     → chỉ Web admin
+#   ./mpms pwa     → chỉ PWA tài xế
+#   ./mpms setup   → prisma generate + migrate (chạy 1 lần khi mới clone / đổi schema)
+#   ./mpms stop    → tắt mọi dev server đang giữ cổng 3000/5173/5174
+set -euo pipefail
+cd "$(dirname "$(readlink -f "$0")")"
+
+cmd="${1:-start}"
+case "$cmd" in
+  start|dev)
+    echo "▸ MPMS: build shared → chạy api(:3000) + web(:5173) + pwa(:5174). Ctrl+C để dừng tất cả."
+    exec pnpm run start
+    ;;
+  api)   exec pnpm --filter api dev ;;
+  web)   pnpm --filter shared build && exec pnpm --filter web dev ;;
+  pwa)   pnpm --filter shared build && exec pnpm --filter pwa dev ;;
+  setup) exec pnpm run setup ;;
+  stop)
+    for p in 3000 5173 5174; do
+      pid="$(lsof -ti "tcp:$p" 2>/dev/null || true)"
+      if [ -n "$pid" ]; then kill $pid 2>/dev/null && echo "  ✓ đã tắt :$p (pid $pid)"; else echo "  · :$p không chạy"; fi
+    done
+    ;;
+  help|-h|--help)
+    sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+    ;;
+  *)
+    echo "Lệnh không hợp lệ: $cmd"; echo "Thử: ./mpms start  (hoặc ./mpms help)"; exit 1 ;;
+esac

@@ -39,7 +39,7 @@ This project implements a **production-grade, multi-tenant passenger attendance 
 | **Core Entities** | Trip, Round, Bus, TripPassengerAssignment, RoundPassengerAssignment, AttendanceRecord |
 | **Key Tech** | NestJS · PostgreSQL · Prisma · React · WebSocket/MQTT |
 | **UI Targets** | Admin Desktop Web · BusManager Offline-First PWA |
-| **Integration** | Google Sheets Sync · SMS · MS Teams · Zalo (client-side) |
+| **Integration** | Google Sheets Sync · SMS · MS Teams · Telegram (Bot API) |
 
 ---
 
@@ -244,7 +244,7 @@ BusManager attendance updates broadcast in real-time to Admin dashboard and othe
 
 - **SMS** — text message to passenger phone
 - **Microsoft Teams** — Teams message
-- **Zalo** — client-side deep link / Web SDK
+- **Telegram** — Bot API (free, no business license required)
 - **Broadcast call** — trigger call to all passengers signaling boarding
 
 ### 7.7 Voice Attendance (Optional — Post-MVP)
@@ -288,7 +288,7 @@ Attendance and passenger data exportable to xlsx for accounting team. Finance wo
 ┌─────────────────────────────────────────────────────────┐
 │              EXTERNAL INTEGRATIONS                       │
 │  Google Sheets API · SMS Gateway · MS Teams API         │
-│  Zalo Web SDK (client-side) · MQTT Broker · xlsx export │
+│  Telegram Bot API · MQTT Broker · xlsx export           │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -415,7 +415,7 @@ WebSocket/MQTT integration, live Admin attendance dashboard (per-bus, per-round)
 ---
 
 ### Sprint 8 — Notifications and External Integrations
-SMS to passengers, Microsoft Teams integration, Zalo client-side, broadcast call feature, Google Sheets export for accounting.
+SMS to passengers, Microsoft Teams integration, Telegram messaging, broadcast call feature, Google Sheets export for accounting.
 
 ---
 

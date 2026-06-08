@@ -20,6 +20,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { MeModule } from './modules/me/me.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { TelegramModule } from './modules/telegram/telegram.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { SystemAdminModule } from './modules/system-admin/system-admin.module';
@@ -44,6 +45,7 @@ import { HealthModule } from './health/health.module';
     GatewayModule,
     QueueModule,
     NotificationModule,
+    TelegramModule,
     ChatModule,
     SystemAdminModule,
     UsersModule,

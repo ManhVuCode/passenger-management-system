@@ -28,14 +28,10 @@ export class CreatePassengerDto {
   @IsOptional()
   hotelRoom?: string
 
-  // D — Zalo OA user id (dạng số, 6–32 chữ số) dùng để định tuyến ZNS; tuỳ chọn, sẽ
-  // quay về dùng phone khi vắng mặt.
-  @IsString()
-  @IsOptional()
-  @Matches(/^\d{6,32}$/, { message: 'Zalo ID must be 6–32 digits' })
-  zaloId?: string
+  // D — telegramChatId KHÔNG nhập tay: do bot đăng ký tự gắn khi hành khách bấm /start +
+  // nhập số điện thoại. Admin chỉ xem (read-only), không gửi qua DTO này.
 
-  // D — đồng ý: khi true, tất cả các kênh bỏ qua hành khách này (SMS STOP / Zalo opt-out).
+  // D — đồng ý: khi true, tất cả các kênh bỏ qua hành khách này (SMS STOP / Telegram opt-out).
   @IsBoolean()
   @IsOptional()
   contactOptOut?: boolean

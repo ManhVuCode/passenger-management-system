@@ -8,7 +8,7 @@ import type { ChatContext, ChatLang } from '../chat.types'
 const DOMAIN_PRIMER =
   'Domain: MPMS tracks passenger attendance on multi-leg tourist bus tours, separately per operator (multi-tenant). ' +
   'A tour (Trip) has rounds (legs); a round is PLANNED → IN_PROGRESS → DONE or CANCELLED, and a tour’s status is derived from its rounds. ' +
-  'Passengers are data only (no login) and are reached by SMS/Zalo/voice; they can opt out. ' +
+  'Passengers are data only (no login) and are reached by SMS/Telegram/voice; they can opt out. ' +
   'Attendance (JOIN/ABSENT/CANCELLED) is set by the BusManager per round and is never auto-marked.'
 
 export function systemPrompt(lang: ChatLang): string {

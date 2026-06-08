@@ -48,11 +48,11 @@ const KB: KnowledgeDoc[] = [
     },
   },
   {
-    keywords: 'passenger guest contact phone zalo opt out optout reach data stop hanh khach lien he tu choi',
+    keywords: 'passenger guest contact phone telegram opt out optout reach data stop hanh khach lien he tu choi',
     title: { en: 'Passengers', vi: 'Hành khách' },
     body: {
-      en: 'Passengers are data only (no accounts). They are reached via SMS, Zalo or voice call — never an in-app login. Any passenger can opt out of contact, and opted-out passengers are skipped on every channel.',
-      vi: 'Hành khách chỉ là dữ liệu (không có tài khoản). Họ được liên hệ qua SMS, Zalo hoặc gọi thoại — không đăng nhập app. Bất kỳ hành khách nào cũng có thể từ chối nhận liên hệ, và người đã từ chối sẽ bị bỏ qua ở mọi kênh.',
+      en: 'Passengers are data only (no accounts). They are reached via SMS, Telegram or voice call — never an in-app login. Any passenger can opt out of contact, and opted-out passengers are skipped on every channel.',
+      vi: 'Hành khách chỉ là dữ liệu (không có tài khoản). Họ được liên hệ qua SMS, Telegram hoặc gọi thoại — không đăng nhập app. Bất kỳ hành khách nào cũng có thể từ chối nhận liên hệ, và người đã từ chối sẽ bị bỏ qua ở mọi kênh.',
     },
   },
   {
@@ -64,11 +64,11 @@ const KB: KnowledgeDoc[] = [
     },
   },
   {
-    keywords: 'notification notifications message messages sms zalo zns voice call teams broadcast automation rule boarding reminder opt out optout consent thong bao gui tin nhan tu dong nhac tu choi',
+    keywords: 'notification notifications message messages sms telegram bot voice call teams broadcast automation rule boarding reminder opt out optout consent thong bao gui tin nhan tu dong nhac tu choi',
     title: { en: 'Notifications & automation', vi: 'Thông báo & tự động' },
     body: {
-      en: 'Operators can message passengers by SMS, Zalo (ZNS) or voice call, and alert drivers in-app or via Teams. Automation rules can auto-send on round start/cancel/complete plus a boarding reminder; all are off by default and opt-in per operator. Real providers run in mock mode until configured with credentials.',
-      vi: 'Nhà xe có thể nhắn hành khách qua SMS, Zalo (ZNS) hoặc gọi thoại, và cảnh báo tài xế trong app hoặc qua Teams. Quy tắc tự động có thể gửi khi chặng khởi hành/huỷ/hoàn thành kèm nhắc giờ lên xe; tất cả mặc định tắt, bật theo từng nhà xe. Nhà cung cấp thật chạy ở chế độ mock cho tới khi được cấu hình.',
+      en: 'Operators can message passengers by SMS, Telegram or voice call, and alert drivers in-app or via Teams. Automation rules can auto-send on round start/cancel/complete plus a boarding reminder; all are off by default and opt-in per operator. Real providers run in mock mode until configured with credentials.',
+      vi: 'Nhà xe có thể nhắn hành khách qua SMS, Telegram hoặc gọi thoại, và cảnh báo tài xế trong app hoặc qua Teams. Quy tắc tự động có thể gửi khi chặng khởi hành/huỷ/hoàn thành kèm nhắc giờ lên xe; tất cả mặc định tắt, bật theo từng nhà xe. Nhà cung cấp thật chạy ở chế độ mock cho tới khi được cấu hình.',
     },
   },
 ]

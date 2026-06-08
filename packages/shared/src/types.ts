@@ -65,7 +65,7 @@ export interface TripPassengerAssignment {
   type?: string
   note?: string
   hotelRoom?: string
-  zaloId?: string
+  telegramChatId?: string
   contactOptOut?: boolean
   createdAt: Date
 }

@@ -16,7 +16,7 @@ export interface SendResult {
 
 /** Một tin nhắn đã render gửi tới một người nhận trên một kênh. */
 export interface MessagePayload {
-  to: string // số điện thoại hoặc zaloId (hoặc nhãn webhook cho các kênh staff)
+  to: string // số điện thoại hoặc telegram chat id (hoặc nhãn webhook cho các kênh staff)
   body: string // nội dung tin nhắn đã render
   tenantId: string
   templateKey?: string
@@ -24,6 +24,6 @@ export interface MessagePayload {
 
 /** Interface theo mẫu Strategy: một adapter cho mỗi kênh gửi. */
 export interface IMessageProvider {
-  readonly channel: string // 'SMS' | 'ZALO' | 'VOICE' | 'TEAMS' (kênh gửi)
+  readonly channel: string // 'SMS' | 'TELEGRAM' | 'VOICE' | 'TEAMS' (kênh gửi)
   send(payload: MessagePayload): Promise<SendResult>
 }

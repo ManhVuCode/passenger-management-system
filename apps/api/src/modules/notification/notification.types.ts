@@ -15,7 +15,7 @@ export type NotificationStatus =
   | 'BOUNCED'
   | 'NO_ANSWER'
 
-/** Phản hồi của hành khách ghi nhận qua nhấn phím 1 trên IVR voice (hoặc sau này là nút Zalo) —
+/** Phản hồi của hành khách ghi nhận qua nhấn phím 1 trên IVR voice (hoặc sau này là nút Telegram) —
  *  CHỈ LÀ Ý ĐỊNH. Lưu trên NotificationLog.rsvp; KHÔNG BAO GIỜ ghi vào một
  *  AttendanceRecord (vốn là JOIN | ABSENT | CANCELLED, do BusManager/Admin đặt). */
 export type RsvpIntent = 'WILL_BOARD' | 'WONT_BOARD'
@@ -31,8 +31,8 @@ export interface SendJobData {
 /** Định dạng số điện thoại chấp nhận cho người nhận SMS/voice. */
 export const PHONE_RE = /^\+?[0-9]{9,15}$/
 
-/** Định dạng Zalo OA user-id — một id dạng số thường dài hơn số điện thoại (18-19 chữ số). */
-export const ZALO_ID_RE = /^[0-9]{6,32}$/
+/** Định dạng Telegram chat target — chat_id dạng số (private/supergroup) hoặc @username. */
+export const TELEGRAM_ID_RE = /^(-?[0-9]{1,20}|@[A-Za-z0-9_]{5,32})$/
 
 /** Che bớt contact để lưu trữ/hiển thị — chỉ giữ lại 3 ký tự cuối. */
 export function redactContact(contact: string): string {

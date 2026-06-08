@@ -1,6 +1,6 @@
 import { baseApi } from '../../store/baseApi'
 
-export type NotificationChannel = 'SMS' | 'TEAMS' | 'BROADCAST' | 'IN_APP' | 'ZALO' | 'VOICE'
+export type NotificationChannel = 'SMS' | 'TEAMS' | 'BROADCAST' | 'IN_APP' | 'TELEGRAM' | 'VOICE'
 
 interface SendPayload {
   tripId: string

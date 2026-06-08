@@ -58,7 +58,6 @@ export default function PassengerListPage() {
     type: '',
     note: '',
     hotelRoom: '',
-    zaloId: '',
   })
   const [errors, setErrors] = useState({ name: '', phone: '' })
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -90,9 +89,9 @@ export default function PassengerListPage() {
     }
     await createPassenger({
       tripId: tripId!,
-      body: { ...form, zaloId: form.zaloId.trim() || undefined },
+      body: form,
     })
-    setForm({ name: '', phone: '', idCard: '', type: '', note: '', hotelRoom: '', zaloId: '' })
+    setForm({ name: '', phone: '', idCard: '', type: '', note: '', hotelRoom: '' })
     setErrors({ name: '', phone: '' })
     setTab('list')
   }
@@ -102,7 +101,7 @@ export default function PassengerListPage() {
     setEditingId(null)
   }
 
-  // D — mô phỏng việc hành khách chủ động từ chối nhận tin (SMS STOP / Zalo opt-out). Được áp dụng khi gửi:
+  // D — mô phỏng việc hành khách chủ động từ chối nhận tin (SMS STOP / Telegram opt-out). Được áp dụng khi gửi:
   // hành khách đã opt-out sẽ bị bỏ qua kèm một dòng log OPT_OUT.
   function handleToggleOptOut(p: { id: string; contactOptOut?: boolean }) {
     void updatePassenger({ id: p.id, tripId: tripId!, body: { contactOptOut: !p.contactOptOut } })
@@ -487,13 +486,6 @@ export default function PassengerListPage() {
                     onChange={(e) => setForm({ ...form, hotelRoom: e.target.value })}
                   />
                 </FormField>
-                <FormField label={t('passengers.zaloId')}>
-                  <FormInput
-                    placeholder={t('passengers.zaloIdPlaceholder')}
-                    value={form.zaloId}
-                    onChange={(e) => setForm({ ...form, zaloId: e.target.value })}
-                  />
-                </FormField>
                 <div className="col-span-2">
                   <FormField label={t('passengers.note')}>
                     <FormInput
@@ -631,7 +623,7 @@ export default function PassengerListPage() {
                   <td className="px-6 py-4 text-sm text-gray-600 font-medium">
                     <div className="flex items-center gap-1.5">
                       <span>{p.phone}</span>
-                      {p.zaloId && <Badge variant="secondary" label={t('passengers.zalo')} />}
+                      {p.telegramChatId && <Badge variant="secondary" label={t('passengers.telegram')} />}
                       {p.contactOptOut && (
                         <Badge variant="warning" label={t('passengers.optedOut')} />
                       )}

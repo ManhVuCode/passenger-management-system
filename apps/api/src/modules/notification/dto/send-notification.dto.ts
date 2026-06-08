@@ -5,7 +5,7 @@ export enum NotificationChannel {
   TEAMS = 'TEAMS',
   BROADCAST = 'BROADCAST', // bí danh cũ của IN_APP (NotificationPanel hiện có)
   IN_APP = 'IN_APP', // cảnh báo WebSocket trong ứng dụng gửi tới tài xế
-  ZALO = 'ZALO',
+  TELEGRAM = 'TELEGRAM',
   VOICE = 'VOICE',
 }
 

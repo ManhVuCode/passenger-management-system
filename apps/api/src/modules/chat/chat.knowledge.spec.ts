@@ -18,7 +18,7 @@ describe('retrieveKnowledge (lexical RAG)', () => {
   })
 
   it('returns top-k localized chunks ordered by score', () => {
-    const r = retrieveKnowledge('zalo sms voice notification automation reminder', 'en', 2)
+    const r = retrieveKnowledge('telegram sms voice notification automation reminder', 'en', 2)
     expect(r.length).toBeGreaterThan(0)
     expect(r.length).toBeLessThanOrEqual(2)
     expect(r[0].score).toBeGreaterThanOrEqual(r[r.length - 1].score)

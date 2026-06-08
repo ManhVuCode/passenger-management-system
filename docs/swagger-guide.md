@@ -158,7 +158,7 @@ Tất cả tài khoản đều dùng password: `password123`.
 ### Notifications
 | Method | Path | Mô tả |
 |--------|------|-------|
-| POST | `/trips/:tripId/rounds/:roundId/notify` | Gửi thông báo cho hành khách trong chặng (SMS / Teams / Zalo / broadcast call) — Admin |
+| POST | `/trips/:tripId/rounds/:roundId/notify` | Gửi thông báo cho hành khách trong chặng (SMS / Teams / Telegram / broadcast call) — Admin |
 
 ### System Tenants (SystemAdmin)
 | Method | Path | Mô tả |

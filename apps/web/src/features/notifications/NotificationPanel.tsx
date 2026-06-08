@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useSendNotificationMutation, type NotificationChannel } from './notificationApi'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
-import { MessageSquare, Webhook, BellRing, PhoneCall, MessageCircle, CheckCircle, AlertCircle } from 'lucide-react'
+import { MessageSquare, Webhook, BellRing, PhoneCall, Send, CheckCircle, AlertCircle } from 'lucide-react'
 
 export default function NotificationPanel({
   tripId,
@@ -41,10 +41,10 @@ export default function NotificationPanel({
       description: t('notifications.voiceDesc'),
     },
     {
-      key: 'ZALO',
-      label: t('notifications.zalo'),
-      icon: MessageCircle,
-      description: t('notifications.zaloDesc'),
+      key: 'TELEGRAM',
+      label: t('notifications.telegram'),
+      icon: Send,
+      description: t('notifications.telegramDesc'),
     },
   ]
 

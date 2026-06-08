@@ -353,7 +353,7 @@ Open any `.html` file directly in a browser — no build step needed.
 | 5 | Round passenger allocation + capacity warning + Admin-only move | ✅ Done |
 | 6 | Attendance workflow — mark, override, cascade, summary, round note | ✅ Done |
 | 7 | Real-time WebSocket dashboard (Admin live feed + PWA peer banner) | ✅ Done |
-| 8 | Notifications (SMS / Teams / Zalo / Broadcast Call) | ✅ Done |
+| 8 | Notifications (SMS / Teams / Telegram / Broadcast Call) | ✅ Done |
 | 9 | PWA offline-first (Service Worker + Background Sync) · Testing · Deployment | ✅ Done |
 
 ---

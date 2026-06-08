@@ -11,13 +11,13 @@ import { NotificationSender } from './notification.sender'
 import { TemplateService, type TemplateKey, type TemplateLocale } from './templates/template.service'
 import { resolveAutoRules, type AutoRules } from './notification.config'
 import { NOTIFICATION_QUEUE } from '../queue/queue.module'
-import { PHONE_RE, ZALO_ID_RE, redactContact, type NotificationTrigger, type RsvpIntent, type SendJobData } from './notification.types'
+import { PHONE_RE, TELEGRAM_ID_RE, redactContact, type NotificationTrigger, type RsvpIntent, type SendJobData } from './notification.types'
 
 interface Recipient {
   id: string
   name: string
   phone: string
-  zaloId: string | null
+  telegramChatId: string | null
   contactOptOut: boolean
 }
 
@@ -81,7 +81,7 @@ export class NotificationService {
         return this.sendInApp(ctx, recipients, dto.channel)
       case NotificationChannel.SMS:
       case NotificationChannel.VOICE:
-      case NotificationChannel.ZALO:
+      case NotificationChannel.TELEGRAM:
         return this.sendPerRecipient(ctx, recipients, dto.channel)
       default:
         throw new NotFoundException('Unsupported channel')
@@ -150,7 +150,7 @@ export class NotificationService {
     }
   }
 
-  /** SMS/Voice/Zalo = theo từng người nhận, có lọc, đưa vào hàng đợi để gửi bất đồng bộ. */
+  /** SMS/Voice/Telegram = theo từng người nhận, có lọc, đưa vào hàng đợi để gửi bất đồng bộ. */
   private async sendPerRecipient(
     ctx: SendContext,
     recipients: Recipient[],
@@ -161,7 +161,7 @@ export class NotificationService {
     let capped = 0
     const accepted: string[] = []
     // C4 — kiểm soát chi phí: giới hạn fan-out voice để một broadcast không thể quay
-    // số lượng cuộc gọi tính phí không giới hạn. SMS/Zalo không bị giới hạn.
+    // số lượng cuộc gọi tính phí không giới hạn. SMS/Telegram không bị giới hạn.
     const cap = channel === NotificationChannel.VOICE ? this.voiceFanoutCap() : Number.POSITIVE_INFINITY
 
     for (const r of recipients) {
@@ -170,10 +170,10 @@ export class NotificationService {
         capped++
         continue
       }
-      // Dùng `||` (không phải `??`) để zaloId là chuỗi rỗng cũng quay về dùng phone.
-      const contact = channel === NotificationChannel.ZALO ? (r.zaloId || r.phone) : r.phone
+      // Telegram nhắn theo chat id riêng; số điện thoại KHÔNG phải đích Telegram nên không quay về phone.
+      const contact = channel === NotificationChannel.TELEGRAM ? r.telegramChatId : r.phone
       const reason = this.rejectReason(r, contact, channel)
-      if (reason) {
+      if (reason || contact === null) {
         skipped++
         await this.prisma.notificationLog.create({
           data: {
@@ -219,7 +219,7 @@ export class NotificationService {
         `VOICE fan-out capped at ${cap}: ${capped} recipient(s) not called for round ${ctx.roundId}`,
       )
     }
-    return { sent, skipped, channel, devMode: this.isMockMode(channel), recipients: accepted }
+    return { sent, skipped, channel, devMode: await this.isMockMode(channel, ctx.tenantId), recipients: accepted }
   }
 
   /** C4 — số cuộc gọi voice tối đa mỗi broadcast (kiểm soát chi phí). Tinh chỉnh qua env, mặc định 50. */
@@ -232,11 +232,10 @@ export class NotificationService {
   private rejectReason(r: Recipient, contact: string | null, channel: NotificationChannel): string | null {
     if (r.contactOptOut) return 'OPT_OUT'
     if (!contact) return 'NO_CONTACT'
-    // Zalo chấp nhận OA user id dạng số (dài hơn số điện thoại) hoặc dùng phone dự phòng;
-    // SMS/voice chỉ chấp nhận số điện thoại.
+    // Telegram chấp nhận chat id dạng số hoặc @username; SMS/voice chỉ chấp nhận số điện thoại.
     const valid =
-      channel === NotificationChannel.ZALO
-        ? ZALO_ID_RE.test(contact) || PHONE_RE.test(contact)
+      channel === NotificationChannel.TELEGRAM
+        ? TELEGRAM_ID_RE.test(contact)
         : PHONE_RE.test(contact)
     return valid ? null : 'NO_CONTACT'
   }
@@ -262,13 +261,16 @@ export class NotificationService {
     }
   }
 
-  private isMockMode(channel: NotificationChannel): boolean {
-    const key =
-      channel === NotificationChannel.VOICE
-        ? 'VOICE_PROVIDER'
-        : channel === NotificationChannel.ZALO
-          ? 'ZALO_PROVIDER'
-          : 'SMS_PROVIDER'
+  private async isMockMode(channel: NotificationChannel, tenantId: string): Promise<boolean> {
+    // Telegram cấu hình theo từng nhà xe (token trong DB) — mock khi chưa có token.
+    if (channel === NotificationChannel.TELEGRAM) {
+      const cfg = await this.prisma.tenantNotificationConfig.findUnique({
+        where: { tenantId },
+        select: { telegramBotToken: true },
+      })
+      return !cfg?.telegramBotToken
+    }
+    const key = channel === NotificationChannel.VOICE ? 'VOICE_PROVIDER' : 'SMS_PROVIDER'
     return (this.config.get<string>(key) ?? 'MOCK').toUpperCase() === 'MOCK'
   }
 
@@ -304,7 +306,7 @@ export class NotificationService {
       where: { tripId, roundId },
       include: {
         tripPassengerAssignment: {
-          select: { id: true, name: true, phone: true, zaloId: true, contactOptOut: true },
+          select: { id: true, name: true, phone: true, telegramChatId: true, contactOptOut: true },
         },
         roundBusAssignment: { include: { bus: { select: { licensePlate: true } } } },
       },
@@ -487,7 +489,7 @@ export class NotificationService {
     })
     if (!round) throw new NotFoundException('Round not found')
 
-    const select = { id: true, name: true, phone: true, zaloId: true, contactOptOut: true }
+    const select = { id: true, name: true, phone: true, telegramChatId: true, contactOptOut: true }
 
     if (passengerIds?.length) {
       return this.prisma.tripPassengerAssignment.findMany({

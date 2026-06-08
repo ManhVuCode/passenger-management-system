@@ -10,7 +10,6 @@ interface CreatePassengerPayload {
   type?: string
   note?: string
   hotelRoom?: string
-  zaloId?: string
   contactOptOut?: boolean
 }
 

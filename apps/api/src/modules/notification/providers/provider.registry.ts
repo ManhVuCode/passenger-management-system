@@ -3,7 +3,7 @@ import type { IMessageProvider } from './message-provider.interface'
 import { SmsProvider } from './sms.provider'
 import { TeamsProvider } from './teams.provider'
 import { VoiceProvider } from './voice.provider'
-import { ZaloProvider } from './zalo.provider'
+import { TelegramProvider } from './telegram.provider'
 
 /**
  * Phân giải chuỗi channel thành provider tương ứng. IN_APP/BROADCAST KHÔNG nằm ở đây —
@@ -14,12 +14,17 @@ import { ZaloProvider } from './zalo.provider'
 export class ProviderRegistry {
   private readonly byChannel: Record<string, IMessageProvider>
 
-  constructor(sms: SmsProvider, teams: TeamsProvider, voice: VoiceProvider, zalo: ZaloProvider) {
+  constructor(
+    sms: SmsProvider,
+    teams: TeamsProvider,
+    voice: VoiceProvider,
+    telegram: TelegramProvider,
+  ) {
     this.byChannel = {
       [sms.channel]: sms,
       [teams.channel]: teams,
       [voice.channel]: voice,
-      [zalo.channel]: zalo,
+      [telegram.channel]: telegram,
     }
   }
 

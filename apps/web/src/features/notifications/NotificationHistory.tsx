@@ -19,7 +19,7 @@ function statusVariant(status: string): BadgeVariant {
 
 export default function NotificationHistory({ tripId }: { tripId: string }) {
   const { t } = useTranslation()
-  // Các dòng SMS/Voice/Zalo bắt đầu ở trạng thái QUEUED rồi mới chuyển sang SENT/FAILED sau đó
+  // Các dòng SMS/Voice/Telegram bắt đầu ở trạng thái QUEUED rồi mới chuyển sang SENT/FAILED sau đó
   // trong worker, vốn không phát tín hiệu invalidation. Chỉ poll khi còn dòng đang chờ xử lý, sau đó dừng.
   const [poll, setPoll] = useState(false)
   const [simulateRsvp, { isLoading: simulating }] = useSimulateRsvpMutation()

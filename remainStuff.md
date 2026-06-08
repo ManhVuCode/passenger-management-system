@@ -98,7 +98,7 @@ These are small in-scope deviations from what the diagrams specify. Each is a se
 - `NotificationModule` not created
 - SMS gateway integration (Twilio / local provider) — `NotificationModule → REST API`
 - Microsoft Teams Incoming Webhook
-- Zalo Web SDK — **client-side**, deep-link approach (Admin browser calls directly, no server token)
+- Telegram Bot API — server-side `sendMessage` (free, no business license; bot token from @BotFather)
 - Broadcast Call provider — voice broadcast to all passengers
 - `BROADCAST_API_KEY` / `SMS_API_KEY` / `TEAMS_WEBHOOK_URL` env slots already documented in README §8 but not wired
 - Activity diagram lane G ("Trigger Notification" → "Dispatch Notification") — both nodes unimplemented
@@ -145,6 +145,6 @@ These are small in-scope deviations from what the diagrams specify. Each is a se
 Two natural next moves, in order of effort:
 
 1. **Diagram-faithfulness pass (~½ day)** — fix gaps §2.1, §2.2, §2.4. Optionally rename Socket.io events to match MQTT topic strings without migrating the underlying broker. Small, self-contained sprint-7-followup branch.
-2. **Sprint 8 (Notifications)** — `NotificationModule` scaffold with provider-pluggable strategy (SMS / Teams / Zalo / Broadcast), env-driven credentials, dev mode logs-only, integration into the Admin web. Wires UC module 09 and Activity lane G.
+2. **Sprint 8 (Notifications)** — `NotificationModule` scaffold with provider-pluggable strategy (SMS / Teams / Telegram / Broadcast), env-driven credentials, dev mode logs-only, integration into the Admin web. Wires UC module 09 and Activity lane G.
 
 Sprint 9 should follow once Sprint 8 lands, since offline + deployment is the largest remaining chunk and benefits from a stable feature set above it.

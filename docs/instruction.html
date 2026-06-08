@@ -36,8 +36,8 @@
           <li><a href="#phase-b">9. Phase B — Engine tự động theo sự kiện</a></li>
           <li class="toc-group">Phase C — Gọi thoại (mock)</li>
           <li><a href="#phase-c">10. Phase C — Gọi thoại &amp; RSVP “bấm 1”</a></li>
-          <li class="toc-group">Phase D — Zalo ZNS</li>
-          <li><a href="#phase-d">11. Phase D — Zalo ZNS &amp; opt-out</a></li>
+          <li class="toc-group">Phase D — Telegram</li>
+          <li><a href="#phase-d">11. Phase D — Telegram &amp; opt-out</a></li>
           <li class="toc-group">Chatbot — Trợ lý chuyến đi</li>
           <li><a href="#chatbot">12. Chatbot — Hỏi đáp về tour + RAG</a></li>
           <li><a href="#reset">13. Dọn dẹp / reset dữ liệu demo</a></li>
@@ -103,8 +103,8 @@ pnpm --filter pwa dev</code></pre>
           <thead><tr><th>Mã</th><th>Tính năng</th><th>Mô tả ngắn</th></tr></thead>
           <tbody>
             <tr><td>A1</td><td>Hạ tầng hàng đợi</td><td>Redis + BullMQ (cổng 6379), <code>QueueModule</code></td></tr>
-            <tr><td>A2</td><td>Mô hình dữ liệu</td><td><code>NotificationLog</code>, <code>TenantNotificationConfig</code> + 3 cột mới cho hành khách (<code>zaloId</code>, <code>contactOptOut</code>, <code>channelPref</code>)</td></tr>
-            <tr><td>A3</td><td>Lớp trừu tượng nhà cung cấp</td><td><code>MessageProvider</code>: mock / sms (eSMS, Twilio) / teams / voice / zalo</td></tr>
+            <tr><td>A2</td><td>Mô hình dữ liệu</td><td><code>NotificationLog</code>, <code>TenantNotificationConfig</code> + 3 cột mới cho hành khách (<code>telegramChatId</code>, <code>contactOptOut</code>, <code>channelPref</code>)</td></tr>
+            <tr><td>A3</td><td>Lớp trừu tượng nhà cung cấp</td><td><code>MessageProvider</code>: mock / sms (eSMS, Twilio) / teams / voice / telegram</td></tr>
             <tr><td>A4</td><td>Ghi log mọi lần gửi</td><td>Vòng đời <code>QUEUED → SENT / FAILED</code></td></tr>
             <tr><td>A5</td><td>Lọc người nhận</td><td>Bỏ qua số trống / sai định dạng / đã opt-out</td></tr>
             <tr><td>A6</td><td>Sửa nút “Broadcast Call”</td><td>Nút trên Live Dashboard giờ gọi cảnh báo IN_APP qua WebSocket</td></tr>
@@ -119,8 +119,8 @@ pnpm --filter pwa dev</code></pre>
             <tr><td>C2</td><td>RSVP “bấm 1” (chỉ ý định)</td><td>Ghi vào <code>NotificationLog.rsvp</code> — <strong>KHÔNG BAO GIỜ</strong> ghi <code>AttendanceRecord</code></td></tr>
             <tr><td>C3</td><td>Bảng “Ý định lên xe”</td><td>Tally SẼ LÊN / KHÔNG / KO NGHE trên Live Dashboard; nút “Voice call round”</td></tr>
             <tr><td>C4</td><td>Giới hạn fan-out</td><td><code>VOICE_MAX_FANOUT</code> (mặc định 50) — chặn 1 lượt gọi vượt số tối đa (cost guard)</td></tr>
-            <tr><td>D1</td><td>Kênh Zalo ZNS</td><td><code>ZaloProvider</code> mock + nhánh ZNS thật trơ (<code>ZALO_PROVIDER=ZNS</code> + token OA + template); nút Zalo thay link <code>zalo.me</code> chết</td></tr>
-            <tr><td>D2</td><td>Zalo ID hành khách</td><td>Ô <code>zaloId</code> trong form + badge; gửi ZALO ưu tiên Zalo ID, tự lùi về SĐT</td></tr>
+            <tr><td>D1</td><td>Kênh Telegram (token theo nhà xe)</td><td><code>TelegramProvider</code> gửi DM qua Bot API; token ở <code>TenantNotificationConfig.telegramBotToken</code> (mỗi nhà xe 1 bot); chưa cấu hình → mock</td></tr>
+            <tr><td>D2</td><td>Bot tự đăng ký chat id</td><td>Hành khách <code>/start</code> → nhập sđt → bot khớp theo <code>phone</code> và tự lưu <code>telegramChatId</code>; song ngữ vi/en, nút nhập lại, xử lý số trùng; ô Telegram ID chỉ hiển thị (không nhập tay)</td></tr>
             <tr><td>D3</td><td>Opt-out (consent)</td><td>Toggle <code>contactOptOut</code> trên hành khách; mọi kênh bỏ qua + ghi <code>OPT_OUT</code></td></tr>
             <tr><td>CB1</td><td>Chatbot hỏi đáp số liệu</td><td>Widget tròn (Admin); snapshot tenant-scoped → đếm/giới thiệu/tóm tắt/đội xe… chính xác; mock mặc định + Ollama</td></tr>
             <tr><td>CB2</td><td>Chatbot RAG + lệnh</td><td>KB song ngữ + truy hồi lexical (“hệ thống hoạt động ra sao”); chips gợi ý; lệnh <code>clear</code>/<code>help</code>; ô nhập tự do</td></tr>
@@ -143,7 +143,7 @@ pnpm --filter pwa dev</code></pre>
 # → [MOCK SMS] to=0903226786 "Please board the bus…" tenant=demo-tours</code></pre>
 
       <h2 id="test-b">3. Test B — Hàng đợi &amp; Retry (A7)</h2>
-      <p>Việc gửi SMS/Voice/Zalo đi qua <strong>hàng đợi BullMQ</strong> (bất đồng bộ). Teams và IN_APP gửi ngay (đồng bộ).</p>
+      <p>Việc gửi SMS/Voice/Telegram đi qua <strong>hàng đợi BullMQ</strong> (bất đồng bộ). Teams và IN_APP gửi ngay (đồng bộ).</p>
       <ol>
         <li>Gửi SMS như Test A rồi <strong>tải lại trang ngay</strong>: bạn có thể bắt gặp vài dòng ở trạng thái
           <code>QUEUED</code> trước khi chuyển <code>SENT</code> — đó là bằng chứng hàng đợi chạy nền.</li>
@@ -201,7 +201,7 @@ TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
 TRIP=d35a07c8-7ea3-4eeb-9583-dbc6af329cb5
 RID=0dab29fe-0e89-4f7c-bc2e-5d4cbe24647d
 
-# Gửi thủ công (channel: SMS | TEAMS | IN_APP | VOICE | ZALO)
+# Gửi thủ công (channel: SMS | TEAMS | IN_APP | VOICE | TELEGRAM)
 curl -s -X POST http://localhost:3000/trips/$TRIP/rounds/$RID/notify \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"channel":"SMS","message":"Mời quý khách lên xe"}'
@@ -216,7 +216,7 @@ curl -s "http://localhost:3000/trips/$TRIP/notifications?limit=20" \
       <h2 id="test-g">8. Điểm danh bằng giọng nói — <em>đã gỡ bỏ</em></h2>
       <blockquote>Tính năng điểm danh bằng giọng nói (Voice check-in &amp; Roll-call đọc tên) đã được
       <strong>gỡ khỏi ứng dụng</strong>; điểm danh nay chỉ qua thao tác chạm trên app tài xế.
-      (Gọi điện thoại tới khách &amp; SMS/Zalo vẫn giữ nguyên.)</blockquote>
+      (Gọi điện thoại tới khách &amp; SMS/Telegram vẫn giữ nguyên.)</blockquote>
 
       <!-- ===================== PHASE B ===================== -->
 
@@ -342,39 +342,61 @@ curl -s -X POST http://localhost:3000/trips/$TRIP/rounds/$RID/notify/rsvp \
 
       <!-- ===================== RESET ===================== -->
       <!-- ===================== PHASE D ===================== -->
-      <h2 id="phase-d">11. Phase D — Zalo ZNS cho hành khách &amp; opt-out</h2>
+      <h2 id="phase-d">11. Phase D — Telegram: bot tự đăng ký + gửi thông báo</h2>
       <div class="page-meta" style="margin-bottom:12px">
-        <span class="badge badge-sky">MOCK — ZNS thật cần Zalo OA</span>
+        <span class="badge badge-sky">Mỗi nhà xe 1 bot</span>
+        <span class="badge badge-emerald">Song ngữ vi/en</span>
         <span class="badge badge-amber">Tôn trọng opt-out</span>
       </div>
-      <p>Zalo là kênh tiếp cận hành khách phổ biến nhất ở VN. Phase D thêm kênh <code>ZALO</code> (ZNS — Zalo
-      Notification Service). Mặc định <strong>MOCK</strong>; nhánh ZNS thật được nối sẵn nhưng “trơ” cho tới khi
-      cấu hình <code>ZALO_PROVIDER=ZNS</code> + token OA + template id (giống cách <code>SmsProvider</code> nối
-      eSMS/Twilio). ZNS chỉ gửi <strong>template đã duyệt</strong> tới số điện thoại liên kết Zalo.</p>
+      <p>Telegram là kênh nhắn tin <strong>miễn phí, không cần giấy phép doanh nghiệp</strong>, gửi qua HTTP đơn giản và
+      chạy trên cả iPhone/Android. Vì bot Telegram <strong>không thể nhắn theo số điện thoại</strong> (chỉ nhắn được tới
+      người đã bấm <code>/start</code>), hệ thống dùng một <strong>bot tự đăng ký</strong>: hành khách quét QR → bấm Start →
+      nhập số điện thoại đã đăng ký → bot tự khớp theo <code>phone</code> và lưu <code>telegramChatId</code> vào đúng
+      hành khách. Sau đó panel “Notify” gửi DM thật tới họ.</p>
+      <p><strong>Mỗi nhà xe một bot riêng</strong>: token lưu theo tenant ở <code>TenantNotificationConfig.telegramBotToken</code>
+      (không đặt trong <code>.env</code>, không commit). Nhà xe chưa cấu hình token → kênh Telegram tự chạy <strong>MOCK</strong>.</p>
 
-      <h3>D-1. Nhập Zalo ID cho hành khách</h3>
+      <h3>D-1. Cấu hình bot cho nhà xe (1 lần)</h3>
       <ol>
-        <li>Vào <strong>Manage Passengers</strong> → tab <strong>Add</strong>: form có thêm ô <strong>“Zalo ID”</strong>
-          (tùy chọn, 6–32 chữ số). Hành khách không có Zalo ID sẽ <strong>tự lùi về số điện thoại</strong> khi gửi ZALO.</li>
-        <li>Trong danh sách, hành khách có Zalo ID hiện badge <strong>“Zalo”</strong> cạnh số điện thoại.</li>
+        <li>Trên Telegram, nhắn <strong>@BotFather</strong> → <code>/newbot</code> → lấy <strong>bot token</strong> + username.</li>
+        <li>Lưu token vào cấu hình của nhà xe (cột <code>telegramBotToken</code>, <code>telegramBotUsername</code> trong
+          <code>TenantNotificationConfig</code>). Khi API khởi động sẽ thấy log
+          <code>Telegram bot đăng ký đang polling cho N nhà xe.</code></li>
       </ol>
 
-      <h3>D-2. Gửi Zalo (ZNS)</h3>
-      <p>Panel <strong>“Notify Passengers”</strong> nay có nút kênh <strong>“Zalo”</strong> (thay cho link
-      <code>zalo.me</code> chết trước đây). Bấm để gửi tới cả chặng. Trong Lịch sử, các dòng kênh <code>ZALO</code>
-      của hành khách có Zalo ID hiển thị người nhận là Zalo ID đã che (vd <code>***001</code>); còn lại là số điện thoại.</p>
-
-      <h3>D-3. Opt-out (mô phỏng inbound “STOP” / từ chối Zalo)</h3>
+      <h3>D-2. Hành khách đăng ký qua bot</h3>
       <ol>
-        <li>Trong danh sách hành khách, bấm icon <strong>chuông</strong> ở cột thao tác để <strong>bật từ chối nhận</strong>
-          (badge <strong>“Từ chối nhận”</strong> xuất hiện cạnh số điện thoại).</li>
-        <li>Gửi lại bất kỳ kênh nào (SMS/Zalo/Voice): hành khách đó bị <strong>bỏ qua</strong> với dòng
-          <span class="badge badge-amber">FAILED</span> · <code>errorReason=OPT_OUT</code>; phản hồi API có <code>skipped</code> tăng.</li>
-        <li>Bấm icon chuông lần nữa để bật lại liên hệ.</li>
+        <li>Hành khách mở link/QR <code>t.me/&lt;bot-username&gt;</code> → bấm <strong>Start</strong> (có nút đổi
+          <strong>🌐 English / Tiếng Việt</strong>; bot tự nhận ngôn ngữ theo Telegram của họ).</li>
+        <li>Bot yêu cầu <strong>nhập số điện thoại (10 số)</strong> → <strong>validate đầy đủ</strong> (chấp nhận
+          <code>+84</code>); sai định dạng thì báo lỗi và cho nhập lại.</li>
+        <li>Khớp được hành khách → bot lưu <code>telegramChatId</code> và trả lời <em>“✅ Đã liên kết số … cho &lt;tên&gt;”</em>,
+          kèm nút <strong>🔁 Nhập lại số điện thoại</strong>. Số không có trong danh sách → báo “chưa có trong danh sách”.</li>
+        <li><strong>Số đã được tài khoản Telegram khác dùng</strong> → bot cảnh báo + nút
+          <strong>“Dùng cho tài khoản này”</strong> (chuyển liên kết sang máy hiện tại và <strong>thông báo cho máy cũ</strong>).</li>
       </ol>
-      <blockquote>Opt-out được tôn trọng ở <strong>mọi kênh</strong> (consent — bắt buộc trước khi gửi thật).
-      Cấu hình ZNS thật: <code>ZALO_PROVIDER=ZNS</code>, <code>ZALO_OA_ACCESS_TOKEN</code>,
-      <code>ZALO_ZNS_TEMPLATE_ID</code> (secret theo tenant, không commit).</blockquote>
+      <blockquote>Ô <strong>“Telegram ID”</strong> trong form hành khách <strong>không cho nhập tay</strong> — chỉ hiển thị
+      (badge <strong>“Telegram”</strong> trong danh sách) khi bot đã liên kết. Admin không phải gõ chat id.</blockquote>
+
+      <h3>D-3. Gửi Telegram</h3>
+      <p>Panel <strong>“Notify Passengers”</strong> có nút kênh <strong>“Telegram”</strong>. Bấm để gửi DM tới các hành
+      khách <strong>đã liên kết</strong> trong chặng; người chưa đăng ký bot bị bỏ qua (<code>NO_CONTACT</code>). Trong Lịch
+      sử, dòng kênh <code>TELEGRAM</code> hiển thị chat id đã che (vd <code>***001</code>).</p>
+
+      <h3>D-4. Opt-out</h3>
+      <ol>
+        <li>Trong danh sách hành khách, bấm icon <strong>chuông</strong> để <strong>bật từ chối nhận</strong>
+          (badge <strong>“Từ chối nhận”</strong>).</li>
+        <li>Gửi lại bất kỳ kênh nào (SMS/Telegram/Voice): hành khách đó bị <strong>bỏ qua</strong> với dòng
+          <span class="badge badge-amber">FAILED</span> · <code>errorReason=OPT_OUT</code>.</li>
+        <li>Bấm chuông lần nữa để bật lại.</li>
+      </ol>
+
+      <blockquote><strong>Test nhanh (live):</strong> chạy API <code>pnpm --filter api dev</code> (thấy log polling) →
+      mở <strong>https://t.me/ToursAssistantBot</strong> → <strong>Start</strong> → gõ một số điện thoại có trong nhà xe
+      (vd <code>0969208565</code>) → bot trả lời đã liên kết. Sau đó vào trang chi tiết chuyến của hành khách đó →
+      <strong>Notify → Telegram</strong> để nhận DM thật. <em>(Lưu ý: chỉ chạy 1 tiến trình poll bot — đừng chạy API và
+      script test cùng lúc, tránh xung đột 409.)</em></blockquote>
 
       <!-- ===================== CHATBOT ===================== -->
       <h2 id="chatbot">12. Chatbot — Trợ lý chuyến đi (hỏi đáp + RAG)</h2>
@@ -416,7 +438,7 @@ curl -s -X POST http://localhost:3000/trips/$TRIP/rounds/$RID/notify/rsvp \
         <thead><tr><th>Câu hỏi</th><th>Trả lời (từ tài liệu)</th></tr></thead>
         <tbody>
           <tr><td>“Điểm danh hoạt động thế nào?”</td><td>JOIN/ABSENT/CANCELLED, do BusManager đặt, không tự điểm danh</td></tr>
-          <tr><td>“Hành khách có đăng nhập được không?”</td><td>Hành khách là dữ liệu, không tài khoản; liên hệ qua SMS/Zalo/Voice</td></tr>
+          <tr><td>“Hành khách có đăng nhập được không?”</td><td>Hành khách là dữ liệu, không tài khoản; liên hệ qua SMS/Telegram/Voice</td></tr>
           <tr><td>“Round (chặng) là gì?”</td><td>Tour gồm các chặng; trạng thái tour suy ra từ chặng</td></tr>
           <tr><td>“Thông báo &amp; opt-out hoạt động ra sao?”</td><td>Các kênh; tự động mặc định tắt; tôn trọng opt-out</td></tr>
         </tbody>
@@ -476,7 +498,7 @@ eval $PSQL "\"delete from \\\"TenantNotificationConfig\\\";\""</code></pre>
       <ul>
         <li><strong>Sai kênh cho hành khách:</strong> hành khách không có tài khoản và không ở trong kênh Teams của công ty.
           Webhook Teams chỉ đăng vào kênh nội bộ — auto-gửi “mời lên xe” qua Teams sẽ <em>không tới được hành khách nào</em>.
-          Thông báo tới hành khách phải đi qua <strong>SMS / Zalo / Voice</strong>.</li>
+          Thông báo tới hành khách phải đi qua <strong>SMS / Telegram / Voice</strong>.</li>
         <li><strong>Hợp lý cho nhân viên:</strong> tóm tắt sự kiện điều hành (chặng khởi hành/huỷ/hoàn thành), cảnh báo quá tải xe, gán tài xế…</li>
         <li><strong>Điều kiện bắt buộc (nếu bật ở Phase B):</strong>
           <ol>
@@ -496,7 +518,7 @@ eval $PSQL "\"delete from \\\"TenantNotificationConfig\\\";\""</code></pre>
           <tbody>
             <tr><td>B</td><td>Engine tự động (EventEmitter + Dispatcher): chặng khởi hành/huỷ/hoàn thành → tự gửi; templating vi/en; nhắc giờ lên xe; công tắc theo tenant</td><td><span class="badge badge-sky">XONG</span> — xem mục 9</td></tr>
             <tr><td>C</td><td>Gọi thoại tới hành khách + TTS tiếng Việt; IVR “bấm 1” lưu RSVP (chỉ ý định, không ghi điểm danh); tally ý định lên xe</td><td><span class="badge badge-sky">XONG (mock)</span> — xem mục 10</td></tr>
-            <tr><td>D</td><td>Kênh Zalo ZNS (mock + nhánh ZNS thật trơ); nhập Zalo ID cho hành khách; opt-out tôn trọng mọi kênh</td><td><span class="badge badge-sky">XONG (mock)</span> — xem mục 11</td></tr>
+            <tr><td>D</td><td>Kênh Telegram (mock + nhánh Bot API thật); nhập Telegram chat id cho hành khách; opt-out tôn trọng mọi kênh</td><td><span class="badge badge-sky">XONG (mock)</span> — xem mục 11</td></tr>
             <tr><td>Chatbot</td><td>Trợ lý chuyến đi: hỏi đáp số liệu (server-side, chính xác) + RAG “cách hệ thống hoạt động”; chips + lệnh; mock mặc định, Ollama tuỳ chọn</td><td><span class="badge badge-sky">XONG</span> — xem mục 12</td></tr>
           </tbody>
         </table>

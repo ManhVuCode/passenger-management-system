@@ -162,9 +162,9 @@ model TripPassengerAssignment {
   type      String?
   note      String?
   hotelRoom String?
-  zaloId        String?
+  telegramChatId String?
   contactOptOut Boolean @default(false)
-  channelPref   String? // SMS | ZALO | VOICE
+  channelPref   String? // SMS | TELEGRAM | VOICE
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -205,12 +205,12 @@ model NotificationLog {
   tenantId     String
   tripId       String?
   roundId      String?
-  channel      String // SMS | ZALO | VOICE | TEAMS | IN_APP
+  channel      String // SMS | TELEGRAM | VOICE | TEAMS | IN_APP
   trigger      String // MANUAL | ROUND_STARTED | ROUND_CANCELLED | BOARDING_REMINDER | ROUND_COMPLETED
   templateKey  String?
   messageText  String
   recipientRef String? // tripPassengerAssignmentId or userId
-  toContact    String? // phone/zaloId — redacted when shown in UI
+  toContact    String? // phone/telegramChatId — redacted when shown in UI
   status       String // QUEUED | SENT | DELIVERED | FAILED | BOUNCED | NO_ANSWER
   providerId   String?
   costMicro    Int?
@@ -227,7 +227,8 @@ model TenantNotificationConfig {
   tenantId      String   @id
   smsProvider   String? // ESMS | TWILIO | MOCK
   smsCredsRef   String? // secret reference — NOT the raw key
-  zaloOaId      String?
+  telegramBotToken    String? // secret — per-tenant bot token (@BotFather); 1 bot / 1 tenant
+  telegramBotUsername String? // bot @username, dùng để dựng link/QR đăng ký
   voiceProvider String? // STRINGEE | TWILIO | MOCK
   voiceCredsRef String?
   autoRules     Json? // { roundStarted: bool, roundCancelled: bool, boardingReminder: bool }

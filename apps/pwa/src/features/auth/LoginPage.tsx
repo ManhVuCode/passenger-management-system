@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { useAppDispatch } from '../../store/hooks'
 import { setCredentials } from './authSlice'
+import { buildSsoHash, consumeSsoHash } from './sso'
 import { Button } from '../../components/ui/button'
 import { Bus, ArrowRight } from 'lucide-react'
+
+const WEB_URL = import.meta.env.VITE_WEB_URL ?? 'http://localhost:5173'
 
 const HERO_IMG =
   'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=900&q=80&auto=format&fit=crop'
@@ -18,6 +21,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Nhận phiên chuyển từ trang đăng nhập chung bên web admin
+  useEffect(() => {
+    const sso = consumeSsoHash()
+    if (sso) {
+      dispatch(setCredentials(sso))
+      navigate('/', { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -38,6 +51,11 @@ export default function LoginPage() {
       }
       const json = await res.json()
       const data = json && typeof json === 'object' && 'data' in json ? json.data : json
+      // Admin đăng nhập ở app tài xế → chuyển phiên sang web admin
+      if (data.role === 'ADMIN' || data.role === 'SYSTEM_ADMIN') {
+        window.location.replace(`${WEB_URL}/login${buildSsoHash(data)}`)
+        return
+      }
       dispatch(setCredentials(data))
       navigate('/')
     } catch {

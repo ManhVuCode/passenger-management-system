@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { useAppDispatch } from '../../store/hooks'
 import { setCredentials } from './authSlice'
+import { buildSsoHash, consumeSsoHash } from './sso'
 import { Button } from '../../components/ui/button'
 import { Bus, ArrowRight, Eye, EyeOff } from 'lucide-react'
+
+const PWA_URL = import.meta.env.VITE_PWA_URL ?? 'http://localhost:5174'
 
 const HERO_IMG =
   'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1600&q=80&auto=format&fit=crop'
@@ -19,6 +22,16 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Nhận phiên chuyển từ PWA (admin lỡ đăng nhập bên app tài xế)
+  useEffect(() => {
+    const sso = consumeSsoHash()
+    if (sso) {
+      dispatch(setCredentials(sso))
+      navigate(sso.role === 'SYSTEM_ADMIN' ? '/system' : '/', { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -36,6 +49,11 @@ export default function LoginPage() {
       }
       const json = await res.json()
       const data = json && typeof json === 'object' && 'data' in json ? json.data : json
+      // Tài xế đăng nhập ở trang chung → chuyển phiên sang PWA tài xế
+      if (data.role === 'BUS_MANAGER') {
+        window.location.replace(`${PWA_URL}/login${buildSsoHash(data)}`)
+        return
+      }
       dispatch(setCredentials(data))
       navigate(data.role === 'SYSTEM_ADMIN' ? '/system' : '/')
     } catch {

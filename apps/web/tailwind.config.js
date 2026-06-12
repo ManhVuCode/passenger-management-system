@@ -5,6 +5,8 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Font hiển thị cho tiêu đề trang & con số lớn (MPMS Premium)
+        display: ['"Space Grotesk"', '"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
         primary: {
@@ -76,6 +78,13 @@ export default {
         card: '0 1px 2px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.06)',
         'card-hover': '0 4px 8px rgba(15,23,42,0.06), 0 16px 32px rgba(15,23,42,0.10)',
         glow: '0 0 0 1px rgba(3,105,161,0.08), 0 8px 24px rgba(3,105,161,0.18)',
+        // Shadow nổi cao cho dialog/popover
+        float: '0 0 0 1px rgba(15,23,42,0.04), 0 12px 24px -8px rgba(15,23,42,0.12), 0 32px 64px -16px rgba(15,23,42,0.18)',
+        // Glow đậm hơn cho khối logo / nút primary khi hover
+        'glow-lg': '0 0 0 1px rgba(14,165,233,0.16), 0 8px 32px rgba(14,165,233,0.35), 0 2px 8px rgba(3,105,161,0.25)',
+        // Viền sáng mảnh phía trên (hiệu ứng kính)
+        'inner-highlight': 'inset 0 1px 0 rgba(255,255,255,0.55)',
+        'inner-highlight-dark': 'inset 0 1px 0 rgba(255,255,255,0.08)',
       },
       keyframes: {
         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
@@ -84,11 +93,36 @@ export default {
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         shimmer: { '100%': { transform: 'translateX(100%)' } },
+        // Trôi nhẹ lên xuống — dùng cho icon empty-state
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-6px)' },
+        },
+        // Nhịp đập mềm — dùng cho chấm "live" realtime
+        pulseSoft: {
+          '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+          '50%': { opacity: '0.55', transform: 'scale(0.85)' },
+        },
+        // Vầng sáng aurora trôi chậm phía nền
+        aurora: {
+          '0%': { transform: 'translate(0, 0) scale(1)' },
+          '50%': { transform: 'translate(4%, -3%) scale(1.06)' },
+          '100%': { transform: 'translate(-3%, 2%) scale(1)' },
+        },
+        // Vòng sáng lan toả — dùng sau chấm live
+        ping: {
+          '0%': { transform: 'scale(1)', opacity: '0.6' },
+          '100%': { transform: 'scale(2.2)', opacity: '0' },
+        },
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.2s ease-out',
         shimmer: 'shimmer 1.5s infinite',
+        float: 'float 4s ease-in-out infinite',
+        'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
+        aurora: 'aurora 18s ease-in-out infinite alternate',
+        'ping-soft': 'ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite',
       },
     },
   },

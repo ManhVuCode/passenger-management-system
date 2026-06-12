@@ -32,11 +32,13 @@ const STYLES: Record<BadgeVariant, string> = {
   destructive: 'bg-danger-50 text-[#991b1b]',
 }
 
+/* Nhãn trạng thái dạng pill — viền hairline tạo độ sắc nét trên mọi nền */
 export function Badge({ label, variant = 'default', className, children, ...props }: BadgeProps) {
   return (
     <span
       className={cn(
         'h-[22px] px-2 inline-flex items-center justify-center rounded-full text-[12px] font-medium whitespace-nowrap',
+        'ring-1 ring-inset ring-black/[0.05] transition-colors duration-150',
         STYLES[variant] ?? STYLES.default,
         className,
       )}

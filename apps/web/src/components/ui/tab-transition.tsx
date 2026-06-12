@@ -10,8 +10,8 @@ export interface TabTransitionProps {
 
 /**
  * Bọc nội dung tab/panel để việc chuyển tab có hiệu ứng nhất quán trên Web + PWA:
- * opacity 0→1, translateY 8px→0, 200ms ease-out. `mode="wait"` cho phép panel đi ra
- * hoàn tất thoát trước khi panel đi vào xuất hiện.
+ * opacity 0→1, translateY 10px→0, ease-out; panel đi ra thoát nhanh hơn để cảm giác gọn.
+ * `mode="wait"` cho phép panel đi ra hoàn tất thoát trước khi panel đi vào xuất hiện.
  */
 export function TabTransition({ tabKey, children, className }: TabTransitionProps) {
   return (
@@ -19,10 +19,10 @@ export function TabTransition({ tabKey, children, className }: TabTransitionProp
       <motion.div
         key={tabKey}
         className={className}
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 8 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
+        exit={{ opacity: 0, y: 6, transition: { duration: 0.12, ease: 'easeIn' } }}
+        transition={{ duration: 0.22, ease: 'easeOut' }}
       >
         {children}
       </motion.div>

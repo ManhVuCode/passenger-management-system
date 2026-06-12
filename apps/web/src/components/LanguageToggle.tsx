@@ -1,32 +1,73 @@
 import { useTranslation } from 'react-i18next'
 import { motion } from 'motion/react'
+import { cn } from '../lib/utils'
 
-export function LanguageToggle() {
+export interface LanguageToggleProps {
+  /** 'dark' cho sidebar navy (mặc định), 'light' cho nền sáng */
+  variant?: 'dark' | 'light'
+  className?: string
+}
+
+const LANGS = [
+  { code: 'vi', label: 'VI', name: 'Tiếng Việt' },
+  { code: 'en', label: 'EN', name: 'English' },
+] as const
+
+/**
+ * Bộ chuyển ngôn ngữ dạng segmented pill: hai lựa chọn VI/EN với
+ * thumb trắng trượt mượt bằng layoutId (spring). Hoạt động trên cả nền navy và nền sáng.
+ */
+export function LanguageToggle({ variant = 'dark', className }: LanguageToggleProps) {
   const { i18n } = useTranslation()
-  const isVI = i18n.language === 'vi'
-
-  function toggle() {
-    i18n.changeLanguage(isVI ? 'en' : 'vi')
-  }
+  const active = i18n.language?.startsWith('vi') ? 'vi' : 'en'
+  const dark = variant === 'dark'
 
   return (
-    <button
-      onClick={toggle}
-      className="flex items-center gap-1.5 h-8 px-2 rounded-lg hover:bg-gray-100 transition-colors select-none"
-      title={isVI ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+    <div
+      role="group"
       aria-label="Toggle language"
+      className={cn(
+        'relative inline-flex h-8 items-center rounded-full p-0.5 select-none',
+        dark ? 'bg-white/10 ring-1 ring-white/10' : 'bg-gray-100 ring-1 ring-gray-200',
+        className,
+      )}
     >
-      <div
-        className="relative w-10 h-5 bg-gray-200 rounded-full transition-colors data-[active=true]:bg-primary-600"
-        data-active={isVI}
-      >
-        <motion.div
-          animate={{ x: isVI ? 20 : 2 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-          className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
-        />
-      </div>
-      <span className="text-xs font-bold text-gray-600 w-5">{isVI ? 'VI' : 'EN'}</span>
-    </button>
+      {LANGS.map(({ code, label, name }) => {
+        const isActive = active === code
+        return (
+          <button
+            key={code}
+            type="button"
+            onClick={() => i18n.changeLanguage(code)}
+            aria-pressed={isActive}
+            aria-label={name}
+            title={name}
+            className={cn(
+              'relative h-7 w-9 rounded-full text-[11px] font-bold tracking-wide cursor-pointer',
+              'transition-colors duration-200',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/70',
+              isActive
+                ? 'text-navy-900'
+                : dark
+                  ? 'text-navy-300 hover:text-white'
+                  : 'text-gray-500 hover:text-gray-900',
+            )}
+          >
+            {isActive && (
+              <motion.span
+                layoutId="lang-toggle-thumb"
+                transition={{ type: 'spring', stiffness: 500, damping: 34 }}
+                className={cn(
+                  'absolute inset-0 rounded-full bg-white shadow-sm',
+                  !dark && 'ring-1 ring-gray-200',
+                )}
+                aria-hidden="true"
+              />
+            )}
+            <span className="relative z-10">{label}</span>
+          </button>
+        )
+      })}
+    </div>
   )
 }

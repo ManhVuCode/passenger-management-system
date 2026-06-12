@@ -1,8 +1,32 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useTranslation } from 'react-i18next'
-import { Building2, ChevronLeft, Edit2, Plus, Trash2, Users, X } from 'lucide-react'
+import {
+  AlertCircle,
+  Building2,
+  Bus,
+  CheckCircle2,
+  ChevronLeft,
+  Edit2,
+  Loader2,
+  PauseCircle,
+  PlayCircle,
+  Plus,
+  ShieldCheck,
+  Trash2,
+  UserCog,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react'
 import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import { Badge } from '../../components/ui/badge'
+import { PageHeader } from '../../components/ui/page-header'
+import { MetricCard } from '../../components/ui/metric-card'
+import { DataTable, type Column } from '../../components/ui/data-table'
+import { EmptyState } from '../../components/ui/empty-state'
+import { SectionCard } from '../../components/ui/section-card'
 import { cn } from '../../lib/utils'
 import {
   useGetTenantsQuery,
@@ -33,6 +57,62 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, '')
 }
 
+/* Lấy tối đa 2 chữ cái đầu của tên để hiển thị avatar */
+function initialsOf(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+/* Lớp gradient avatar theo vai trò người dùng — dùng chung cho bảng và drawer */
+function roleGradientClass(role: UserRow['role']) {
+  return role === 'ADMIN'
+    ? 'bg-gradient-to-br from-primary-500 to-primary-700'
+    : role === 'BUS_MANAGER'
+      ? 'bg-gradient-to-br from-warning-500 to-warning-600'
+      : 'bg-gradient-to-br from-gray-400 to-gray-600'
+}
+
+/* Viên tóm tắt nhỏ ở góc tiêu đề bảng (số liệu nhanh theo tông màu) */
+function HeaderStatPill({
+  className,
+  children,
+}: {
+  className?: string
+  children: React.ReactNode
+}) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold tabular-nums ring-1 ring-inset',
+        className,
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
+/* Nhãn trạng thái tenant kèm chấm màu */
+function StatusBadge({ status }: { status: 'ACTIVE' | 'SUSPENDED' }) {
+  const { t } = useTranslation()
+  return (
+    <Badge variant={status === 'ACTIVE' ? 'success' : 'destructive'}>
+      <span
+        aria-hidden="true"
+        className={cn(
+          'mr-1.5 h-1.5 w-1.5 rounded-full',
+          status === 'ACTIVE' ? 'bg-success-500' : 'bg-danger-500',
+        )}
+      />
+      {t(`status.${status}`)}
+    </Badge>
+  )
+}
+
 function TenantsView({ onOpenTenant }: { onOpenTenant: (t: TenantRow) => void }) {
   const { t } = useTranslation()
   const { data: tenants = [], isLoading } = useGetTenantsQuery()
@@ -47,98 +127,189 @@ function TenantsView({ onOpenTenant }: { onOpenTenant: (t: TenantRow) => void })
     })
   }
 
-  return (
-    <div className="p-8">
-      <header className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-extrabold text-navy-900 tracking-tight">{t('systemAdmin.title')}</h1>
-          <p className="text-gray-600 mt-1">
-            {tenants.length === 0
-              ? t('systemAdmin.noOperators')
-              : t('systemAdmin.subtitle', { count: tenants.length })}
-          </p>
-        </div>
-        <Button className="gap-2" onClick={() => setShowCreate(true)}>
-          <Plus size={18} />
-          {t('systemAdmin.addTenant')}
-        </Button>
-      </header>
+  const activeCount = tenants.filter((tn) => tn.status === 'ACTIVE').length
+  const suspendedCount = tenants.filter((tn) => tn.status === 'SUSPENDED').length
 
-      {isLoading ? (
-        <p className="text-gray-400">{t('common.loading')}</p>
-      ) : tenants.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-12 text-center flex flex-col items-center gap-3">
-          <Building2 size={36} className="text-gray-300" />
-          <p className="text-gray-950 font-bold">{t('systemAdmin.noOperators')}</p>
-          <p className="text-gray-500 text-sm">{t('systemAdmin.noOperatorsHelp')}</p>
-          <Button className="gap-2 mt-2" onClick={() => setShowCreate(true)}>
-            <Plus size={16} /> {t('systemAdmin.addTenant')}
+  const columns: Column<TenantRow>[] = [
+    {
+      key: 'name',
+      header: t('systemAdmin.companyName'),
+      sortValue: (tn) => tn.name,
+      render: (tn) => (
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-[11px] font-bold text-white shadow-inner-highlight ring-1 ring-black/[0.04]">
+            {initialsOf(tn.name)}
+          </div>
+          <span className="truncate font-semibold text-navy-900">{tn.name}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'slug',
+      header: t('systemAdmin.slug'),
+      sortValue: (tn) => tn.slug,
+      render: (tn) => (
+        <code className="rounded-md bg-gray-100/80 px-1.5 py-0.5 font-mono text-[11px] text-gray-600 ring-1 ring-inset ring-gray-200/60">
+          {tn.slug}
+        </code>
+      ),
+    },
+    {
+      key: 'status',
+      header: t('common.status'),
+      sortValue: (tn) => tn.status,
+      render: (tn) => <StatusBadge status={tn.status} />,
+    },
+    {
+      key: 'admins',
+      header: t('systemAdmin.admins'),
+      sortValue: (tn) => tn.adminsCount,
+      render: (tn) => <CountPill value={tn.adminsCount} />,
+    },
+    {
+      key: 'drivers',
+      header: t('systemAdmin.drivers'),
+      sortValue: (tn) => tn.managersCount,
+      render: (tn) => <CountPill value={tn.managersCount} />,
+    },
+    {
+      key: 'created',
+      header: t('systemAdmin.created'),
+      sortValue: (tn) => tn.createdAt,
+      render: (tn) => (
+        <span className="text-xs tabular-nums text-gray-500">
+          {new Date(tn.createdAt).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: t('common.actions'),
+      align: 'right',
+      render: (tn) => (
+        // Chặn click lan ra dòng (dòng mở danh sách user của tenant)
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition-[color,background-color,transform] duration-150 hover:bg-primary-50 hover:text-primary-600 active:scale-95"
+            onClick={() => setEditTenant(tn)}
+            aria-label={t('common.edit')}
+          >
+            <Edit2 size={15} />
+          </button>
+          <button
+            type="button"
+            className={cn(
+              'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold ring-1 ring-inset ring-transparent transition-[color,background-color,box-shadow,transform] duration-150 active:scale-95',
+              tn.status === 'ACTIVE'
+                ? 'text-warning-600 hover:bg-warning-500/10 hover:ring-warning-500/20'
+                : 'text-success-600 hover:bg-success-600/10 hover:ring-success-600/20',
+            )}
+            onClick={() => toggleStatus(tn)}
+          >
+            {tn.status === 'ACTIVE' ? (
+              <PauseCircle size={14} aria-hidden="true" />
+            ) : (
+              <PlayCircle size={14} aria-hidden="true" />
+            )}
+            {tn.status === 'ACTIVE' ? t('common.suspend') : t('common.activate')}
+          </button>
+        </div>
+      ),
+    },
+  ]
+
+  return (
+    <div className="space-y-6 p-8">
+      <PageHeader
+        title={t('systemAdmin.title')}
+        subtitle={
+          tenants.length === 0
+            ? t('systemAdmin.noOperators')
+            : t('systemAdmin.subtitle', { count: tenants.length })
+        }
+        actions={
+          <Button className="gap-2" onClick={() => setShowCreate(true)}>
+            <Plus size={18} />
+            {t('systemAdmin.addTenant')}
           </Button>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                <th className="px-5 py-3">{t('systemAdmin.companyName')}</th>
-                <th className="px-5 py-3">{t('systemAdmin.slug')}</th>
-                <th className="px-5 py-3">{t('common.status')}</th>
-                <th className="px-5 py-3">{t('systemAdmin.admins')}</th>
-                <th className="px-5 py-3">{t('systemAdmin.drivers')}</th>
-                <th className="px-5 py-3">{t('systemAdmin.created')}</th>
-                <th className="px-5 py-3 text-right">{t('common.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tenants.map((tn, idx) => (
-                <tr
-                  key={tn.id}
-                  className={cn(
-                    'h-14 border-t border-gray-100 cursor-pointer hover:bg-primary-50/40',
-                    idx % 2 === 1 && 'bg-gray-50/40',
-                  )}
-                  onClick={() => onOpenTenant(tn)}
-                >
-                  <td className="px-5 font-bold text-gray-950">{tn.name}</td>
-                  <td className="px-5 text-gray-500 font-mono text-xs">{tn.slug}</td>
-                  <td className="px-5">
-                    <StatusPill status={tn.status} />
-                  </td>
-                  <td className="px-5 text-gray-600">{tn.adminsCount}</td>
-                  <td className="px-5 text-gray-600">{tn.managersCount}</td>
-                  <td className="px-5 text-gray-500 text-xs">
-                    {new Date(tn.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-5">
-                    <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                        onClick={() => setEditTenant(tn)}
-                        aria-label={t('common.edit')}
-                      >
-                        <Edit2 size={15} />
-                      </button>
-                      <button
-                        className={cn(
-                          'px-3 h-8 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-colors',
-                          tn.status === 'ACTIVE'
-                            ? 'text-warning-600 hover:bg-warning-500/10'
-                            : 'text-success-600 hover:bg-success-600/10',
-                        )}
-                        onClick={() => toggleStatus(tn)}
-                      >
-                        {tn.status === 'ACTIVE'
-                          ? t('common.suspend')
-                          : t('common.activate')}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        }
+      />
+
+      {/* Dải chỉ số tổng quan — con số tự đếm tăng dần */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MetricCard
+          label={t('systemAdmin.totalTenants')}
+          value={tenants.length}
+          icon={Building2}
+          color="text-primary-600"
+          bg="bg-primary-50"
+        />
+        <MetricCard
+          label={t('systemAdmin.active')}
+          value={activeCount}
+          icon={CheckCircle2}
+          color="text-success-600"
+          bg="bg-success-50"
+        />
+        <MetricCard
+          label={t('systemAdmin.suspended')}
+          value={suspendedCount}
+          icon={PauseCircle}
+          color="text-warning-600"
+          bg="bg-warning-50"
+        />
+      </div>
+
+      {/* Bảng tenant đóng khung trong SectionCard: tiêu đề + viên tóm tắt trạng thái */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut', delay: 0.05 }}
+      >
+        <SectionCard
+          bodyClassName="p-0"
+          title={
+            <span className="inline-flex items-center gap-2.5">
+              {t('systemAdmin.title')}
+              <CountPill value={tenants.length} />
+            </span>
+          }
+          headerAction={
+            <div className="hidden items-center gap-2 sm:flex">
+              <HeaderStatPill className="bg-success-50 text-success-700 ring-success-600/15">
+                <span className="h-1.5 w-1.5 rounded-full bg-success-500" aria-hidden="true" />
+                {activeCount} {t('systemAdmin.active')}
+              </HeaderStatPill>
+              <HeaderStatPill className="bg-danger-50 text-danger-600 ring-danger-500/15">
+                <span className="h-1.5 w-1.5 rounded-full bg-danger-500" aria-hidden="true" />
+                {suspendedCount} {t('systemAdmin.suspended')}
+              </HeaderStatPill>
+            </div>
+          }
+        >
+          <DataTable
+            className="rounded-none border-0 shadow-none"
+            columns={columns}
+            data={tenants}
+            rowKey={(tn) => tn.id}
+            loading={isLoading}
+            onRowClick={(tn) => onOpenTenant(tn)}
+            empty={
+              <EmptyState
+                icon={Building2}
+                title={t('systemAdmin.noOperators')}
+                description={t('systemAdmin.noOperatorsHelp')}
+                action={
+                  <Button size="sm" className="gap-2" onClick={() => setShowCreate(true)}>
+                    <Plus size={15} /> {t('systemAdmin.addTenant')}
+                  </Button>
+                }
+              />
+            }
+          />
+        </SectionCard>
+      </motion.div>
 
       <AnimatePresence>
         {showCreate && <AddTenantModal onClose={() => setShowCreate(false)} />}
@@ -150,19 +321,72 @@ function TenantsView({ onOpenTenant }: { onOpenTenant: (t: TenantRow) => void })
   )
 }
 
-function StatusPill({ status }: { status: 'ACTIVE' | 'SUSPENDED' }) {
-  const { t } = useTranslation()
+/* Ô số đếm nhỏ trong bảng (số admin / tài xế) */
+function CountPill({ value }: { value: number }) {
   return (
-    <span
-      className={cn(
-        'inline-flex h-6 items-center px-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest',
-        status === 'ACTIVE'
-          ? 'bg-success-600/10 text-success-600'
-          : 'bg-danger-600/10 text-danger-600',
-      )}
-    >
-      {t(`status.${status}`)}
+    <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-lg bg-gray-100/80 px-2 text-xs font-semibold tabular-nums text-gray-700 ring-1 ring-inset ring-gray-200/60">
+      {value}
     </span>
+  )
+}
+
+/* Nhóm nút chọn dạng segmented: thumb trắng trượt bằng layoutId */
+function SegmentedField<T extends string>({
+  id,
+  value,
+  options,
+  onChange,
+}: {
+  id: string
+  value: T
+  options: { value: T; label: React.ReactNode; activeClass?: string }[]
+  onChange: (v: T) => void
+}) {
+  return (
+    <div className="flex gap-1 rounded-xl bg-gray-100 p-1 ring-1 ring-inset ring-gray-200/60">
+      {options.map((opt) => {
+        const active = value === opt.value
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            aria-pressed={active}
+            className={cn(
+              'relative h-9 flex-1 cursor-pointer rounded-lg text-sm font-semibold transition-colors duration-150',
+              active ? (opt.activeClass ?? 'text-primary-700') : 'text-gray-500 hover:text-gray-800',
+            )}
+          >
+            {active && (
+              <motion.span
+                layoutId={`segmented-${id}`}
+                transition={{ type: 'spring', stiffness: 500, damping: 34 }}
+                className="absolute inset-0 rounded-lg bg-white shadow-sm ring-1 ring-black/[0.04]"
+                aria-hidden="true"
+              />
+            )}
+            <span className="relative z-10 inline-flex items-center justify-center gap-1.5">
+              {opt.label}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/* Thông báo lỗi form — trượt vào nhẹ khi xuất hiện */
+function FormError({ message }: { message: string }) {
+  return (
+    <motion.p
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="flex items-start gap-2 rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-600 ring-1 ring-inset ring-danger-100"
+    >
+      <AlertCircle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+      {message}
+    </motion.p>
   )
 }
 
@@ -192,19 +416,19 @@ function AddTenantModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <ModalShell title={t('systemAdmin.addTenantTitle')} onClose={onClose}>
+    <ModalShell title={t('systemAdmin.addTenantTitle')} icon={Building2} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <FieldLabel label={`${t('systemAdmin.companyName')} *`}>
-          <input
+          <Input
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
             required
             placeholder="Acme Travel"
-            className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+            className="h-11 font-medium"
           />
         </FieldLabel>
         <FieldLabel label={`${t('systemAdmin.slug')} *`}>
-          <input
+          <Input
             value={slug}
             onChange={(e) => {
               setSlug(e.target.value)
@@ -213,21 +437,43 @@ function AddTenantModal({ onClose }: { onClose: () => void }) {
             required
             pattern="^[a-z0-9-]+$"
             placeholder="acme-travel"
-            className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-mono text-xs"
+            className="h-11 font-mono text-xs"
           />
         </FieldLabel>
 
-        {error && (
-          <p className="text-sm text-danger-600 bg-danger-50 border border-danger-100 rounded-lg px-3 py-2">
-            {error}
-          </p>
-        )}
+        {/* Xem trước nhận diện tenant — avatar và slug cập nhật trực tiếp khi gõ */}
+        <AnimatePresence initial={false}>
+          {name.trim() && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="overflow-hidden"
+            >
+              <div className="flex items-center gap-3 rounded-xl border border-primary-100 bg-gradient-to-r from-primary-50/80 to-sky-50/40 p-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-[11px] font-bold text-white shadow-inner-highlight ring-1 ring-black/[0.04]">
+                  {initialsOf(name)}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-navy-900">{name}</p>
+                  <code className="font-mono text-[11px] text-primary-700">
+                    {slug || slugify(name)}
+                  </code>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {error && <FormError message={error} />}
 
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} className="gap-2">
+            {isLoading && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
             {isLoading ? t('systemAdmin.creating') : t('systemAdmin.createOperator')}
           </Button>
         </div>
@@ -256,49 +502,54 @@ function EditTenantModal({ tenant, onClose }: { tenant: TenantRow; onClose: () =
   }
 
   return (
-    <ModalShell title={t('systemAdmin.editTenantTitle')} onClose={onClose}>
+    <ModalShell title={t('systemAdmin.editTenantTitle')} icon={Edit2} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <FieldLabel label={t('systemAdmin.companyName')}>
-          <input
+          <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+            className="h-11 font-medium"
           />
         </FieldLabel>
         <FieldLabel label={t('common.status')}>
-          <div className="flex gap-2">
-            {(['ACTIVE', 'SUSPENDED'] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setStatus(value)}
-                className={cn(
-                  'flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-widest transition-all',
-                  status === value
-                    ? value === 'ACTIVE'
-                      ? 'bg-success-600 text-white'
-                      : 'bg-danger-600 text-white'
-                    : 'bg-gray-50 border border-gray-100 text-gray-500 hover:bg-gray-100',
-                )}
-              >
-                {t(`status.${value}`)}
-              </button>
-            ))}
-          </div>
+          <SegmentedField
+            id="tenant-status"
+            value={status}
+            onChange={setStatus}
+            options={[
+              {
+                value: 'ACTIVE',
+                label: (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-success-500" aria-hidden="true" />
+                    {t('status.ACTIVE')}
+                  </>
+                ),
+                activeClass: 'text-success-700',
+              },
+              {
+                value: 'SUSPENDED',
+                label: (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-danger-500" aria-hidden="true" />
+                    {t('status.SUSPENDED')}
+                  </>
+                ),
+                activeClass: 'text-danger-600',
+              },
+            ]}
+          />
         </FieldLabel>
 
-        {error && (
-          <p className="text-sm text-danger-600 bg-danger-50 border border-danger-100 rounded-lg px-3 py-2">
-            {error}
-          </p>
-        )}
+        {error && <FormError message={error} />}
 
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} className="gap-2">
+            {isLoading && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
             {isLoading ? t('systemAdmin.saving') : t('systemAdmin.saveChanges')}
           </Button>
         </div>
@@ -320,92 +571,160 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
     await removeUser({ tenantId: tenant.id, userId: u.id })
   }
 
-  return (
-    <div className="p-8">
-      <header className="flex justify-between items-center mb-8">
+  const adminsCount = users.filter((u) => u.role === 'ADMIN').length
+  const driversCount = users.filter((u) => u.role === 'BUS_MANAGER').length
+
+  const columns: Column<UserRow>[] = [
+    {
+      key: 'name',
+      header: t('systemAdmin.nameColumn'),
+      sortValue: (u) => u.name,
+      render: (u) => (
         <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white shadow-inner-highlight ring-1 ring-black/[0.04]',
+              roleGradientClass(u.role),
+            )}
+          >
+            {initialsOf(u.name)}
+          </div>
+          <span className="truncate font-semibold text-navy-900">{u.name}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'email',
+      header: t('systemAdmin.emailColumn'),
+      sortValue: (u) => u.email,
+      render: (u) => <span className="text-gray-600">{u.email}</span>,
+    },
+    {
+      key: 'phone',
+      header: t('systemAdmin.phoneColumn'),
+      render: (u) => (
+        <span className="font-mono text-xs tabular-nums text-gray-600">{u.phone ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'role',
+      header: t('systemAdmin.roleColumn'),
+      sortValue: (u) => u.role,
+      render: (u) => <RoleBadge role={u.role} />,
+    },
+    {
+      key: 'joined',
+      header: t('systemAdmin.joinedColumn'),
+      sortValue: (u) => u.createdAt,
+      render: (u) => (
+        <span className="text-xs tabular-nums text-gray-500">
+          {new Date(u.createdAt).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: t('systemAdmin.actionsColumn'),
+      align: 'right',
+      render: (u) => (
+        <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={() => setEditUser(u)}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition-colors duration-150 hover:bg-primary-50 hover:text-primary-600"
+            aria-label={t('common.edit')}
+          >
+            <Edit2 size={15} />
+          </button>
+          <button
+            onClick={() => handleRemove(u)}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition-colors duration-150 hover:bg-danger-50 hover:text-danger-600"
+            aria-label={t('systemAdmin.removeUser')}
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+      ),
+    },
+  ]
+
+  return (
+    <div className="space-y-6 p-8">
+      <PageHeader
+        leading={
           <button
             onClick={onBack}
-            className="h-10 w-10 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100"
             aria-label={t('common.back')}
+            className="mb-1 inline-flex cursor-pointer items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-gray-500 transition-colors duration-150 hover:text-primary-600"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={14} aria-hidden="true" />
+            {t('systemAdmin.tenantUsers')}
           </button>
-          <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              {t('systemAdmin.tenantUsers')}
-            </p>
-            <h1 className="text-3xl font-extrabold text-navy-900 tracking-tight">{tenant.name}</h1>
-          </div>
-        </div>
-        <Button className="gap-2" onClick={() => setShowAdd(true)}>
-          <Plus size={18} /> {t('systemAdmin.addUser')}
-        </Button>
-      </header>
+        }
+        title={tenant.name}
+        subtitle={
+          <span className="inline-flex items-center gap-2">
+            <code className="rounded-md bg-gray-100/80 px-1.5 py-0.5 font-mono text-[11px] text-gray-600 ring-1 ring-inset ring-gray-200/60">
+              {tenant.slug}
+            </code>
+            <StatusBadge status={tenant.status} />
+          </span>
+        }
+        actions={
+          <Button className="gap-2" onClick={() => setShowAdd(true)}>
+            <Plus size={18} /> {t('systemAdmin.addUser')}
+          </Button>
+        }
+      />
 
-      {isLoading ? (
-        <p className="text-gray-400">{t('common.loading')}</p>
-      ) : users.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-12 text-center flex flex-col items-center gap-3">
-          <Users size={36} className="text-gray-300" />
-          <p className="text-gray-950 font-bold">{t('systemAdmin.noUsers')}</p>
-          <p className="text-gray-500 text-sm">{t('systemAdmin.noUsersHelp')}</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                <th className="px-5 py-3">{t('systemAdmin.nameColumn')}</th>
-                <th className="px-5 py-3">{t('systemAdmin.emailColumn')}</th>
-                <th className="px-5 py-3">{t('systemAdmin.phoneColumn')}</th>
-                <th className="px-5 py-3">{t('systemAdmin.roleColumn')}</th>
-                <th className="px-5 py-3">{t('systemAdmin.joinedColumn')}</th>
-                <th className="px-5 py-3 text-right">{t('systemAdmin.actionsColumn')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u, idx) => (
-                <tr
-                  key={u.id}
-                  className={cn(
-                    'h-14 border-t border-gray-100',
-                    idx % 2 === 1 && 'bg-gray-50/40',
-                  )}
-                >
-                  <td className="px-5 font-bold text-gray-950">{u.name}</td>
-                  <td className="px-5 text-gray-500">{u.email}</td>
-                  <td className="px-5 text-gray-500">{u.phone ?? '—'}</td>
-                  <td className="px-5">
-                    <RolePill role={u.role} />
-                  </td>
-                  <td className="px-5 text-gray-500 text-xs">
-                    {new Date(u.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-5">
-                    <div className="flex gap-1 justify-end">
-                      <button
-                        onClick={() => setEditUser(u)}
-                        className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                        aria-label={t('common.edit')}
-                      >
-                        <Edit2 size={15} />
-                      </button>
-                      <button
-                        onClick={() => handleRemove(u)}
-                        className="p-2 text-gray-400 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
-                        aria-label={t('systemAdmin.removeUser')}
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* Dải chỉ số người dùng của tenant */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MetricCard
+          label={t('systemAdmin.users')}
+          value={users.length}
+          icon={Users}
+          color="text-primary-600"
+          bg="bg-primary-50"
+        />
+        <MetricCard
+          label={t('systemAdmin.admins')}
+          value={adminsCount}
+          icon={ShieldCheck}
+          color="text-success-600"
+          bg="bg-success-50"
+        />
+        <MetricCard
+          label={t('systemAdmin.drivers')}
+          value={driversCount}
+          icon={Bus}
+          color="text-warning-600"
+          bg="bg-warning-50"
+        />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut', delay: 0.05 }}
+      >
+        <DataTable
+          columns={columns}
+          data={users}
+          rowKey={(u) => u.id}
+          loading={isLoading}
+          empty={
+            <EmptyState
+              icon={Users}
+              title={t('systemAdmin.noUsers')}
+              description={t('systemAdmin.noUsersHelp')}
+              action={
+                <Button size="sm" className="gap-2" onClick={() => setShowAdd(true)}>
+                  <Plus size={15} /> {t('systemAdmin.addUser')}
+                </Button>
+              }
+            />
+          }
+        />
+      </motion.div>
 
       <AnimatePresence>
         {showAdd && <AddUserModal tenantId={tenant.id} onClose={() => setShowAdd(false)} />}
@@ -415,26 +734,41 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               onClick={() => setEditUser(null)}
-              className="fixed inset-0 bg-gray-950/20 backdrop-blur-[2px] z-[60]"
+              className="fixed inset-0 z-[60] bg-navy-950/45 backdrop-blur-sm"
             />
+            {/* Drawer chỉnh sửa user — trượt vào bằng spring */}
             <motion.div
-              initial={{ x: 420 }}
+              initial={{ x: 440 }}
               animate={{ x: 0 }}
-              exit={{ x: 420 }}
-              className="fixed top-0 right-0 bottom-0 w-[420px] bg-white shadow-2xl z-[70] border-l border-gray-100 flex flex-col"
+              exit={{ x: 440, transition: { duration: 0.2, ease: 'easeIn' } }}
+              transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+              role="dialog"
+              aria-modal="true"
+              className="fixed inset-y-0 right-0 z-[70] flex w-[420px] max-w-[calc(100vw-24px)] flex-col bg-white shadow-float"
             >
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <div>
-                  <h2 className="font-bold text-gray-950">Edit User</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Update user details and role
-                  </p>
+              <div className="flex items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-gray-50/80 to-transparent px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-inner-highlight ring-1 ring-black/[0.04]',
+                      roleGradientClass(editUser.role),
+                    )}
+                  >
+                    <UserCog size={18} aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="font-semibold tracking-tight text-navy-900">
+                      {t('systemAdmin.editUserTitle')}
+                    </h2>
+                    <p className="mt-0.5 text-xs text-gray-500">Update user details and role</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setEditUser(null)}
-                  className="p-2 text-gray-400 hover:text-gray-950 hover:bg-white rounded-full transition-all"
-                  aria-label="Close"
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-700"
+                  aria-label={t('common.close')}
                 >
                   <X size={18} />
                 </button>
@@ -460,13 +794,8 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
   )
 }
 
-function RolePill({ role }: { role: UserRow['role'] }) {
+function RoleBadge({ role }: { role: UserRow['role'] }) {
   const { t } = useTranslation()
-  const map = {
-    ADMIN: 'bg-primary-50 text-primary-600',
-    BUS_MANAGER: 'bg-[#fff7ed] text-[#c2410c]',
-    SYSTEM_ADMIN: 'bg-gray-100 text-gray-600',
-  } as const
   const label =
     role === 'BUS_MANAGER'
       ? t('systemAdmin.drivers')
@@ -474,14 +803,11 @@ function RolePill({ role }: { role: UserRow['role'] }) {
         ? t('systemAdmin.admins')
         : t('nav.systemAdmin')
   return (
-    <span
-      className={cn(
-        'inline-flex h-6 items-center px-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest',
-        map[role],
-      )}
-    >
-      {label}
-    </span>
+    <Badge
+      variant={role === 'SYSTEM_ADMIN' ? 'secondary' : role}
+      className="text-[10px] font-bold uppercase tracking-widest"
+      label={label}
+    />
   )
 }
 
@@ -507,66 +833,71 @@ function AddUserModal({ tenantId, onClose }: { tenantId: string; onClose: () => 
   }
 
   return (
-    <ModalShell title={t('systemAdmin.addUserTitle')} onClose={onClose}>
+    <ModalShell title={t('systemAdmin.addUserTitle')} icon={UserPlus} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <FieldLabel label={`${t('passengers.fullName')} *`}>
-          <input
+          <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+            className="h-11 font-medium"
           />
         </FieldLabel>
         <FieldLabel label={`${t('auth.email')} *`}>
-          <input
+          <Input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+            className="h-11 font-medium"
           />
         </FieldLabel>
         <FieldLabel label={`${t('systemAdmin.role')} *`}>
-          <div className="flex gap-2">
-            {(['ADMIN', 'BUS_MANAGER'] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRole(r)}
-                className={cn(
-                  'flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-widest transition-all',
-                  role === r
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-50 border border-gray-100 text-gray-500 hover:bg-gray-100',
-                )}
-              >
-                {r === 'BUS_MANAGER' ? t('systemAdmin.drivers') : t('systemAdmin.admins')}
-              </button>
-            ))}
-          </div>
+          <SegmentedField
+            id="add-user-role"
+            value={role}
+            onChange={setRole}
+            options={[
+              {
+                value: 'ADMIN',
+                label: (
+                  <>
+                    <ShieldCheck size={14} aria-hidden="true" />
+                    {t('systemAdmin.admins')}
+                  </>
+                ),
+              },
+              {
+                value: 'BUS_MANAGER',
+                label: (
+                  <>
+                    <Bus size={14} aria-hidden="true" />
+                    {t('systemAdmin.drivers')}
+                  </>
+                ),
+              },
+            ]}
+          />
         </FieldLabel>
         <FieldLabel label={`${t('systemAdmin.tempPassword')} *`}>
-          <input
+          <Input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             minLength={6}
             required
-            className="w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all font-medium"
+            className="h-11 font-medium"
           />
         </FieldLabel>
 
-        {error && (
-          <p className="text-sm text-danger-600 bg-danger-50 border border-danger-100 rounded-lg px-3 py-2">
-            {error}
-          </p>
-        )}
+        {error && <FormError message={error} />}
 
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} className="gap-2">
+            {isLoading && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
             {isLoading ? t('systemAdmin.creating') : t('systemAdmin.createUser')}
           </Button>
         </div>
@@ -591,6 +922,7 @@ function EditUserForm({
   onCancel: () => void
   isLoading: boolean
 }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState({
     name: user.name,
     email: user.email,
@@ -598,10 +930,6 @@ function EditUserForm({
     role: (user.role === 'BUS_MANAGER' ? 'BUS_MANAGER' : 'ADMIN') as 'ADMIN' | 'BUS_MANAGER',
   })
   const [error, setError] = useState('')
-
-  const fieldClass =
-    'w-full h-11 px-4 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-all text-sm font-medium'
-  const labelClass = 'text-[10px] font-bold text-gray-400 uppercase tracking-widest'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -616,37 +944,34 @@ function EditUserForm({
       await onSubmit(form)
     } catch (err: unknown) {
       const msg = (err as { data?: { message?: string } })?.data?.message
-      setError(typeof msg === 'string' ? msg : 'Failed to update user')
+      setError(typeof msg === 'string' ? msg : t('systemAdmin.failedUpdateUser'))
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-6 space-y-5">
-        <div className="space-y-1.5">
-          <label className={labelClass}>Full Name</label>
-          <input
+    <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex-1 space-y-5 overflow-y-auto p-6">
+        <FieldLabel label={t('passengers.fullName')}>
+          <Input
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="e.g. Nguyen Van A"
-            className={fieldClass}
+            placeholder={t('users.fullNamePlaceholder')}
+            className="h-11 font-medium"
           />
-        </div>
+        </FieldLabel>
 
-        <div className="space-y-1.5">
-          <label className={labelClass}>Email</label>
-          <input
+        <FieldLabel label={t('auth.email')}>
+          <Input
             type="email"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="user@example.com"
-            className={fieldClass}
+            className="h-11 font-medium"
           />
-        </div>
+        </FieldLabel>
 
-        <div className="space-y-1.5">
-          <label className={labelClass}>Phone Number</label>
-          <input
+        <FieldLabel label="Phone Number">
+          <Input
             value={form.phone}
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, '')
@@ -654,13 +979,13 @@ function EditUserForm({
             }}
             maxLength={10}
             placeholder="0901234567"
-            className={fieldClass}
+            className="h-11 font-mono tabular-nums"
           />
           <div className="flex justify-between">
-            <p className="text-[10px] text-gray-400">10 digits only</p>
+            <p className="text-[11px] text-gray-500">10 digits only</p>
             <p
               className={cn(
-                'text-[10px] font-medium',
+                'text-[11px] font-semibold tabular-nums',
                 form.phone.length === 10
                   ? 'text-success-600'
                   : form.phone.length > 0
@@ -671,50 +996,56 @@ function EditUserForm({
               {form.phone.length}/10
             </p>
           </div>
-        </div>
+        </FieldLabel>
 
-        <div className="space-y-1.5">
-          <label className={labelClass}>Role</label>
-          <select
+        <FieldLabel label={t('systemAdmin.role')}>
+          <SegmentedField
+            id="edit-user-role"
             value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value as 'ADMIN' | 'BUS_MANAGER' })}
-            className={fieldClass}
-          >
-            <option value="ADMIN">Admin — Điều phối viên</option>
-            <option value="BUS_MANAGER">BusManager — Tài xế</option>
-          </select>
+            onChange={(role) => setForm({ ...form, role })}
+            options={[
+              { value: 'ADMIN', label: 'Admin — Điều phối viên' },
+              { value: 'BUS_MANAGER', label: 'BusManager — Tài xế' },
+            ]}
+          />
+        </FieldLabel>
+
+        {/* Ghi chú quyền hạn theo vai trò — đổi nội dung mượt khi chọn vai trò khác */}
+        <div className="rounded-xl border border-primary-100 bg-primary-50 p-3">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={form.role}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="flex items-start gap-2"
+            >
+              {form.role === 'ADMIN' ? (
+                <ShieldCheck size={15} className="mt-0.5 shrink-0 text-primary-600" aria-hidden="true" />
+              ) : (
+                <Bus size={15} className="mt-0.5 shrink-0 text-primary-600" aria-hidden="true" />
+              )}
+              <p className="text-[11px] leading-relaxed text-primary-700">
+                {form.role === 'ADMIN'
+                  ? 'Admin có quyền quản lý chuyến đi, xe, hành khách và xem live dashboard.'
+                  : 'BusManager (Tài xế) chỉ có quyền điểm danh hành khách trên xe được phân công.'}
+              </p>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
-        <div className="p-3 bg-primary-50 rounded-xl border border-primary-100">
-          <p className="text-[11px] text-primary-600 leading-relaxed">
-            {form.role === 'ADMIN'
-              ? '🗂 Admin có quyền quản lý chuyến đi, xe, hành khách và xem live dashboard.'
-              : '🚌 BusManager (Tài xế) chỉ có quyền điểm danh hành khách trên xe được phân công.'}
-          </p>
-        </div>
-
-        {error && (
-          <p className="text-sm text-danger-600 bg-danger-50 border border-danger-100 rounded-lg px-3 py-2">
-            {error}
-          </p>
-        )}
+        {error && <FormError message={error} />}
       </div>
 
-      <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex gap-3">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="flex-1 h-11 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-600/90 active:scale-[0.98] transition-all disabled:opacity-50"
-        >
-          {isLoading ? 'Saving…' : 'Save Changes'}
-        </button>
+      <div className="flex gap-3 border-t border-border bg-gray-50/50 p-6">
+        <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
+          {t('common.cancel')}
+        </Button>
+        <Button type="submit" disabled={isLoading} className="flex-1 gap-2">
+          {isLoading && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
+          {isLoading ? t('systemAdmin.saving') : t('systemAdmin.saveChanges')}
+        </Button>
       </div>
     </form>
   )
@@ -723,7 +1054,7 @@ function EditUserForm({
 function FieldLabel({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+      <label className="ml-1 text-[11px] font-bold uppercase tracking-widest text-gray-500">
         {label}
       </label>
       {children}
@@ -731,43 +1062,57 @@ function FieldLabel({ label, children }: { label: string; children: React.ReactN
   )
 }
 
+/* Khung modal dùng chung: backdrop mờ navy + panel spring scale-in */
 function ModalShell({
   title,
+  icon: Icon,
   onClose,
   children,
 }: {
   title: string
+  icon?: React.ElementType
   onClose: () => void
   children: React.ReactNode
 }) {
+  const { t } = useTranslation()
   return (
-    <>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      onClick={onClose}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-navy-950/45 p-4 backdrop-blur-sm"
+    >
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 bg-gray-950/30 backdrop-blur-[2px] z-[60]"
-      />
-      <motion.div
-        initial={{ opacity: 0, y: 12, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 12, scale: 0.97 }}
-        transition={{ duration: 0.15 }}
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] max-w-[calc(100vw-32px)] bg-white rounded-2xl shadow-2xl z-[70] border border-gray-100 overflow-hidden"
+        initial={{ opacity: 0, scale: 0.92, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 8, transition: { duration: 0.15, ease: 'easeIn' } }}
+        transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        className="w-full max-w-[480px] overflow-hidden rounded-2xl bg-white shadow-float ring-1 ring-black/5"
       >
-        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-950">{title}</h2>
+        <div className="flex items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-gray-50/80 to-transparent px-6 py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            {Icon && (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-inner-highlight ring-1 ring-black/[0.04]">
+                <Icon size={18} aria-hidden="true" />
+              </div>
+            )}
+            <h2 className="truncate text-lg font-semibold tracking-tight text-navy-900">{title}</h2>
+          </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-950 rounded-full hover:bg-gray-100 transition-all"
-            aria-label="Close"
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition-colors duration-150 hover:bg-gray-100 hover:text-gray-700"
+            aria-label={t('common.close')}
           >
             <X size={18} />
           </button>
         </div>
         <div className="p-6">{children}</div>
       </motion.div>
-    </>
+    </motion.div>
   )
 }

@@ -16,7 +16,10 @@ export interface ConfirmDialogProps {
   variant?: 'danger' | 'default'
 }
 
-/** Hộp thoại xác nhận cho các hành động phá huỷ / không thể hoàn tác. Thay thế kiểu fire-and-forget. */
+/**
+ * Hộp thoại xác nhận cho các hành động phá huỷ / không thể hoàn tác.
+ * Panel vào màn hình bằng spring scale-in, backdrop mờ dần.
+ */
 export function ConfirmDialog({
   open, title, description, confirmLabel, cancelLabel,
   onConfirm, onCancel, loading = false, error, variant = 'danger',
@@ -25,25 +28,26 @@ export function ConfirmDialog({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-4 backdrop-blur-[2px]"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/45 p-4 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
           onClick={onCancel}
         >
           <motion.div
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-card-hover"
-            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-float ring-1 ring-black/5"
+            initial={{ opacity: 0, scale: 0.92, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 8 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            exit={{ opacity: 0, scale: 0.95, y: 8, transition: { duration: 0.15, ease: 'easeIn' } }}
+            transition={{ type: 'spring', stiffness: 420, damping: 32 }}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
           >
             <div className="flex items-start gap-3">
               {variant === 'danger' && (
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-danger-50">
+                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-danger-50 ring-1 ring-danger-100">
                   <AlertTriangle size={20} className="text-danger-600" />
                 </div>
               )}
@@ -53,7 +57,13 @@ export function ConfirmDialog({
               </div>
             </div>
             {error && (
-              <p className="mt-3 rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-600">{error}</p>
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-600 ring-1 ring-danger-100"
+              >
+                {error}
+              </motion.p>
             )}
             <div className="mt-5 flex justify-end gap-2">
               <Button variant="secondary" onClick={onCancel} disabled={loading}>

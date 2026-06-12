@@ -13,11 +13,20 @@ export function SectionCard({
   title, subtitle, headerAction, bodyClassName, className, children, ...props
 }: SectionCardProps) {
   return (
-    <div className={cn('rounded-2xl border border-border bg-white shadow-card', className)} {...props}>
+    <div
+      className={cn(
+        'overflow-hidden rounded-2xl border border-border bg-white shadow-card',
+        'transition-shadow duration-200 hover:shadow-card-hover',
+        className,
+      )}
+      {...props}
+    >
       {(title || headerAction) && (
-        <div className="flex items-center justify-between gap-3 border-b border-border px-6 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-gray-50/80 to-transparent px-6 py-4">
           <div className="min-w-0">
-            {title && <h2 className="text-base font-semibold tracking-tight text-navy-900 truncate">{title}</h2>}
+            {title && (
+              <h2 className="text-base font-semibold tracking-tight text-navy-900 truncate">{title}</h2>
+            )}
             {subtitle && <p className="mt-0.5 text-sm text-gray-500">{subtitle}</p>}
           </div>
           {headerAction && <div className="shrink-0">{headerAction}</div>}

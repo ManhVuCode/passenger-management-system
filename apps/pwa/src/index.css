@@ -1,14 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+/* Phông chữ: Plus Jakarta Sans (nội dung) + Space Grotesk (tiêu đề trang & số liệu lớn) */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  html {
+    /* Tắt highlight xám mặc định khi chạm trên mobile — feedback chạm do active:scale đảm nhiệm */
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
     @apply bg-gray-50 text-gray-950 font-sans antialiased;
     background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
     background-size: 20px 20px;
+  }
+  /* Vòng focus mặc định cho mọi phần tử tương tác (utility ở component sẽ override) */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-gray-50;
+  }
+  /* Mọi thứ bấm được phải có cursor-pointer */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    @apply cursor-pointer;
   }
 }
 
@@ -19,15 +33,57 @@
 
 @layer utilities {
   .glass {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
   .glass-dark {
     background: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  /* Kính màu navy đậm — dùng cho header/hero tối */
+  .glass-navy {
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  /* Nền aurora: dải sáng xanh đại dương mềm — kết hợp animate-aurora để trôi nhẹ */
+  .bg-aurora {
+    background-image:
+      radial-gradient(at 15% 0%, rgba(14, 165, 233, 0.16) 0, transparent 55%),
+      radial-gradient(at 85% 12%, rgba(56, 189, 248, 0.14) 0, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(3, 105, 161, 0.1) 0, transparent 60%);
+    background-size: 200% 200%;
+  }
+  /* Chữ gradient xanh đại dương — dùng cho tiêu đề/điểm nhấn */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent;
+  }
+  /* Đệm theo safe-area cho thiết bị có notch / home indicator */
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  /* Ẩn thanh cuộn nhưng vẫn cuộn được (chip filter cuộn ngang...) */
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+}
+
+/* Tôn trọng cài đặt giảm chuyển động của người dùng — tắt mọi animation/transition CSS */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

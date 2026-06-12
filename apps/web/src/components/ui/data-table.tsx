@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { motion } from 'motion/react'
 import { ChevronUp, ChevronDown } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { Skeleton } from './skeleton'
@@ -28,7 +29,11 @@ export interface DataTableProps<T> {
 
 const alignClass = { left: 'text-left', center: 'text-center', right: 'text-right' } as const
 
-/** Bảng dùng chung với header dính (sticky), sắp xếp phía client, skeleton loading và trạng thái rỗng. */
+/**
+ * Bảng dùng chung với header dính (sticky), sắp xếp phía client, skeleton shimmer
+ * và trạng thái rỗng. Các dòng vào màn hình theo nhịp stagger ~40ms (tối đa 0.4s),
+ * hover làm sáng nền dòng bằng tông primary rất nhạt.
+ */
 export function DataTable<T>({
   columns, data, rowKey, loading = false, skeletonRows = 5, empty, onRowClick, className,
 }: DataTableProps<T>) {
@@ -65,14 +70,14 @@ export function DataTable<T>({
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-border bg-gray-50/60">
+            <tr className="border-b border-border">
               {columns.map((col) => (
                 <th
                   key={col.key}
                   className={cn(
-                    'sticky top-0 bg-gray-50/60 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500',
+                    'sticky top-0 z-10 bg-gray-50/90 backdrop-blur-sm px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500',
                     alignClass[col.align ?? 'left'],
-                    col.sortValue && 'cursor-pointer select-none',
+                    col.sortValue && 'cursor-pointer select-none transition-colors hover:text-primary-600',
                     col.headerClassName,
                   )}
                   onClick={() => toggleSort(col)}
@@ -107,14 +112,26 @@ export function DataTable<T>({
                 </td>
               </tr>
             ) : (
-              sorted.map((row) => (
-                <tr
+              sorted.map((row, i) => (
+                <motion.tr
                   key={rowKey(row)}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, ease: 'easeOut', delay: Math.min(i * 0.04, 0.4) }}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   className={cn(
-                    'border-b border-border last:border-0 transition-colors',
-                    onRowClick && 'cursor-pointer hover:bg-gray-50',
+                    'border-b border-border last:border-0 transition-colors duration-150 hover:bg-primary-50/40',
+                    onRowClick &&
+                      'cursor-pointer focus-visible:outline-none focus-visible:bg-primary-50/60',
                   )}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.key === 'Enter') onRowClick(row)
+                        }
+                      : undefined
+                  }
                 >
                   {columns.map((col) => (
                     <td
@@ -124,7 +141,7 @@ export function DataTable<T>({
                       {col.render(row)}
                     </td>
                   ))}
-                </tr>
+                </motion.tr>
               ))
             )}
           </tbody>

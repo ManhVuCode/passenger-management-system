@@ -182,7 +182,14 @@ export class AllocationService {
       throw new NotFoundException('Allocation not found')
     }
 
-    return this.prisma.roundPassengerAssignment.delete({ where: { id: assignmentId } })
+    // Xóa bản ghi điểm danh đi kèm (1:1) trước để không vướng FK.
+    const [, deleted] = await this.prisma.$transaction([
+      this.prisma.attendanceRecord.deleteMany({
+        where: { roundPassengerAssignmentId: assignmentId },
+      }),
+      this.prisma.roundPassengerAssignment.delete({ where: { id: assignmentId } }),
+    ])
+    return deleted
   }
 
   async movePassenger(

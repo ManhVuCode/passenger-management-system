@@ -25,11 +25,14 @@ export type RsvpIntent = 'WILL_BOARD' | 'WONT_BOARD'
 export interface SendJobData {
   logId: string
   channel: string
-  payload: { to: string; body: string; tenantId: string; templateKey?: string }
+  payload: { to: string; body: string; tenantId: string; templateKey?: string; subject?: string }
 }
 
 /** Định dạng số điện thoại chấp nhận cho người nhận SMS/voice. */
 export const PHONE_RE = /^\+?[0-9]{9,15}$/
+
+/** Định dạng email chấp nhận cho người nhận kênh EMAIL — kiểm tra thô, đủ chặn rác. */
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 /** Định dạng Telegram chat target — chat_id dạng số (private/supergroup) hoặc @username. */
 export const TELEGRAM_ID_RE = /^(-?[0-9]{1,20}|@[A-Za-z0-9_]{5,32})$/

@@ -47,6 +47,7 @@ export interface AutoRules {
   roundCancelled: boolean
   roundCompleted: boolean
   boardingReminder: boolean
+  emailReport: boolean
 }
 
 export type RsvpIntent = 'WILL_BOARD' | 'WONT_BOARD'

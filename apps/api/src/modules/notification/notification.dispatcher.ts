@@ -32,6 +32,27 @@ export class NotificationDispatcher {
   @OnEvent(RoundEvents.COMPLETED)
   async onRoundCompleted(payload: RoundEventPayload): Promise<void> {
     await this.dispatch(payload, 'roundCompleted', 'ROUND_COMPLETED', 'round.completed')
+    await this.dispatchEmailReport(payload)
+  }
+
+  /** Email báo cáo điểm danh cho Admin khi round hoàn thành — công tắc riêng (emailReport). */
+  private async dispatchEmailReport(payload: RoundEventPayload): Promise<void> {
+    const config = await this.prisma.tenantNotificationConfig.findUnique({
+      where: { tenantId: payload.tenantId },
+    })
+    if (!resolveAutoRules(config?.autoRules).emailReport) return
+
+    try {
+      const result = await this.service.sendAttendanceReportEmail(payload)
+      this.logger.log(
+        `EMAIL_REPORT → ${payload.roundId}: sent ${result.sent}, skipped ${result.skipped}`,
+      )
+    } catch (e) {
+      // Tự động hóa không bao giờ được phép lan ngược lên request đã phát ra sự kiện.
+      this.logger.error(
+        `EMAIL_REPORT dispatch failed for ${payload.roundId}: ${(e as Error).message}`,
+      )
+    }
   }
 
   private async dispatch(

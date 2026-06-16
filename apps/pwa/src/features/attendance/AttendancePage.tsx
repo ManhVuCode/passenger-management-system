@@ -1,11 +1,10 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence, useSpring, useTransform } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import {
   useGetPassengersForBusQuery,
   useMarkAttendanceMutation,
-  useGetAttendanceSummaryQuery,
   useUpdateRoundStatusMutation,
 } from './attendanceApi'
 import { useAttendanceSocket, type AttendanceUpdate } from '../../hooks/useAttendanceSocket'
@@ -62,10 +61,21 @@ export default function AttendancePage() {
     roundId: roundId!,
     busId: busId!,
   })
-  const { data: summary } = useGetAttendanceSummaryQuery({
-    tripId: tripId!,
-    roundId: roundId!,
-  })
+  // Số liệu phạm vi XE NÀY (danh sách hành khách của xe) — summary của API là
+  // toàn round (mọi xe) nên không dùng ở đây kẻo tài xế hiểu nhầm
+  const busStats = useMemo(() => {
+    let join = 0
+    let absent = 0
+    let cancelled = 0
+    for (const p of passengers) {
+      const s = p.attendanceRecord?.status
+      if (s === 'JOIN') join++
+      else if (s === 'ABSENT') absent++
+      else if (s === 'CANCELLED') cancelled++
+    }
+    const total = passengers.length
+    return { total, join, absent, cancelled, pending: total - join - absent - cancelled }
+  }, [passengers])
   const [markAttendance, { isLoading: marking }] = useMarkAttendanceMutation()
   const [updateRoundStatus, { isLoading: completing }] = useUpdateRoundStatusMutation()
 
@@ -214,7 +224,7 @@ export default function AttendancePage() {
 
   const someMarked = passengers.some((p) => p.attendanceRecord)
   // Tránh chia cho 0 khi tính phần trăm thanh tiến độ
-  const totalSafe = Math.max(summary?.total ?? 0, 1)
+  const totalSafe = Math.max(busStats.total, 1)
 
   return (
     <div className="relative min-h-screen bg-gray-50 flex flex-col max-w-[420px] mx-auto border-x border-gray-200">
@@ -291,7 +301,7 @@ export default function AttendancePage() {
                     )}
                   />
                 </span>
-                {t('attendance.seats', { count: summary?.total ?? passengers.length })}
+                {t('attendance.seats', { count: busStats.total })}
               </p>
             </div>
             <button
@@ -302,26 +312,26 @@ export default function AttendancePage() {
             </button>
           </div>
 
-          {summary && (
+          {busStats.total > 0 && (
             <div className="px-4 pb-3">
               {/* Ba số liệu lớn đếm tăng động (font-display + tabular-nums) */}
               <div className="grid grid-cols-3 gap-2 mb-2.5">
                 {(
                   [
                     {
-                      value: summary.join,
+                      value: busStats.join,
                       label: t('status.JOIN'),
                       dot: 'bg-success-500',
                       text: 'text-success-700',
                     },
                     {
-                      value: summary.absent,
+                      value: busStats.absent,
                       label: t('status.ABSENT'),
                       dot: 'bg-warning-500',
                       text: 'text-[#b45309]',
                     },
                     {
-                      value: summary.pending,
+                      value: busStats.pending,
                       label: t('status.PENDING'),
                       dot: 'bg-gray-300',
                       text: 'text-navy-700',
@@ -349,17 +359,17 @@ export default function AttendancePage() {
               <div className="flex h-2 rounded-full bg-gray-200/80 ring-1 ring-inset ring-navy-900/5 overflow-hidden">
                 <motion.div
                   className="h-full bg-gradient-to-r from-success-500 to-success-600"
-                  animate={{ width: `${(summary.join / totalSafe) * 100}%` }}
+                  animate={{ width: `${(busStats.join / totalSafe) * 100}%` }}
                   transition={{ type: 'spring', stiffness: 140, damping: 24 }}
                 />
                 <motion.div
                   className="h-full bg-gradient-to-r from-warning-500 to-warning-600"
-                  animate={{ width: `${(summary.absent / totalSafe) * 100}%` }}
+                  animate={{ width: `${(busStats.absent / totalSafe) * 100}%` }}
                   transition={{ type: 'spring', stiffness: 140, damping: 24 }}
                 />
                 <motion.div
                   className="h-full bg-gradient-to-r from-danger-500 to-danger-600"
-                  animate={{ width: `${(summary.cancelled / totalSafe) * 100}%` }}
+                  animate={{ width: `${(busStats.cancelled / totalSafe) * 100}%` }}
                   transition={{ type: 'spring', stiffness: 140, damping: 24 }}
                 />
               </div>
@@ -528,21 +538,27 @@ export default function AttendancePage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <h4 className="text-[15px] font-bold text-navy-800 truncate">
+                      {/* Tên chiếm toàn bộ dòng đầu — badge type chuyển xuống dòng meta
+                          để tên tiếng Việt dài không bị cắt trên màn hình hẹp */}
+                      <h4 className="flex-1 min-w-0 text-[15px] font-bold text-navy-800 truncate">
                         {p.tripPassengerAssignment.name}
                       </h4>
-                      {p.tripPassengerAssignment.type && (
-                        <Badge
-                          variant={`TYPE_${p.tripPassengerAssignment.type}` as BadgeVariant}
-                          label={p.tripPassengerAssignment.type}
-                        />
-                      )}
                       {isCancelled && (
                         <Badge variant="CANCELLED" label={t('status.CANCELLED')} />
                       )}
                     </div>
                     <p className="flex items-center gap-1.5 text-xs text-gray-500 tabular-nums">
-                      <span className="truncate">{p.tripPassengerAssignment.phone}</span>
+                      {/* SĐT ưu tiên hiển thị đủ (tài xế cần gọi khách) — badge type co lại trước */}
+                      <span className="shrink-0">{p.tripPassengerAssignment.phone}</span>
+                      {p.tripPassengerAssignment.type && (
+                        <Badge
+                          variant={`TYPE_${p.tripPassengerAssignment.type}` as BadgeVariant}
+                          className="min-w-0 h-[18px] px-2 text-[10px]"
+                          title={p.tripPassengerAssignment.type}
+                        >
+                          <span className="truncate">{p.tripPassengerAssignment.type}</span>
+                        </Badge>
+                      )}
                       {/* Giờ điểm danh — hiện ngay cả với bản ghi optimistic (markedAt local) */}
                       {p.attendanceRecord && (
                         <span

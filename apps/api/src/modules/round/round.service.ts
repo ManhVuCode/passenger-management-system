@@ -152,6 +152,16 @@ export class RoundService {
 
   async remove(id: string, tenantId: string) {
     await this.findOne(id, tenantId)
-    return this.prisma.round.delete({ where: { id } })
+    // Xóa dây chuyền theo thứ tự phụ thuộc FK (schema không khai báo onDelete: Cascade).
+    const results = await this.prisma.$transaction([
+      this.prisma.attendanceRecord.deleteMany({
+        where: { roundPassengerAssignment: { roundId: id } },
+      }),
+      this.prisma.roundPassengerAssignment.deleteMany({ where: { roundId: id } }),
+      this.prisma.busManagerAssignment.deleteMany({ where: { roundId: id } }),
+      this.prisma.roundBusAssignment.deleteMany({ where: { roundId: id } }),
+      this.prisma.round.delete({ where: { id } }),
+    ])
+    return results[results.length - 1]
   }
 }

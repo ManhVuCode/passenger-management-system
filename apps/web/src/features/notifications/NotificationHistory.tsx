@@ -1,6 +1,6 @@
 import { useEffect, useState, type ElementType } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Bell, BellRing, MessageSquare, PhoneCall, Radio, Send, Webhook } from 'lucide-react'
+import { Bell, BellRing, Mail, MessageSquare, PhoneCall, Radio, Send, Webhook } from 'lucide-react'
 import {
   useGetNotificationHistoryQuery,
   useSimulateRsvpMutation,
@@ -26,6 +26,7 @@ const CHANNEL_ICONS: Record<string, ElementType> = {
   VOICE: PhoneCall,
   TELEGRAM: Send,
   BROADCAST: Radio,
+  EMAIL: Mail,
 }
 
 /* Chấm màu theo trạng thái ở cột thời gian — tạo cảm giác dòng thời gian cho lịch sử.
@@ -48,8 +49,12 @@ function StatusDot({ status }: { status: string }) {
   return <span className={`h-2 w-2 shrink-0 rounded-full ${color}`} aria-hidden="true" />
 }
 
+// Số dòng hiển thị mỗi trang — lịch sử có thể rất dài (mỗi lần gửi × mỗi hành khách)
+const PAGE_SIZE = 15
+
 export default function NotificationHistory({ tripId }: { tripId: string }) {
   const { t } = useTranslation()
+  const [visible, setVisible] = useState(PAGE_SIZE)
   // Các dòng SMS/Voice/Telegram bắt đầu ở trạng thái QUEUED rồi mới chuyển sang SENT/FAILED sau đó
   // trong worker, vốn không phát tín hiệu invalidation. Chỉ poll khi còn dòng đang chờ xử lý, sau đó dừng.
   const [poll, setPoll] = useState(false)
@@ -184,15 +189,28 @@ export default function NotificationHistory({ tripId }: { tripId: string }) {
     },
   ]
 
+  const remaining = logs.length - visible
+
   return (
     <SectionCard bodyClassName="p-0">
       <DataTable
         columns={columns}
-        data={logs}
+        data={logs.slice(0, visible)}
         rowKey={(r) => r.id}
         loading={isLoading}
         empty={<EmptyState icon={Bell} title={t('notifications.historyEmpty')} />}
       />
+      {remaining > 0 && (
+        <div className="border-t border-gray-100 p-3 text-center">
+          <button
+            type="button"
+            onClick={() => setVisible((v) => v + PAGE_SIZE)}
+            className="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold text-primary-600 transition-colors duration-150 hover:bg-primary-50"
+          >
+            {t('notifications.showMore', { count: Math.min(remaining, PAGE_SIZE), remaining })}
+          </button>
+        </div>
+      )}
     </SectionCard>
   )
 }

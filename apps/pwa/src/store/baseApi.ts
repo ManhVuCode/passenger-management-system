@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import type { RootState } from './index'
 import type { ApiResponse } from '@pms/shared'
+import { logout } from '../features/auth/authSlice'
 
 export const baseApi = createApi({
   reducerPath: 'api',
@@ -15,6 +16,12 @@ export const baseApi = createApi({
     })
 
     const result = await rawBaseQuery(args, api, extraOptions)
+
+    // Token hết hạn / bị thu hồi: xóa phiên để ProtectedRoute đưa về trang đăng nhập
+    // chung, thay vì hiển thị màn hình "chưa được phân công" gây hiểu nhầm.
+    if (result.error?.status === 401) {
+      api.dispatch(logout())
+    }
 
     if (result.data) {
       const wrapped = result.data as ApiResponse<unknown>

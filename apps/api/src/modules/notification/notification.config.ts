@@ -8,6 +8,8 @@ export interface AutoRules {
   roundCancelled: boolean
   roundCompleted: boolean
   boardingReminder: boolean
+  /** Gửi email báo cáo điểm danh cho các Admin của tenant khi một round hoàn thành. */
+  emailReport: boolean
 }
 
 export type AutoRuleKey = keyof AutoRules
@@ -17,6 +19,7 @@ export const DEFAULT_AUTO_RULES: AutoRules = {
   roundCancelled: false,
   roundCompleted: false,
   boardingReminder: false,
+  emailReport: false,
 }
 
 /** Ép một giá trị Json không xác định thành AutoRules đầy đủ (mặc định tất cả là false). */
@@ -28,5 +31,6 @@ export function resolveAutoRules(raw: unknown): AutoRules {
     roundCancelled: obj.roundCancelled === true,
     roundCompleted: obj.roundCompleted === true,
     boardingReminder: obj.boardingReminder === true,
+    emailReport: obj.emailReport === true,
   }
 }

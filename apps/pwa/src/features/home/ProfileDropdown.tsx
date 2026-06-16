@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { logout } from '../auth/authSlice'
-import { useNavigate } from 'react-router-dom'
 import { LogOut, Key, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { cn } from '../../lib/utils'
@@ -16,7 +15,6 @@ export default function ProfileDropdown() {
   const [open, setOpen] = useState(false)
   const [showChangePw, setShowChangePw] = useState(false)
   const dispatch = useAppDispatch()
-  const navigate = useNavigate()
   const name = useAppSelector((s) => s.auth.name) ?? t('profile.driver')
   const email = useAppSelector((s) => s.auth.email) ?? ''
   const role = useAppSelector((s) => s.auth.role) ?? ''
@@ -32,7 +30,10 @@ export default function ProfileDropdown() {
 
   function handleLogout() {
     dispatch(logout())
-    navigate('/login')
+    // Trang đăng nhập chung nằm bên web admin — rời hẳn PWA sau khi xóa phiên
+    window.location.replace(
+      `${import.meta.env.VITE_WEB_URL ?? 'http://localhost:5173'}/login`,
+    )
   }
 
   const initials = name

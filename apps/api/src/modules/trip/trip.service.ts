@@ -83,6 +83,19 @@ export class TripService {
 
   async remove(id: string, tenantId: string) {
     await this.findOne(id, tenantId)
-    return this.prisma.trip.delete({ where: { id } })
+    // Xóa dây chuyền theo thứ tự phụ thuộc FK (schema không khai báo onDelete: Cascade).
+    // NotificationLog giữ nguyên — tripId/roundId chỉ là cột string, đóng vai trò audit trail.
+    const results = await this.prisma.$transaction([
+      this.prisma.attendanceRecord.deleteMany({
+        where: { roundPassengerAssignment: { tripId: id } },
+      }),
+      this.prisma.roundPassengerAssignment.deleteMany({ where: { tripId: id } }),
+      this.prisma.busManagerAssignment.deleteMany({ where: { tripId: id } }),
+      this.prisma.roundBusAssignment.deleteMany({ where: { tripId: id } }),
+      this.prisma.tripPassengerAssignment.deleteMany({ where: { tripId: id } }),
+      this.prisma.round.deleteMany({ where: { tripId: id } }),
+      this.prisma.trip.delete({ where: { id } }),
+    ])
+    return results[results.length - 1]
   }
 }

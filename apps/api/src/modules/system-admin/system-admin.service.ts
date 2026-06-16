@@ -107,6 +107,17 @@ export class SystemAdminService {
   async removeUser(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
     if (!user) throw new NotFoundException('User not found')
+    // Không cascade: tài xế còn được gán xe hoặc đã từng điểm danh (markedBy là
+    // audit trail) thì chặn xóa — gỡ phân công trước, lịch sử điểm danh giữ nguyên.
+    const [driving, marked] = await this.prisma.$transaction([
+      this.prisma.busManagerAssignment.count({ where: { userId } }),
+      this.prisma.attendanceRecord.count({ where: { markedBy: userId } }),
+    ])
+    if (driving > 0 || marked > 0) {
+      throw new ConflictException(
+        `User is still referenced (driver assignments: ${driving}, attendance records marked: ${marked}). Unassign them first.`,
+      )
+    }
     await this.prisma.user.delete({ where: { id: userId } })
     return { success: true }
   }

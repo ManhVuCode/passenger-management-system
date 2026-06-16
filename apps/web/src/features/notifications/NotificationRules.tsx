@@ -1,7 +1,7 @@
 import { type ElementType } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'motion/react'
-import { AlarmClock, AlertCircle, CheckCircle2, PlayCircle, XCircle } from 'lucide-react'
+import { AlarmClock, AlertCircle, CheckCircle2, Mail, PlayCircle, XCircle } from 'lucide-react'
 import { SectionCard } from '../../components/ui/section-card'
 import {
   useGetAutoRulesQuery,
@@ -14,6 +14,7 @@ const RULE_KEYS: (keyof AutoRules)[] = [
   'roundCancelled',
   'roundCompleted',
   'boardingReminder',
+  'emailReport',
 ]
 
 const LABELS: Record<keyof AutoRules, { label: string; desc: string; icon: ElementType }> = {
@@ -21,6 +22,7 @@ const LABELS: Record<keyof AutoRules, { label: string; desc: string; icon: Eleme
   roundCancelled: { label: 'ruleRoundCancelled', desc: 'ruleRoundCancelledDesc', icon: XCircle },
   roundCompleted: { label: 'ruleRoundCompleted', desc: 'ruleRoundCompletedDesc', icon: CheckCircle2 },
   boardingReminder: { label: 'ruleBoardingReminder', desc: 'ruleBoardingReminderDesc', icon: AlarmClock },
+  emailReport: { label: 'ruleEmailReport', desc: 'ruleEmailReportDesc', icon: Mail },
 }
 
 /* Công tắc bật/tắt: núm gạt trượt bằng spring (layout animation), nền gradient khi bật */

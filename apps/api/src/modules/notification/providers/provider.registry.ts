@@ -4,6 +4,7 @@ import { SmsProvider } from './sms.provider'
 import { TeamsProvider } from './teams.provider'
 import { VoiceProvider } from './voice.provider'
 import { TelegramProvider } from './telegram.provider'
+import { EmailProvider } from './email.provider'
 
 /**
  * Phân giải chuỗi channel thành provider tương ứng. IN_APP/BROADCAST KHÔNG nằm ở đây —
@@ -19,12 +20,14 @@ export class ProviderRegistry {
     teams: TeamsProvider,
     voice: VoiceProvider,
     telegram: TelegramProvider,
+    email: EmailProvider,
   ) {
     this.byChannel = {
       [sms.channel]: sms,
       [teams.channel]: teams,
       [voice.channel]: voice,
       [telegram.channel]: telegram,
+      [email.channel]: email,
     }
   }
 

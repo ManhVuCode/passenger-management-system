@@ -11,7 +11,7 @@ import { NotificationSender } from './notification.sender'
 import { TemplateService, type TemplateKey, type TemplateLocale } from './templates/template.service'
 import { resolveAutoRules, type AutoRules } from './notification.config'
 import { NOTIFICATION_QUEUE } from '../queue/queue.module'
-import { PHONE_RE, TELEGRAM_ID_RE, redactContact, type NotificationTrigger, type RsvpIntent, type SendJobData } from './notification.types'
+import { EMAIL_RE, PHONE_RE, TELEGRAM_ID_RE, redactContact, type NotificationTrigger, type RsvpIntent, type SendJobData } from './notification.types'
 
 interface Recipient {
   id: string
@@ -408,6 +408,90 @@ export class NotificationService {
       orderBy: { createdAt: 'desc' },
       take,
     })
+  }
+
+
+  /**
+   * Email tự động: báo cáo điểm danh gửi tới các Admin của tenant khi một round
+   * hoàn thành. Cổng autoRules.emailReport do dispatcher kiểm tra trước khi gọi.
+   * Người nhận là User.email của Admin — KHÔNG phải hành khách (hành khách chưa
+   * có trường email). Đi qua cùng pipeline queue/retry/log như mọi kênh khác.
+   */
+  async sendAttendanceReportEmail(params: {
+    tripId: string
+    roundId: string
+    tenantId: string
+  }): Promise<DispatchResult> {
+    const { tripId, roundId, tenantId } = params
+    const round = await this.prisma.round.findFirst({
+      where: { id: roundId, tripId, tenantId },
+      include: { trip: { select: { name: true } } },
+    })
+    if (!round) return { sent: 0, skipped: 0 }
+
+    const rpas = await this.prisma.roundPassengerAssignment.findMany({
+      where: { tripId, roundId },
+      include: {
+        tripPassengerAssignment: { select: { name: true } },
+        attendanceRecord: { select: { status: true } },
+      },
+    })
+    const total = rpas.length
+    const joined = rpas.filter((r) => r.attendanceRecord?.status === 'JOIN')
+    const absentees = rpas.filter((r) => r.attendanceRecord?.status === 'ABSENT')
+    const pending = rpas.filter((r) => !r.attendanceRecord)
+
+    const subject = `[MPMS] Báo cáo điểm danh — ${round.trip.name} / chặng ${round.name}`
+    const lines = [
+      `Chặng "${round.name}" của chuyến "${round.trip.name}" đã hoàn thành.`,
+      '',
+      `Tổng hành khách: ${total}`,
+      `Đã lên xe: ${joined.length}`,
+      `Vắng mặt: ${absentees.length}`,
+      `Chưa điểm danh: ${pending.length}`,
+    ]
+    if (absentees.length > 0) {
+      lines.push('', 'Danh sách vắng mặt:')
+      for (const r of absentees) lines.push(`  - ${r.tripPassengerAssignment.name}`)
+    }
+    if (pending.length > 0) {
+      lines.push('', 'Chưa điểm danh:')
+      for (const r of pending) lines.push(`  - ${r.tripPassengerAssignment.name}`)
+    }
+    const body = lines.join('\n')
+
+    const admins = await this.prisma.user.findMany({
+      where: { tenantId, role: 'ADMIN' },
+      select: { email: true },
+    })
+
+    let sent = 0
+    let skipped = 0
+    for (const admin of admins) {
+      if (!admin.email || !EMAIL_RE.test(admin.email)) {
+        skipped++
+        continue
+      }
+      const log = await this.prisma.notificationLog.create({
+        data: {
+          tenantId,
+          tripId,
+          roundId,
+          channel: 'EMAIL',
+          trigger: 'ROUND_COMPLETED',
+          messageText: body,
+          toContact: redactContact(admin.email),
+          status: 'QUEUED',
+        },
+      })
+      await this.enqueueOrInline({
+        logId: log.id,
+        channel: 'EMAIL',
+        payload: { to: admin.email, body, tenantId, subject },
+      })
+      sent++
+    }
+    return { sent, skipped }
   }
 
   /** B4 — đọc các công tắc automation của tenant (mặc định tất cả là false). */

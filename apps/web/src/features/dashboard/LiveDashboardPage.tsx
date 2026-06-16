@@ -616,7 +616,7 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
               className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-gray-100 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-card-hover"
             >
               {/* Dải header: xe + tiến độ đã điểm danh */}
-              <div className="flex items-center justify-between border-b border-gray-100 bg-gradient-to-b from-gray-50/80 to-white p-5">
+              <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-gradient-to-b from-gray-50/80 to-white p-5">
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 shadow-inner-highlight ring-1 ring-black/[0.03]">
                     <BusIcon size={20} />
@@ -625,7 +625,7 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
                     <h3 className="truncate text-sm font-bold text-navy-900">
                       {busInfo?.name ?? `Bus ${busId.slice(0, 8)}`}
                     </h3>
-                    <p className="font-mono text-[10px] font-bold tracking-wide text-gray-400">
+                    <p className="truncate font-mono text-[10px] font-bold tracking-wide text-gray-400">
                       {busInfo?.licensePlate ?? busId.slice(0, 8)}
                     </p>
                   </div>
@@ -636,7 +636,7 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
                     <span className="text-base font-semibold text-gray-400">/{total}</span>
                   </p>
                   <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    {t('attendance.liveTitle')}
+                    {t('attendance.markedShort')}
                   </p>
                 </div>
               </div>

@@ -16,10 +16,11 @@ export interface SendResult {
 
 /** Một tin nhắn đã render gửi tới một người nhận trên một kênh. */
 export interface MessagePayload {
-  to: string // số điện thoại hoặc telegram chat id (hoặc nhãn webhook cho các kênh staff)
+  to: string // số điện thoại, telegram chat id, địa chỉ email (hoặc nhãn webhook cho các kênh staff)
   body: string // nội dung tin nhắn đã render
   tenantId: string
   templateKey?: string
+  subject?: string // chỉ kênh EMAIL dùng — tiêu đề thư
 }
 
 /** Interface theo mẫu Strategy: một adapter cho mỗi kênh gửi. */

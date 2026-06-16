@@ -15,6 +15,7 @@ import { SmsProvider } from './providers/sms.provider'
 import { TeamsProvider } from './providers/teams.provider'
 import { VoiceProvider } from './providers/voice.provider'
 import { TelegramProvider } from './providers/telegram.provider'
+import { EmailProvider } from './providers/email.provider'
 import { GatewayModule } from '../../gateway/gateway.module'
 import { NOTIFICATION_QUEUE } from '../queue/queue.module'
 
@@ -34,6 +35,7 @@ import { NOTIFICATION_QUEUE } from '../queue/queue.module'
     TeamsProvider,
     VoiceProvider,
     TelegramProvider,
+    EmailProvider,
   ],
   exports: [NotificationService],
 })

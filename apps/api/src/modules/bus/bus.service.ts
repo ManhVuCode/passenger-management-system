@@ -49,6 +49,14 @@ export class BusService {
 
   async remove(id: string, tenantId: string) {
     await this.findOne(id, tenantId)
+    // Không cascade: xe còn gán vào round mang theo phân bổ + điểm danh lịch sử.
+    // Buộc Admin gỡ xe khỏi các round trước, tránh xóa nhầm dữ liệu vận hành.
+    const assignments = await this.prisma.roundBusAssignment.count({ where: { busId: id } })
+    if (assignments > 0) {
+      throw new ConflictException(
+        `Bus is assigned to ${assignments} round(s). Remove it from all rounds first.`,
+      )
+    }
     return this.prisma.bus.delete({ where: { id } })
   }
 }

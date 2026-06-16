@@ -26,6 +26,7 @@ export const en = {
 
   auth: {
     signIn: 'Sign In',
+    redirectingToLogin: 'Redirecting to sign-in…',
     signingIn: 'Signing in…',
     email: 'Email',
     password: 'Password',
@@ -57,8 +58,8 @@ export const en = {
 
   attendance: {
     title: 'Attendance',
-    seats_one: 'Bus · {{count}} seat',
-    seats_other: 'Bus · {{count}} seats',
+    seats_one: 'Bus · {{count}} passenger',
+    seats_other: 'Bus · {{count}} passengers',
     joined: '✓ {{count}} Joined',
     absent: '✗ {{count}} Absent',
     pending: '? {{count}} Pending',

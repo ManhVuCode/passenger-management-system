@@ -28,6 +28,7 @@ export const vi: PWATranslationKeys = {
 
   auth: {
     signIn: 'Đăng nhập',
+    redirectingToLogin: 'Đang chuyển đến trang đăng nhập…',
     signingIn: 'Đang đăng nhập…',
     email: 'Email',
     password: 'Mật khẩu',
@@ -59,8 +60,8 @@ export const vi: PWATranslationKeys = {
 
   attendance: {
     title: 'Điểm danh',
-    seats_one: 'Xe · {{count}} chỗ',
-    seats_other: 'Xe · {{count}} chỗ',
+    seats_one: 'Xe · {{count}} hành khách',
+    seats_other: 'Xe · {{count}} hành khách',
     joined: '✓ {{count}} Đã lên',
     absent: '✗ {{count}} Vắng',
     pending: '? {{count}} Chờ',

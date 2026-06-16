@@ -54,9 +54,19 @@ export class AssignmentService {
     })
     if (!round) throw new NotFoundException('Round not found')
 
-    return this.prisma.roundBusAssignment.delete({
-      where: { tripId_roundId_busId: { tripId, roundId, busId } },
-    })
+    // Gỡ xe = gỡ cả tài xế + phân bổ hành khách + điểm danh của xe đó trong round này
+    // (xóa theo thứ tự phụ thuộc FK — schema không khai báo onDelete: Cascade).
+    const results = await this.prisma.$transaction([
+      this.prisma.attendanceRecord.deleteMany({
+        where: { roundPassengerAssignment: { tripId, roundId, busId } },
+      }),
+      this.prisma.roundPassengerAssignment.deleteMany({ where: { tripId, roundId, busId } }),
+      this.prisma.busManagerAssignment.deleteMany({ where: { tripId, roundId, busId } }),
+      this.prisma.roundBusAssignment.delete({
+        where: { tripId_roundId_busId: { tripId, roundId, busId } },
+      }),
+    ])
+    return results[results.length - 1]
   }
 
   async assignBusManager(

@@ -17,4 +17,8 @@ export class UpdateAutoRulesDto {
   @IsOptional()
   @IsBoolean()
   boardingReminder?: boolean
+
+  @IsOptional()
+  @IsBoolean()
+  emailReport?: boolean
 }

@@ -83,7 +83,17 @@ export class PassengerService {
 
   async remove(id: string, tenantId: string) {
     await this.findOne(id, tenantId)
-    return this.prisma.tripPassengerAssignment.delete({ where: { id } })
+    // Xóa kèm phân bổ round + điểm danh của hành khách (thứ tự phụ thuộc FK).
+    const results = await this.prisma.$transaction([
+      this.prisma.attendanceRecord.deleteMany({
+        where: { roundPassengerAssignment: { tripPassengerAssignmentId: id } },
+      }),
+      this.prisma.roundPassengerAssignment.deleteMany({
+        where: { tripPassengerAssignmentId: id },
+      }),
+      this.prisma.tripPassengerAssignment.delete({ where: { id } }),
+    ])
+    return results[results.length - 1]
   }
 
   async sheetSync(tripId: string, tenantId: string, dto: SheetSyncDto) {

@@ -46,6 +46,7 @@ import {
   Send,
   User,
   Phone,
+  Mail,
   CreditCard,
   Tag,
   BedDouble,
@@ -76,6 +77,7 @@ export default function PassengerListPage() {
   const [form, setForm] = useState({
     name: '',
     phone: '',
+    email: '',
     idCard: '',
     type: '',
     note: '',
@@ -84,6 +86,7 @@ export default function PassengerListPage() {
   const [errors, setErrors] = useState({ name: '', phone: '' })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editNote, setEditNote] = useState('')
+  const [editEmail, setEditEmail] = useState('')
   const [sheetUrl, setSheetUrl] = useState('')
   const [importing, setImporting] = useState(false)
   const [importPreview, setImportPreview] = useState<{
@@ -113,13 +116,13 @@ export default function PassengerListPage() {
       tripId: tripId!,
       body: form,
     })
-    setForm({ name: '', phone: '', idCard: '', type: '', note: '', hotelRoom: '' })
+    setForm({ name: '', phone: '', email: '', idCard: '', type: '', note: '', hotelRoom: '' })
     setErrors({ name: '', phone: '' })
     setTab('list')
   }
 
   async function handleSaveNote(id: string) {
-    await updatePassenger({ id, tripId: tripId!, body: { note: editNote } })
+    await updatePassenger({ id, tripId: tripId!, body: { note: editNote, email: editEmail } })
     setEditingId(null)
   }
 
@@ -214,6 +217,7 @@ export default function PassengerListPage() {
     return (
       p.name.toLowerCase().includes(term) ||
       p.phone.toLowerCase().includes(term) ||
+      (p.email?.toLowerCase().includes(term) ?? false) ||
       (p.idCard?.toLowerCase().includes(term) ?? false)
     )
   })
@@ -630,6 +634,15 @@ export default function PassengerListPage() {
                       onChange={(e) => setForm({ ...form, hotelRoom: e.target.value })}
                     />
                   </FormField>
+                  <FormField label={t('passengers.email')}>
+                    <FormInput
+                      icon={Mail}
+                      type="email"
+                      placeholder={t('passengers.emailPlaceholder')}
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    />
+                  </FormField>
                   <div className="sm:col-span-2">
                     <FormField label={t('passengers.note')}>
                       <FormInput
@@ -742,6 +755,7 @@ export default function PassengerListPage() {
                   <th className={TH}>#</th>
                   <th className={TH}>{t('passengers.fullName')}</th>
                   <th className={TH}>{t('passengers.phone')}</th>
+                  <th className={TH}>{t('passengers.email')}</th>
                   <th className={TH}>{t('passengers.idCard')}</th>
                   <th className={TH}>{t('passengers.type')}</th>
                   <th className={TH}>{t('passengers.hotelRoom')}</th>
@@ -755,7 +769,7 @@ export default function PassengerListPage() {
               <tbody>
                 {filteredPassengers.length === 0 && (
                   <tr>
-                    <td colSpan={8 + roundSummaries.length} className="p-0">
+                    <td colSpan={9 + roundSummaries.length} className="p-0">
                       <EmptyState
                         icon={Users}
                         title={
@@ -807,6 +821,21 @@ export default function PassengerListPage() {
                           </Badge>
                         )}
                       </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {editingId === p.id ? (
+                        <input
+                          type="email"
+                          value={editEmail}
+                          onChange={(e) => setEditEmail(e.target.value)}
+                          placeholder={t('passengers.emailPlaceholder')}
+                          className="h-8 w-full min-w-[150px] rounded-lg border border-primary-200 bg-white px-2.5 text-xs text-navy-900 shadow-sm transition-[border-color,box-shadow] duration-200 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/25"
+                        />
+                      ) : p.email ? (
+                        <span className="text-xs text-gray-600">{p.email}</span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="px-5 py-3.5 font-mono text-xs text-gray-600">
                       {p.idCard ?? '—'}
@@ -882,6 +911,7 @@ export default function PassengerListPage() {
                           onClick={() => {
                             setEditingId(p.id)
                             setEditNote(p.note ?? '')
+                            setEditEmail(p.email ?? '')
                           }}
                           className="group/note flex cursor-pointer items-center gap-2 rounded-lg text-left"
                         >
@@ -914,6 +944,7 @@ export default function PassengerListPage() {
                           onClick={() => {
                             setEditingId(p.id)
                             setEditNote(p.note ?? '')
+                            setEditEmail(p.email ?? '')
                           }}
                           className="cursor-pointer rounded-lg p-2 text-gray-400 transition-colors duration-150 hover:bg-primary-50 hover:text-primary-600"
                           aria-label={t('common.edit')}

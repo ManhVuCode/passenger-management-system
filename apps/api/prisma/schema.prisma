@@ -159,6 +159,7 @@ model TripPassengerAssignment {
   name      String
   phone     String
   idCard    String?
+  email     String?
   type      String?
   note      String?
   hotelRoom String?

@@ -62,6 +62,7 @@ export interface TripPassengerAssignment {
   name: string
   phone: string
   idCard?: string
+  email?: string
   type?: string
   note?: string
   hotelRoom?: string

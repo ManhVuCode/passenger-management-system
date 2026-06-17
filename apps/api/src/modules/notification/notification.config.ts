@@ -8,7 +8,7 @@ export interface AutoRules {
   roundCancelled: boolean
   roundCompleted: boolean
   boardingReminder: boolean
-  /** Gửi email báo cáo điểm danh cho các Admin của tenant khi một round hoàn thành. */
+  /** Gửi email báo cáo điểm danh cho Admin: tóm tắt mỗi khi một chặng hoàn thành, và bản tổng hợp kèm Excel khi cả chuyến kết thúc. */
   emailReport: boolean
 }
 

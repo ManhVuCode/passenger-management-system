@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, Matches } from 'class-validator'
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsEmail, Matches } from 'class-validator'
+import { Transform } from 'class-transformer'
 import { IsSimpleText } from '../../../common/validators/is-simple-text.validator'
 
 export class CreatePassengerDto {
@@ -15,6 +16,13 @@ export class CreatePassengerDto {
   @IsString()
   @IsOptional()
   idCard?: string
+
+  // Email hành khách (không bắt buộc) — dùng cho kênh EMAIL trước giờ khởi hành.
+  // Chuỗi rỗng được chuẩn hóa về undefined để @IsEmail không chặn người để trống.
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value))
+  @IsEmail({}, { message: 'Email không hợp lệ' })
+  email?: string
 
   @IsString()
   @IsOptional()

@@ -3,6 +3,7 @@ import Papa from 'papaparse'
 export interface SheetRow {
   name: string
   phone: string
+  email?: string
   type?: string
   hotelRoom?: string
   note?: string
@@ -21,6 +22,12 @@ const COLUMN_MAP: Record<string, keyof SheetRow> = {
   'số điện thoại': 'phone',
   'so dien thoai': 'phone',
   'điện thoại': 'phone',
+
+  email: 'email',
+  'e-mail': 'email',
+  mail: 'email',
+  'thư điện tử': 'email',
+  'thu dien tu': 'email',
 
   'đơn vị công tác': 'type',
   'don vi cong tac': 'type',

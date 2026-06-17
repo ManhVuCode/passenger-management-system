@@ -13,6 +13,9 @@ const DEFAULT_COLUMN_MAP: Record<string, string> = {
   phone: 'phone',
   'so dien thoai': 'phone',
   'số điện thoại': 'phone',
+  email: 'email',
+  'e-mail': 'email',
+  mail: 'email',
   idcard: 'idCard',
   cccd: 'idCard',
   cmnd: 'idCard',
@@ -113,7 +116,7 @@ export class PassengerService {
     return {
       mode: SheetSyncMode.GENERATE,
       message: 'Sheet template generated. Fill in the columns below and re-sync via IMPORT mode.',
-      templateColumns: ['name', 'phone', 'idCard', 'type', 'note'],
+      templateColumns: ['name', 'phone', 'email', 'idCard', 'type', 'note'],
       tripId,
       note: 'To integrate with Google Sheets API, set GOOGLE_SERVICE_ACCOUNT_JSON in env',
     }
@@ -132,7 +135,7 @@ export class PassengerService {
       detectedMapping: columnMapping ?? DEFAULT_COLUMN_MAP,
       message: 'Column mapping confirmed. Use POST /passengers/bulk to import parsed rows.',
       requiredColumns: ['name', 'phone'],
-      optionalColumns: ['idCard', 'type', 'note'],
+      optionalColumns: ['email', 'idCard', 'type', 'note'],
     }
   }
 
@@ -142,6 +145,7 @@ export class PassengerService {
     const rows = passengers.map((p) => ({
       Name: p.name,
       Phone: p.phone,
+      Email: p.email ?? '',
       'ID Card': p.idCard ?? '',
       Type: p.type ?? '',
       Note: p.note ?? '',

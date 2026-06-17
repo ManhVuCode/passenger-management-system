@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectQueue } from '@nestjs/bullmq'
 import { Queue } from 'bullmq'
+import * as XLSX from 'xlsx'
 import { Prisma, type NotificationLog } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { AttendanceGateway } from '../../gateway/attendance.gateway'
@@ -17,6 +18,7 @@ interface Recipient {
   id: string
   name: string
   phone: string
+  email: string | null
   telegramChatId: string | null
   contactOptOut: boolean
 }
@@ -83,6 +85,8 @@ export class NotificationService {
       case NotificationChannel.VOICE:
       case NotificationChannel.TELEGRAM:
         return this.sendPerRecipient(ctx, recipients, dto.channel)
+      case NotificationChannel.EMAIL:
+        return this.sendEmailToPassengers(ctx, recipients)
       default:
         throw new NotFoundException('Unsupported channel')
     }
@@ -222,6 +226,76 @@ export class NotificationService {
     return { sent, skipped, channel, devMode: await this.isMockMode(channel, ctx.tenantId), recipients: accepted }
   }
 
+  /**
+   * Gửi email nội dung tự do của admin cho hành khách CỦA round có địa chỉ email hợp lệ.
+   * Hành khách không có email (hoặc đã opt-out) bị bỏ qua và đếm vào `skipped` — không
+   * tạo dòng log FAILED để tránh nhiễu (việc thiếu email là bình thường). Đi qua cùng
+   * pipeline queue/log như các kênh khác.
+   */
+  private async sendEmailToPassengers(
+    ctx: SendContext,
+    recipients: Recipient[],
+  ): Promise<NotificationResult> {
+    const round = await this.prisma.round.findFirst({
+      where: { id: ctx.roundId, tripId: ctx.tripId, tenantId: ctx.tenantId },
+      include: { trip: { select: { name: true } } },
+    })
+    const subject = round
+      ? `[MPMS] Thông báo — ${round.trip.name} / ${round.name}`
+      : '[MPMS] Thông báo cho hành khách'
+
+    let sent = 0
+    let skipped = 0
+    const accepted: string[] = []
+    for (const r of recipients) {
+      const email = r.email?.trim() ?? ''
+      if (r.contactOptOut || !email || !EMAIL_RE.test(email)) {
+        skipped++
+        continue
+      }
+      const log = await this.prisma.notificationLog.create({
+        data: {
+          tenantId: ctx.tenantId,
+          tripId: ctx.tripId,
+          roundId: ctx.roundId,
+          channel: 'EMAIL',
+          trigger: ctx.trigger,
+          messageText: ctx.message,
+          recipientRef: r.id,
+          toContact: redactContact(email),
+          status: 'QUEUED',
+        },
+      })
+      await this.enqueueOrInline({
+        logId: log.id,
+        channel: 'EMAIL',
+        payload: { to: email, body: ctx.message, tenantId: ctx.tenantId, subject },
+      })
+      sent++
+      accepted.push(redactContact(email))
+    }
+    return {
+      sent,
+      skipped,
+      channel: NotificationChannel.EMAIL,
+      devMode: await this.isMockMode(NotificationChannel.EMAIL, ctx.tenantId),
+      recipients: accepted,
+    }
+  }
+
+  /** Đếm hành khách của round có/không có email hợp lệ — cho UI cảnh báo trước khi gửi. */
+  async getEmailEligibility(
+    tripId: string,
+    roundId: string,
+    tenantId: string,
+  ): Promise<{ total: number; withEmail: number; withoutEmail: number }> {
+    const recipients = await this.resolveRecipients(tripId, roundId, tenantId)
+    const withEmail = recipients.filter(
+      (r) => !r.contactOptOut && r.email && EMAIL_RE.test(r.email.trim()),
+    ).length
+    return { total: recipients.length, withEmail, withoutEmail: recipients.length - withEmail }
+  }
+
   /** C4 — số cuộc gọi voice tối đa mỗi broadcast (kiểm soát chi phí). Tinh chỉnh qua env, mặc định 50. */
   private voiceFanoutCap(): number {
     const raw = Number(this.config.get<string>('VOICE_MAX_FANOUT'))
@@ -262,6 +336,12 @@ export class NotificationService {
   }
 
   private async isMockMode(channel: NotificationChannel, tenantId: string): Promise<boolean> {
+    // Email: thật khi EMAIL_PROVIDER=BREVO và có đủ BREVO_API_KEY + EMAIL_FROM; còn lại là mock.
+    if (channel === NotificationChannel.EMAIL) {
+      const provider = (this.config.get<string>('EMAIL_PROVIDER') ?? 'MOCK').toUpperCase()
+      if (provider !== 'BREVO') return true
+      return !this.config.get<string>('BREVO_API_KEY') || !this.config.get<string>('EMAIL_FROM')
+    }
     // Telegram cấu hình theo từng nhà xe (token trong DB) — mock khi chưa có token.
     if (channel === NotificationChannel.TELEGRAM) {
       const cfg = await this.prisma.tenantNotificationConfig.findUnique({
@@ -306,7 +386,14 @@ export class NotificationService {
       where: { tripId, roundId },
       include: {
         tripPassengerAssignment: {
-          select: { id: true, name: true, phone: true, telegramChatId: true, contactOptOut: true },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+            telegramChatId: true,
+            contactOptOut: true,
+          },
         },
         roundBusAssignment: { include: { bus: { select: { licensePlate: true } } } },
       },
@@ -494,6 +581,90 @@ export class NotificationService {
     return { sent, skipped }
   }
 
+  /**
+   * Email tự động cuối CHUYẾN: khi tất cả các chặng đã kết thúc (Trip.status suy ra =
+   * DONE), gửi MỘT email kèm tệp .xlsx tổng hợp điểm danh toàn chuyến tới các Admin của
+   * tenant. BỔ SUNG cho báo cáo text per-round ở trên (không thay thế). Dispatcher kiểm
+   * tra cổng emailReport + điều kiện "cả chuyến đã xong" trước khi gọi.
+   */
+  async sendTripAttendanceReportEmail(params: {
+    tripId: string
+    tenantId: string
+  }): Promise<DispatchResult> {
+    const { tripId, tenantId } = params
+    const trip = await this.prisma.trip.findFirst({
+      where: { id: tripId, tenantId },
+      select: { name: true },
+    })
+    if (!trip) return { sent: 0, skipped: 0 }
+
+    const rounds = await this.prisma.round.findMany({
+      where: { tripId, tenantId },
+      orderBy: { sequence: 'asc' },
+      select: { id: true, name: true, sequence: true },
+    })
+    const rpas = await this.prisma.roundPassengerAssignment.findMany({
+      where: { tripId },
+      include: {
+        tripPassengerAssignment: { select: { id: true, name: true, phone: true } },
+        attendanceRecord: { select: { status: true } },
+      },
+    })
+
+    const { buffer, totals } = buildAttendanceWorkbook(rounds, rpas)
+    const contentBase64 = buffer.toString('base64')
+    const filename = `diem-danh-${slugify(trip.name)}.xlsx`
+
+    const subject = `[MPMS] Báo cáo điểm danh — chuyến "${trip.name}"`
+    const body = [
+      `Chuyến "${trip.name}" đã kết thúc.`,
+      '',
+      `Số chặng: ${rounds.length}`,
+      `Tổng lượt điểm danh: ${totals.total}`,
+      `Có mặt: ${totals.join} · Vắng: ${totals.absent} · Hủy: ${totals.cancelled} · Chưa điểm danh: ${totals.pending}`,
+      '',
+      'Bảng chi tiết theo từng chặng nằm trong tệp Excel đính kèm.',
+    ].join('\n')
+
+    const admins = await this.prisma.user.findMany({
+      where: { tenantId, role: 'ADMIN' },
+      select: { email: true },
+    })
+
+    let sent = 0
+    let skipped = 0
+    for (const admin of admins) {
+      if (!admin.email || !EMAIL_RE.test(admin.email)) {
+        skipped++
+        continue
+      }
+      const log = await this.prisma.notificationLog.create({
+        data: {
+          tenantId,
+          tripId,
+          channel: 'EMAIL',
+          trigger: 'TRIP_COMPLETED',
+          messageText: body,
+          toContact: redactContact(admin.email),
+          status: 'QUEUED',
+        },
+      })
+      await this.enqueueOrInline({
+        logId: log.id,
+        channel: 'EMAIL',
+        payload: {
+          to: admin.email,
+          body,
+          tenantId,
+          subject,
+          attachments: [{ filename, contentBase64 }],
+        },
+      })
+      sent++
+    }
+    return { sent, skipped }
+  }
+
   /** B4 — đọc các công tắc automation của tenant (mặc định tất cả là false). */
   async getAutoRules(tenantId: string): Promise<AutoRules> {
     const config = await this.prisma.tenantNotificationConfig.findUnique({ where: { tenantId } })
@@ -573,7 +744,7 @@ export class NotificationService {
     })
     if (!round) throw new NotFoundException('Round not found')
 
-    const select = { id: true, name: true, phone: true, telegramChatId: true, contactOptOut: true }
+    const select = { id: true, name: true, phone: true, email: true, telegramChatId: true, contactOptOut: true }
 
     if (passengerIds?.length) {
       return this.prisma.tripPassengerAssignment.findMany({
@@ -602,4 +773,102 @@ interface SendContext {
 function formatTime(date: Date): string {
   const p = (n: number) => String(n).padStart(2, '0')
   return `${p(date.getHours())}:${p(date.getMinutes())} ${p(date.getDate())}/${p(date.getMonth() + 1)}`
+}
+
+type ReportRound = { id: string; name: string; sequence: number }
+type ReportRpa = {
+  roundId: string
+  tripPassengerAssignment: { id: string; name: string; phone: string }
+  attendanceRecord: { status: string } | null
+}
+
+/**
+ * Dựng workbook .xlsx báo cáo điểm danh toàn chuyến: sheet "Điểm danh" dạng ma trận
+ * hành khách × chặng + sheet "Tổng hợp" theo từng chặng. Trả về buffer và tổng số liệu
+ * để dựng phần thân email.
+ */
+function buildAttendanceWorkbook(
+  rounds: ReportRound[],
+  rpas: ReportRpa[],
+): {
+  buffer: Buffer
+  totals: { total: number; join: number; absent: number; cancelled: number; pending: number }
+} {
+  const statusVN = (s?: string | null): string =>
+    s === 'JOIN' ? 'Có mặt' : s === 'ABSENT' ? 'Vắng' : s === 'CANCELLED' ? 'Hủy' : 'Chưa điểm danh'
+  const colName = (r: ReportRound): string => `${r.sequence}. ${r.name}`
+  type Bucket = 'join' | 'absent' | 'cancelled' | 'pending'
+  const bucketOf = (s?: string | null): Bucket =>
+    s === 'JOIN' ? 'join' : s === 'ABSENT' ? 'absent' : s === 'CANCELLED' ? 'cancelled' : 'pending'
+
+  const byPassenger = new Map<string, { name: string; phone: string; perRound: Map<string, string> }>()
+  const totals = { total: 0, join: 0, absent: 0, cancelled: 0, pending: 0 }
+  const roundTotals = new Map<
+    string,
+    { total: number; join: number; absent: number; cancelled: number; pending: number }
+  >()
+  for (const r of rounds) roundTotals.set(r.id, { total: 0, join: 0, absent: 0, cancelled: 0, pending: 0 })
+
+  for (const rpa of rpas) {
+    const p = rpa.tripPassengerAssignment
+    let entry = byPassenger.get(p.id)
+    if (!entry) {
+      entry = { name: p.name, phone: p.phone, perRound: new Map() }
+      byPassenger.set(p.id, entry)
+    }
+    const status = rpa.attendanceRecord?.status ?? null
+    entry.perRound.set(rpa.roundId, statusVN(status))
+
+    const bucket = bucketOf(status)
+    totals.total++
+    totals[bucket]++
+    const rt = roundTotals.get(rpa.roundId)
+    if (rt) {
+      rt.total++
+      rt[bucket]++
+    }
+  }
+
+  const matrixRows = [...byPassenger.values()].map((entry) => {
+    const row: Record<string, string | number> = { 'Hành khách': entry.name, SĐT: entry.phone }
+    for (const r of rounds) row[colName(r)] = entry.perRound.get(r.id) ?? '—'
+    return row
+  })
+  const ws1 = XLSX.utils.json_to_sheet(
+    matrixRows.length ? matrixRows : [{ 'Hành khách': '(không có hành khách)' }],
+  )
+
+  const summaryRows = rounds.map((r) => {
+    const rt = roundTotals.get(r.id)!
+    return {
+      Chặng: colName(r),
+      Tổng: rt.total,
+      'Có mặt': rt.join,
+      Vắng: rt.absent,
+      Hủy: rt.cancelled,
+      'Chưa điểm danh': rt.pending,
+    }
+  })
+  const ws2 = XLSX.utils.json_to_sheet(
+    summaryRows.length ? summaryRows : [{ Chặng: '(không có chặng)' }],
+  )
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws1, 'Điểm danh')
+  XLSX.utils.book_append_sheet(wb, ws2, 'Tổng hợp')
+  const buffer = Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }))
+  return { buffer, totals }
+}
+
+/** Chuẩn hóa tên chuyến thành slug an toàn cho tên tệp (bỏ dấu tiếng Việt). */
+function slugify(s: string): string {
+  const base = s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+  return base || 'chuyen'
 }

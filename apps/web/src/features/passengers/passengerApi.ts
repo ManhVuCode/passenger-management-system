@@ -6,6 +6,7 @@ type Passenger = TripPassengerAssignment
 interface CreatePassengerPayload {
   name: string
   phone: string
+  email?: string
   idCard?: string
   type?: string
   note?: string

@@ -4,6 +4,7 @@ export type NotificationTrigger =
   | 'ROUND_STARTED'
   | 'ROUND_CANCELLED'
   | 'ROUND_COMPLETED'
+  | 'TRIP_COMPLETED'
   | 'BOARDING_REMINDER'
 
 /** Trạng thái vòng đời gửi được lưu trên NotificationLog. */
@@ -25,7 +26,14 @@ export type RsvpIntent = 'WILL_BOARD' | 'WONT_BOARD'
 export interface SendJobData {
   logId: string
   channel: string
-  payload: { to: string; body: string; tenantId: string; templateKey?: string; subject?: string }
+  payload: {
+    to: string
+    body: string
+    tenantId: string
+    templateKey?: string
+    subject?: string
+    attachments?: { filename: string; contentBase64: string }[]
+  }
 }
 
 /** Định dạng số điện thoại chấp nhận cho người nhận SMS/voice. */

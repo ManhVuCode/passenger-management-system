@@ -1,6 +1,13 @@
 import { baseApi } from '../../store/baseApi'
 
-export type NotificationChannel = 'SMS' | 'TEAMS' | 'BROADCAST' | 'IN_APP' | 'TELEGRAM' | 'VOICE'
+export type NotificationChannel =
+  | 'SMS'
+  | 'TEAMS'
+  | 'BROADCAST'
+  | 'IN_APP'
+  | 'TELEGRAM'
+  | 'VOICE'
+  | 'EMAIL'
 
 interface SendPayload {
   tripId: string
@@ -63,6 +70,12 @@ export interface VoiceIntentSummary {
   wontBoard: number
 }
 
+export interface EmailEligibility {
+  total: number
+  withEmail: number
+  withoutEmail: number
+}
+
 export const notificationApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     sendNotification: builder.mutation<NotificationResult, SendPayload>({
@@ -94,6 +107,12 @@ export const notificationApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Notification'],
     }),
+    getEmailEligibility: builder.query<EmailEligibility, { tripId: string; roundId: string }>({
+      query: ({ tripId, roundId }) => ({
+        url: `/trips/${tripId}/rounds/${roundId}/notify/email-recipients`,
+      }),
+      providesTags: ['Notification'],
+    }),
     simulateRsvp: builder.mutation<
       NotificationLog,
       { tripId: string; roundId: string; logId: string; rsvp: RsvpIntent }
@@ -114,5 +133,6 @@ export const {
   useGetAutoRulesQuery,
   useUpdateAutoRulesMutation,
   useGetVoiceIntentQuery,
+  useGetEmailEligibilityQuery,
   useSimulateRsvpMutation,
 } = notificationApi

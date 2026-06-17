@@ -7,6 +7,7 @@ export enum NotificationChannel {
   IN_APP = 'IN_APP', // cảnh báo WebSocket trong ứng dụng gửi tới tài xế
   TELEGRAM = 'TELEGRAM',
   VOICE = 'VOICE',
+  EMAIL = 'EMAIL', // gửi email cho hành khách (chỉ những người có địa chỉ email)
 }
 
 export class SendNotificationDto {

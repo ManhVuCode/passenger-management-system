@@ -45,6 +45,10 @@ export class EmailProvider implements IMessageProvider {
           subject: payload.subject ?? 'Thông báo từ MPMS',
           // Nội dung đã render dạng text — bọc <pre> để giữ xuống dòng của báo cáo
           htmlContent: `<pre style="font-family:inherit;white-space:pre-wrap">${escapeHtml(payload.body)}</pre>`,
+          // Brevo nhận tệp đính kèm dạng { name, content(base64) } — chỉ thêm khi có.
+          ...(payload.attachments?.length
+            ? { attachment: payload.attachments.map((a) => ({ name: a.filename, content: a.contentBase64 })) }
+            : {}),
         }),
       })
       const json = (await res.json().catch(() => ({}))) as {

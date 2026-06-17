@@ -33,6 +33,7 @@ export class NotificationDispatcher {
   async onRoundCompleted(payload: RoundEventPayload): Promise<void> {
     await this.dispatch(payload, 'roundCompleted', 'ROUND_COMPLETED', 'round.completed')
     await this.dispatchEmailReport(payload)
+    await this.dispatchTripEmailReport(payload)
   }
 
   /** Email báo cáo điểm danh cho Admin khi round hoàn thành — công tắc riêng (emailReport). */
@@ -53,6 +54,43 @@ export class NotificationDispatcher {
         `EMAIL_REPORT dispatch failed for ${payload.roundId}: ${(e as Error).message}`,
       )
     }
+  }
+
+  /** Email báo cáo XLSX tổng hợp khi CẢ chuyến kết thúc — cùng công tắc emailReport. */
+  private async dispatchTripEmailReport(payload: RoundEventPayload): Promise<void> {
+    const config = await this.prisma.tenantNotificationConfig.findUnique({
+      where: { tenantId: payload.tenantId },
+    })
+    if (!resolveAutoRules(config?.autoRules).emailReport) return
+    if (!(await this.isTripComplete(payload.tripId))) return
+
+    try {
+      const result = await this.service.sendTripAttendanceReportEmail({
+        tenantId: payload.tenantId,
+        tripId: payload.tripId,
+      })
+      this.logger.log(
+        `EMAIL_REPORT(trip) → ${payload.tripId}: sent ${result.sent}, skipped ${result.skipped}`,
+      )
+    } catch (e) {
+      this.logger.error(
+        `EMAIL_REPORT(trip) dispatch failed for ${payload.tripId}: ${(e as Error).message}`,
+      )
+    }
+  }
+
+  /** Trip coi như đã kết thúc khi có ≥1 chặng, mọi chặng đều DONE/CANCELLED và không
+   *  phải tất cả đều CANCELLED — khớp nhánh DONE của TripService.deriveTripStatus. */
+  private async isTripComplete(tripId: string): Promise<boolean> {
+    const rounds = await this.prisma.round.findMany({
+      where: { tripId },
+      select: { status: true },
+    })
+    if (rounds.length === 0) return false
+    const s = rounds.map((r) => r.status)
+    if (s.some((x) => x === 'IN_PROGRESS' || x === 'PLANNED')) return false
+    if (s.every((x) => x === 'CANCELLED')) return false
+    return s.every((x) => x === 'DONE' || x === 'CANCELLED')
   }
 
   private async dispatch(

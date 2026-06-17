@@ -1,18 +1,25 @@
 import { useState, type ElementType } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'motion/react'
-import { useSendNotificationMutation, type NotificationChannel } from './notificationApi'
+import {
+  useSendNotificationMutation,
+  useGetEmailEligibilityQuery,
+  type NotificationChannel,
+} from './notificationApi'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Badge } from '../../components/ui/badge'
 import {
   AlertCircle,
+  AlertTriangle,
   BellRing,
   CheckCircle,
   Loader2,
+  Mail,
   MessageSquare,
   PhoneCall,
   Send,
   Webhook,
+  X,
 } from 'lucide-react'
 
 /* Bảng gửi thông báo cho hành khách của một round — bộ chọn kênh dạng lưới có hiệu ứng */
@@ -32,6 +39,38 @@ export default function NotificationPanel({
     null,
   )
   const [error, setError] = useState<string | null>(null)
+
+  // Luồng gửi email cho hành khách: mở modal → (cảnh báo nếu có người thiếu email) → nhập nội dung → gửi
+  const [emailOpen, setEmailOpen] = useState(false)
+  const [emailConfirmed, setEmailConfirmed] = useState(false)
+  const [emailBody, setEmailBody] = useState('')
+  const [emailResult, setEmailResult] = useState<{ sent: number; skipped: number } | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const { data: eligibility, isFetching: eligLoading } = useGetEmailEligibilityQuery(
+    { tripId, roundId },
+    { skip: !emailOpen, refetchOnMountOrArgChange: true },
+  )
+  const missing = eligibility?.withoutEmail ?? 0
+  const needsConfirm = missing > 0 && !emailConfirmed
+
+  function closeEmail() {
+    setEmailOpen(false)
+    setEmailConfirmed(false)
+    setEmailBody('')
+    setEmailResult(null)
+    setEmailError(null)
+  }
+
+  async function handleSendEmail() {
+    setEmailError(null)
+    try {
+      const res = await send({ tripId, roundId, channel: 'EMAIL', message: emailBody }).unwrap()
+      setEmailResult({ sent: res.sent, skipped: res.skipped })
+    } catch (e: unknown) {
+      const msg = (e as { data?: { message?: string } })?.data?.message
+      setEmailError(typeof msg === 'string' ? msg : t('errors.serverError'))
+    }
+  }
 
   const channels: {
     key: NotificationChannel
@@ -149,6 +188,16 @@ export default function NotificationPanel({
           })}
         </div>
 
+        {/* Nút gửi email cho hành khách — luồng riêng có xác nhận + soạn nội dung */}
+        <button
+          type="button"
+          onClick={() => setEmailOpen(true)}
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary-200 bg-primary-50/50 px-3 py-2.5 text-sm font-semibold text-primary-700 transition-colors duration-200 hover:bg-primary-100/60"
+        >
+          <Mail size={15} />
+          {t('notifications.emailPassengers')}
+        </button>
+
         {/* Banner kết quả / lỗi trượt vào nhẹ nhàng */}
         <AnimatePresence initial={false}>
           {result && (
@@ -179,6 +228,131 @@ export default function NotificationPanel({
               className="flex items-center gap-2 rounded-xl border border-danger-100 bg-danger-50 px-3 py-2 text-sm text-danger-600"
             >
               <AlertCircle size={14} className="shrink-0" /> {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal soạn & gửi email cho hành khách — cảnh báo nếu chưa phải ai cũng có email */}
+        <AnimatePresence>
+          {emailOpen && (
+            <motion.div
+              key="email-modal"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/40 p-4 backdrop-blur-sm"
+              onClick={closeEmail}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-float"
+              >
+                <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-navy-900">
+                    <Mail size={15} className="text-primary-600" />
+                    {t('notifications.emailModalTitle')}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={closeEmail}
+                    className="cursor-pointer rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-navy-900"
+                    aria-label={t('common.cancel')}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-3 p-5">
+                  {eligLoading ? (
+                    <p className="flex items-center gap-2 text-sm text-gray-500">
+                      <Loader2 size={14} className="animate-spin" />
+                      {t('notifications.emailChecking')}
+                    </p>
+                  ) : emailResult ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-success-200 bg-success-50 px-3 py-2.5 text-sm text-success-700">
+                      <CheckCircle size={15} className="shrink-0 text-success-600" />
+                      {t('notifications.emailSent', { count: emailResult.sent })}
+                    </div>
+                  ) : eligibility && eligibility.withEmail === 0 ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-warning-200 bg-warning-50 px-3 py-2.5 text-sm text-warning-700">
+                      <AlertTriangle size={15} className="shrink-0" />
+                      {t('notifications.emailNone')}
+                    </div>
+                  ) : needsConfirm ? (
+                    <>
+                      <div className="flex items-start gap-2.5 rounded-xl border border-warning-200 bg-warning-50 px-3 py-3 text-sm text-warning-700">
+                        <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                        <span>
+                          {t('notifications.emailWarn', {
+                            without: missing,
+                            total: eligibility?.total ?? 0,
+                          })}
+                        </span>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={closeEmail}
+                          className="cursor-pointer rounded-xl border border-border px-3.5 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                        >
+                          {t('common.cancel')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEmailConfirmed(true)}
+                          className="cursor-pointer rounded-xl bg-gradient-to-br from-sky-500 to-primary-600 px-3.5 py-2 text-sm font-semibold text-white shadow-glow transition-opacity hover:opacity-90"
+                        >
+                          {t('notifications.emailContinue')}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs text-gray-600">
+                        {t('notifications.emailComposeHint', { count: eligibility?.withEmail ?? 0 })}
+                      </p>
+                      <textarea
+                        className="h-28 w-full resize-none rounded-xl border border-border bg-white px-3 py-2 text-sm text-navy-900 transition-[border-color,box-shadow] duration-200 placeholder:text-gray-400 hover:border-gray-300 focus:border-primary-400 focus:outline-none focus:ring-4 focus:ring-primary-500/25"
+                        placeholder={t('notifications.emailPlaceholder')}
+                        value={emailBody}
+                        onChange={(e) => setEmailBody(e.target.value)}
+                        autoFocus
+                      />
+                      {emailError && (
+                        <div className="flex items-center gap-2 rounded-xl border border-danger-100 bg-danger-50 px-3 py-2 text-sm text-danger-600">
+                          <AlertCircle size={14} className="shrink-0" /> {emailError}
+                        </div>
+                      )}
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={closeEmail}
+                          className="cursor-pointer rounded-xl border border-border px-3.5 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                        >
+                          {t('common.cancel')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSendEmail}
+                          disabled={isLoading || !emailBody.trim()}
+                          className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-br from-sky-500 to-primary-600 px-3.5 py-2 text-sm font-semibold text-white shadow-glow transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isLoading ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Mail size={14} />
+                          )}
+                          {t('notifications.emailSend')}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

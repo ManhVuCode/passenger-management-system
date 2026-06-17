@@ -21,6 +21,17 @@ export class NotificationController {
     return this.notificationService.sendToRound(tripId, roundId, user.tenantId, dto)
   }
 
+  /** Số hành khách của round có / không có email — để UI cảnh báo trước khi gửi email. */
+  @Get('email-recipients')
+  @Roles(Role.ADMIN)
+  emailRecipients(
+    @Param('tripId') tripId: string,
+    @Param('roundId') roundId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.notificationService.getEmailEligibility(tripId, roundId, user.tenantId)
+  }
+
   /** C5 — thống kê ý định lên xe từ các cuộc gọi thoại của round này. */
   @Get('intent')
   @Roles(Role.ADMIN)

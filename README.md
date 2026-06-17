@@ -153,8 +153,7 @@ The cross-tenant admin proves tenant isolation: requesting `demo-tours` resource
 | `JWT_EXPIRES_IN` | ✅ | `7d` | Token expiry |
 | `PORT` | ✅ | `3000` | API port |
 | `SMS_API_KEY` | ❌ | — | SMS provider key (Sprint 8 — dev logs only) |
-| `TEAMS_WEBHOOK_URL` | ❌ | — | MS Teams incoming webhook (Sprint 8) |
-| `BROADCAST_API_KEY` | ❌ | — | Voice broadcast provider (Sprint 8) |
+| `EMAIL_PROVIDER` / `BREVO_API_KEY` / `EMAIL_FROM` | ❌ | `MOCK` | Email channel (Brevo); mock mode logs only |
 
 ### `apps/web/.env` and `apps/pwa/.env`
 
@@ -353,7 +352,7 @@ Open any `.html` file directly in a browser — no build step needed.
 | 5 | Round passenger allocation + capacity warning + Admin-only move | ✅ Done |
 | 6 | Attendance workflow — mark, override, cascade, summary, round note | ✅ Done |
 | 7 | Real-time WebSocket dashboard (Admin live feed + PWA peer banner) | ✅ Done |
-| 8 | Notifications (SMS / Teams / Telegram / Broadcast Call) | ✅ Done |
+| 8 | Notifications (SMS / Telegram / Email / In-app Broadcast) | ✅ Done |
 | 9 | PWA offline-first (Service Worker + Background Sync) · Testing · Deployment | ✅ Done |
 
 ---

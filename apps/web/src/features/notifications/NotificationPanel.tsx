@@ -16,9 +16,7 @@ import {
   Loader2,
   Mail,
   MessageSquare,
-  PhoneCall,
   Send,
-  Webhook,
   X,
 } from 'lucide-react'
 
@@ -79,18 +77,11 @@ export default function NotificationPanel({
     description: string
   }[] = [
     { key: 'SMS', label: t('notifications.sms'), icon: MessageSquare, description: t('notifications.smsDesc') },
-    { key: 'TEAMS', label: t('notifications.teams'), icon: Webhook, description: t('notifications.teamsDesc') },
     {
       key: 'IN_APP',
       label: t('notifications.inApp'),
       icon: BellRing,
       description: t('notifications.inAppDesc'),
-    },
-    {
-      key: 'VOICE',
-      label: t('notifications.voice'),
-      icon: PhoneCall,
-      description: t('notifications.voiceDesc'),
     },
     {
       key: 'TELEGRAM',

@@ -32,14 +32,12 @@ export class NotificationSender {
     await this.prisma.notificationLog.update({
       where: { id: data.logId },
       data: {
-        // Provider có thể báo một trạng thái kết thúc (ví dụ voice NO_ANSWER); nếu không
-        // thì dùng mặc định success→SENT / failure→FAILED.
+        // Provider có thể báo một trạng thái kết thúc; nếu không thì dùng mặc định
+        // success→SENT / failure→FAILED.
         status: result.status ?? (result.success ? 'SENT' : 'FAILED'),
         providerId: result.providerId,
         costMicro: result.costMicro,
         errorReason: result.error,
-        // Phản hồi nhấn phím 1 qua IVR chỉ là ý định — ghi tại đây, không bao giờ ghi vào điểm danh.
-        ...(result.rsvp ? { rsvp: result.rsvp } : {}),
       },
     })
 

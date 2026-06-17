@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import type { IMessageProvider } from './message-provider.interface'
 import { SmsProvider } from './sms.provider'
-import { TeamsProvider } from './teams.provider'
-import { VoiceProvider } from './voice.provider'
 import { TelegramProvider } from './telegram.provider'
 import { EmailProvider } from './email.provider'
 
@@ -17,15 +15,11 @@ export class ProviderRegistry {
 
   constructor(
     sms: SmsProvider,
-    teams: TeamsProvider,
-    voice: VoiceProvider,
     telegram: TelegramProvider,
     email: EmailProvider,
   ) {
     this.byChannel = {
       [sms.channel]: sms,
-      [teams.channel]: teams,
-      [voice.channel]: voice,
       [telegram.channel]: telegram,
       [email.channel]: email,
     }

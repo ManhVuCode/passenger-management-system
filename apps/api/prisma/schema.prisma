@@ -165,7 +165,7 @@ model TripPassengerAssignment {
   hotelRoom String?
   telegramChatId String?
   contactOptOut Boolean @default(false)
-  channelPref   String? // SMS | TELEGRAM | VOICE
+  channelPref   String? // SMS | TELEGRAM
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -206,17 +206,17 @@ model NotificationLog {
   tenantId     String
   tripId       String?
   roundId      String?
-  channel      String // SMS | TELEGRAM | VOICE | TEAMS | IN_APP
-  trigger      String // MANUAL | ROUND_STARTED | ROUND_CANCELLED | BOARDING_REMINDER | ROUND_COMPLETED
+  channel      String // SMS | TELEGRAM | EMAIL | IN_APP | BROADCAST
+  trigger      String // MANUAL | ROUND_STARTED | ROUND_CANCELLED | ROUND_COMPLETED | TRIP_COMPLETED | BOARDING_REMINDER
   templateKey  String?
   messageText  String
   recipientRef String? // tripPassengerAssignmentId or userId
-  toContact    String? // phone/telegramChatId — redacted when shown in UI
-  status       String // QUEUED | SENT | DELIVERED | FAILED | BOUNCED | NO_ANSWER
+  toContact    String? // phone/telegramChatId/email — redacted when shown in UI
+  status       String // QUEUED | SENT | DELIVERED | FAILED | BOUNCED
   providerId   String?
   costMicro    Int?
   errorReason  String?
-  rsvp         String? // WILL_BOARD | WONT_BOARD — intent only, NEVER writes AttendanceRecord
+  rsvp         String? // (legacy) voice IVR intent — feature removed; column retained, no longer written
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -230,8 +230,8 @@ model TenantNotificationConfig {
   smsCredsRef   String? // secret reference — NOT the raw key
   telegramBotToken    String? // secret — per-tenant bot token (@BotFather); 1 bot / 1 tenant
   telegramBotUsername String? // bot @username, dùng để dựng link/QR đăng ký
-  voiceProvider String? // STRINGEE | TWILIO | MOCK
-  voiceCredsRef String?
+  voiceProvider String? // (legacy) voice provider config — feature removed; column retained
+  voiceCredsRef String? // (legacy) feature removed; column retained
   autoRules     Json? // { roundStarted: bool, roundCancelled: bool, boardingReminder: bool }
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

@@ -4,7 +4,7 @@ import { motion, AnimatePresence, animate, useReducedMotion } from 'motion/react
 import { useTranslation } from 'react-i18next'
 import { useGetTripQuery } from '../trips/tripsApi'
 import { useGetAllocationsByRoundQuery } from '../allocation/allocationApi'
-import { useSendNotificationMutation, useGetVoiceIntentQuery } from '../notifications/notificationApi'
+import { useSendNotificationMutation } from '../notifications/notificationApi'
 import {
   useAttendanceSocket,
   type AttendanceUpdate,
@@ -21,7 +21,6 @@ import {
   XCircle,
   Bus as BusIcon,
   MessageSquare,
-  PhoneCall,
   Check,
   X,
   Clock,
@@ -122,17 +121,6 @@ export default function LiveDashboardPage() {
 
   const [sendBroadcast, { isLoading: broadcasting }] = useSendNotificationMutation()
   const [broadcastResult, setBroadcastResult] = useState<string | null>(null)
-  // C5 — thống kê ý định lên xe cho các cuộc gọi thoại của round đang active. CHỈ poll
-  // trong khi các cuộc gọi còn đang chuyển sang DELIVERED/NO_ANSWER trong worker (worker này
-  // không phát cache invalidation), sau đó dừng; các mutation send/sim refetch qua tag Notification.
-  const [pollIntent, setPollIntent] = useState(false)
-  const { data: intent } = useGetVoiceIntentQuery(
-    { tripId: tripId!, roundId: activeRoundId! },
-    { skip: !tripId || !activeRoundId, pollingInterval: pollIntent ? 5000 : 0, skipPollingIfUnfocused: true },
-  )
-  useEffect(() => {
-    setPollIntent((intent?.pending ?? 0) > 0)
-  }, [intent])
 
   async function handleBroadcast() {
     if (!tripId || !activeRoundId) return
@@ -147,22 +135,6 @@ export default function LiveDashboardPage() {
       setBroadcastResult(t('notifications.broadcastSent', { count: res.sent }))
     } catch {
       setBroadcastResult(t('notifications.broadcastFailed'))
-    }
-  }
-
-  async function handleVoiceCall() {
-    if (!tripId || !activeRoundId) return
-    setBroadcastResult(null)
-    try {
-      const res = await sendBroadcast({
-        tripId,
-        roundId: activeRoundId,
-        channel: 'VOICE',
-        message: t('notifications.voiceScriptDefault'),
-      }).unwrap()
-      setBroadcastResult(t('notifications.voiceCallSent', { count: res.sent }))
-    } catch {
-      setBroadcastResult(t('notifications.voiceCallFailed'))
     }
   }
 
@@ -410,14 +382,6 @@ export default function LiveDashboardPage() {
               <MessageSquare size={14} />{' '}
               {broadcasting ? t('notifications.broadcasting') : t('notifications.inApp')}
             </Button>
-            <Button
-              variant="outline"
-              className="w-full gap-2 text-xs"
-              onClick={handleVoiceCall}
-              disabled={broadcasting || !activeRoundId}
-            >
-              <PhoneCall size={14} /> {t('notifications.voiceCall')}
-            </Button>
             <AnimatePresence>
               {broadcastResult && (
                 <motion.p
@@ -432,53 +396,9 @@ export default function LiveDashboardPage() {
                 </motion.p>
               )}
             </AnimatePresence>
-            <AnimatePresence>
-              {intent && intent.total > 0 && (
-                <motion.div
-                  key="intent-panel"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
-                  transition={{ duration: 0.25, ease: 'easeOut' }}
-                  className="mt-2 rounded-xl bg-gray-50/80 p-2.5 ring-1 ring-inset ring-gray-200/60"
-                >
-                  <div className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    {t('notifications.intentTitle')}
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5 text-center">
-                    <IntentStat
-                      label={t('notifications.intentWillBoard')}
-                      value={intent.willBoard}
-                      tone="text-emerald-600"
-                    />
-                    <IntentStat
-                      label={t('notifications.intentWontBoard')}
-                      value={intent.wontBoard}
-                      tone="text-red-600"
-                    />
-                    <IntentStat
-                      label={t('notifications.intentNoAnswer')}
-                      value={intent.noAnswer}
-                      tone="text-gray-500"
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </aside>
       </div>
-    </div>
-  )
-}
-
-function IntentStat({ label, value, tone }: { label: string; value: number; tone: string }) {
-  return (
-    <div className="rounded-lg bg-white py-1.5 shadow-sm ring-1 ring-black/[0.04]">
-      <div className={cn('font-display text-base font-bold tabular-nums', tone)}>
-        <AnimatedNumber value={value} />
-      </div>
-      <div className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">{label}</div>
     </div>
   )
 }

@@ -12,7 +12,7 @@ import { NotificationSender } from './notification.sender'
 import { TemplateService, type TemplateKey, type TemplateLocale } from './templates/template.service'
 import { resolveAutoRules, type AutoRules } from './notification.config'
 import { NOTIFICATION_QUEUE } from '../queue/queue.module'
-import { EMAIL_RE, PHONE_RE, TELEGRAM_ID_RE, redactContact, type NotificationTrigger, type RsvpIntent, type SendJobData } from './notification.types'
+import { EMAIL_RE, PHONE_RE, TELEGRAM_ID_RE, redactContact, type NotificationTrigger, type SendJobData } from './notification.types'
 
 interface Recipient {
   id: string
@@ -35,17 +35,6 @@ export interface NotificationResult {
 export interface DispatchResult {
   sent: number
   skipped: number
-}
-
-/** C5 — thống kê ý định lên xe cho broadcast voice (theo trip / round). */
-export interface VoiceIntentSummary {
-  total: number
-  answered: number
-  noAnswer: number
-  pending: number
-  failed: number
-  willBoard: number
-  wontBoard: number
 }
 
 @Injectable()
@@ -76,48 +65,16 @@ export class NotificationService {
 
     const ctx = { tenantId, tripId, roundId, message: dto.message, trigger }
     switch (dto.channel) {
-      case NotificationChannel.TEAMS:
-        return this.sendTeams(ctx, recipients)
       case NotificationChannel.BROADCAST:
       case NotificationChannel.IN_APP:
         return this.sendInApp(ctx, recipients, dto.channel)
       case NotificationChannel.SMS:
-      case NotificationChannel.VOICE:
       case NotificationChannel.TELEGRAM:
         return this.sendPerRecipient(ctx, recipients, dto.channel)
       case NotificationChannel.EMAIL:
         return this.sendEmailToPassengers(ctx, recipients)
       default:
         throw new NotFoundException('Unsupported channel')
-    }
-  }
-
-  /** Teams = một card tổng hợp duy nhất gửi tới kênh staff/ops; một dòng log. */
-  private async sendTeams(ctx: SendContext, recipients: Recipient[]): Promise<NotificationResult> {
-    const provider = this.registry.get('TEAMS')
-    const result = provider
-      ? await provider.send({ to: 'teams', body: ctx.message, tenantId: ctx.tenantId })
-      : { success: false, error: 'NO_PROVIDER' }
-    await this.prisma.notificationLog.create({
-      data: {
-        tenantId: ctx.tenantId,
-        tripId: ctx.tripId,
-        roundId: ctx.roundId,
-        channel: 'TEAMS',
-        trigger: ctx.trigger,
-        messageText: ctx.message,
-        toContact: 'teams',
-        status: result.success ? 'SENT' : 'FAILED',
-        providerId: result.providerId,
-        errorReason: result.error,
-      },
-    })
-    return {
-      sent: recipients.length,
-      skipped: 0,
-      channel: NotificationChannel.TEAMS,
-      devMode: !this.config.get<string>('TEAMS_WEBHOOK_URL'),
-      recipients: recipients.map((r) => r.name),
     }
   }
 
@@ -149,12 +106,12 @@ export class NotificationService {
       channel,
       // Broadcast WebSocket luôn được kích hoạt bất kể key nào — không bao giờ là stub dev-mode.
       devMode: false,
-      // Không gửi theo từng người nhận ở đây; trả về tên (không bao giờ số điện thoại thô) như nhánh Teams.
+      // Không gửi theo từng người nhận ở đây; trả về tên (không bao giờ số điện thoại thô).
       recipients: recipients.map((r) => r.name),
     }
   }
 
-  /** SMS/Voice/Telegram = theo từng người nhận, có lọc, đưa vào hàng đợi để gửi bất đồng bộ. */
+  /** SMS/Telegram = theo từng người nhận, có lọc, đưa vào hàng đợi để gửi bất đồng bộ. */
   private async sendPerRecipient(
     ctx: SendContext,
     recipients: Recipient[],
@@ -162,18 +119,9 @@ export class NotificationService {
   ): Promise<NotificationResult> {
     let sent = 0
     let skipped = 0
-    let capped = 0
     const accepted: string[] = []
-    // C4 — kiểm soát chi phí: giới hạn fan-out voice để một broadcast không thể quay
-    // số lượng cuộc gọi tính phí không giới hạn. SMS/Telegram không bị giới hạn.
-    const cap = channel === NotificationChannel.VOICE ? this.voiceFanoutCap() : Number.POSITIVE_INFINITY
 
     for (const r of recipients) {
-      if (sent >= cap) {
-        skipped++
-        capped++
-        continue
-      }
       // Telegram nhắn theo chat id riêng; số điện thoại KHÔNG phải đích Telegram nên không quay về phone.
       const contact = channel === NotificationChannel.TELEGRAM ? r.telegramChatId : r.phone
       const reason = this.rejectReason(r, contact, channel)
@@ -218,11 +166,6 @@ export class NotificationService {
       accepted.push(redactContact(contact))
     }
 
-    if (capped > 0) {
-      this.logger.warn(
-        `VOICE fan-out capped at ${cap}: ${capped} recipient(s) not called for round ${ctx.roundId}`,
-      )
-    }
     return { sent, skipped, channel, devMode: await this.isMockMode(channel, ctx.tenantId), recipients: accepted }
   }
 
@@ -296,17 +239,11 @@ export class NotificationService {
     return { total: recipients.length, withEmail, withoutEmail: recipients.length - withEmail }
   }
 
-  /** C4 — số cuộc gọi voice tối đa mỗi broadcast (kiểm soát chi phí). Tinh chỉnh qua env, mặc định 50. */
-  private voiceFanoutCap(): number {
-    const raw = Number(this.config.get<string>('VOICE_MAX_FANOUT'))
-    return Number.isFinite(raw) && raw > 0 ? raw : 50
-  }
-
   /** Trả về lý do từ chối cho bộ lọc người nhận A5, hoặc null nếu hợp lệ. */
   private rejectReason(r: Recipient, contact: string | null, channel: NotificationChannel): string | null {
     if (r.contactOptOut) return 'OPT_OUT'
     if (!contact) return 'NO_CONTACT'
-    // Telegram chấp nhận chat id dạng số hoặc @username; SMS/voice chỉ chấp nhận số điện thoại.
+    // Telegram chấp nhận chat id dạng số hoặc @username; SMS chỉ chấp nhận số điện thoại.
     const valid =
       channel === NotificationChannel.TELEGRAM
         ? TELEGRAM_ID_RE.test(contact)
@@ -350,8 +287,7 @@ export class NotificationService {
       })
       return !cfg?.telegramBotToken
     }
-    const key = channel === NotificationChannel.VOICE ? 'VOICE_PROVIDER' : 'SMS_PROVIDER'
-    return (this.config.get<string>(key) ?? 'MOCK').toUpperCase() === 'MOCK'
+    return (this.config.get<string>('SMS_PROVIDER') ?? 'MOCK').toUpperCase() === 'MOCK'
   }
 
   /**
@@ -681,56 +617,6 @@ export class NotificationService {
       update: { autoRules: next as unknown as Prisma.InputJsonValue },
     })
     return resolveAutoRules(config.autoRules)
-  }
-
-  /**
-   * C3 — ghi phản hồi nhấn phím 1 qua IVR của hành khách thành một RSVP INTENT trên
-   * dòng log voice. Giới hạn theo tenant (R10) và chỉ áp dụng cho các dòng VOICE. Đây là
-   * hook "mô phỏng nhấn phím 1" cho demo và đúng hình dạng mà một webhook IVR thật sẽ
-   * gọi. Nó CHỈ cập nhật NotificationLog.rsvp — KHÔNG BAO GIỜ tạo hay thay đổi một
-   * AttendanceRecord (domain rules #5/#6: điểm danh thuộc về BusManager).
-   */
-  async setRsvpIntent(tenantId: string, logId: string, rsvp: RsvpIntent): Promise<NotificationLog> {
-    // Phản hồi nhấn phím 1 chỉ có thể tồn tại với cuộc gọi thực sự được nghe máy, nên
-    // chỉ cho phép ghi vào các dòng đã được trả lời. Điều này giữ getVoiceIntent nhất quán
-    // (willBoard + wontBoard không bao giờ vượt quá số lượng answered).
-    const log = await this.prisma.notificationLog.findFirst({
-      where: { id: logId, tenantId, channel: 'VOICE', status: { in: ['DELIVERED', 'SENT'] } },
-      select: { id: true },
-    })
-    if (!log) throw new NotFoundException('Answered voice call not found')
-    return this.prisma.notificationLog.update({ where: { id: logId }, data: { rsvp } })
-  }
-
-  /** C5 — thống kê ý định lên xe trên các cuộc gọi voice của một trip (hoặc round) (R10). */
-  async getVoiceIntent(
-    tripId: string,
-    tenantId: string,
-    roundId?: string,
-  ): Promise<VoiceIntentSummary> {
-    const rows = await this.prisma.notificationLog.findMany({
-      where: { tenantId, tripId, channel: 'VOICE', ...(roundId ? { roundId } : {}) },
-      select: { status: true, rsvp: true },
-    })
-    const s: VoiceIntentSummary = {
-      total: rows.length,
-      answered: 0,
-      noAnswer: 0,
-      pending: 0,
-      failed: 0,
-      willBoard: 0,
-      wontBoard: 0,
-    }
-    for (const r of rows) {
-      if (r.rsvp === 'WILL_BOARD') s.willBoard++
-      else if (r.rsvp === 'WONT_BOARD') s.wontBoard++
-
-      if (r.status === 'NO_ANSWER') s.noAnswer++
-      else if (r.status === 'QUEUED') s.pending++
-      else if (r.status === 'FAILED' || r.status === 'BOUNCED') s.failed++
-      else s.answered++ // SENT | DELIVERED (đã trả lời)
-    }
-    return s
   }
 
   private async resolveRecipients(

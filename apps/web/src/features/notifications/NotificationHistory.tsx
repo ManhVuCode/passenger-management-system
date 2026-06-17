@@ -1,9 +1,8 @@
 import { useEffect, useState, type ElementType } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Bell, BellRing, Mail, MessageSquare, PhoneCall, Radio, Send, Webhook } from 'lucide-react'
+import { Bell, BellRing, Mail, MessageSquare, Radio, Send } from 'lucide-react'
 import {
   useGetNotificationHistoryQuery,
-  useSimulateRsvpMutation,
   type NotificationLog,
 } from './notificationApi'
 import { DataTable, type Column } from '../../components/ui/data-table'
@@ -21,9 +20,7 @@ function statusVariant(status: string): BadgeVariant {
 // Icon lucide cho từng kênh gửi — đồng bộ với bộ chọn kênh ở NotificationPanel
 const CHANNEL_ICONS: Record<string, ElementType> = {
   SMS: MessageSquare,
-  TEAMS: Webhook,
   IN_APP: BellRing,
-  VOICE: PhoneCall,
   TELEGRAM: Send,
   BROADCAST: Radio,
   EMAIL: Mail,
@@ -55,10 +52,9 @@ const PAGE_SIZE = 15
 export default function NotificationHistory({ tripId }: { tripId: string }) {
   const { t } = useTranslation()
   const [visible, setVisible] = useState(PAGE_SIZE)
-  // Các dòng SMS/Voice/Telegram bắt đầu ở trạng thái QUEUED rồi mới chuyển sang SENT/FAILED sau đó
+  // Các dòng SMS/Telegram/Email bắt đầu ở trạng thái QUEUED rồi mới chuyển sang SENT/FAILED sau đó
   // trong worker, vốn không phát tín hiệu invalidation. Chỉ poll khi còn dòng đang chờ xử lý, sau đó dừng.
   const [poll, setPoll] = useState(false)
-  const [simulateRsvp, { isLoading: simulating }] = useSimulateRsvpMutation()
   const { data: logs = [], isLoading } = useGetNotificationHistoryQuery(
     { tripId },
     { pollingInterval: poll ? 4000 : 0, skipPollingIfUnfocused: true },
@@ -121,59 +117,6 @@ export default function NotificationHistory({ tripId }: { tripId: string }) {
           )}
         </div>
       ),
-    },
-    {
-      key: 'rsvp',
-      header: t('notifications.colRsvp'),
-      render: (r) => {
-        if (r.rsvp) {
-          return (
-            <Badge
-              variant={r.rsvp === 'WILL_BOARD' ? 'success' : 'destructive'}
-              label={t(
-                r.rsvp === 'WILL_BOARD'
-                  ? 'notifications.rsvpWillBoard'
-                  : 'notifications.rsvpWontBoard',
-              )}
-            />
-          )
-        }
-        // Điều khiển thủ công: mô phỏng hành khách bấm 1 / 2 trong một cuộc gọi đã được trả lời.
-        // Chỉ là ý định — backend ghi nhận vào log, không bao giờ ghi vào dữ liệu điểm danh.
-        const answered = r.status === 'DELIVERED' || r.status === 'SENT'
-        if (r.channel === 'VOICE' && answered && r.roundId) {
-          const roundId = r.roundId
-          return (
-            <div className="flex gap-1.5">
-              <button
-                type="button"
-                disabled={simulating}
-                onClick={() =>
-                  void simulateRsvp({ tripId, roundId, logId: r.id, rsvp: 'WILL_BOARD' })
-                }
-                className="cursor-pointer rounded-lg border border-success-200 bg-success-50 px-2 py-0.5 text-[11px] font-semibold text-success-700 transition-colors duration-150 hover:bg-success-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {t('notifications.simWillBoard')}
-              </button>
-              <button
-                type="button"
-                disabled={simulating}
-                onClick={() =>
-                  void simulateRsvp({ tripId, roundId, logId: r.id, rsvp: 'WONT_BOARD' })
-                }
-                className="cursor-pointer rounded-lg border border-danger-100 bg-danger-50 px-2 py-0.5 text-[11px] font-semibold text-danger-600 transition-colors duration-150 hover:bg-danger-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {t('notifications.simWontBoard')}
-              </button>
-            </div>
-          )
-        }
-        return (
-          <span className="text-gray-300" aria-hidden="true">
-            —
-          </span>
-        )
-      },
     },
     {
       key: 'message',

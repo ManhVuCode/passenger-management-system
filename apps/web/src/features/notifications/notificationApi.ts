@@ -2,11 +2,9 @@ import { baseApi } from '../../store/baseApi'
 
 export type NotificationChannel =
   | 'SMS'
-  | 'TEAMS'
   | 'BROADCAST'
   | 'IN_APP'
   | 'TELEGRAM'
-  | 'VOICE'
   | 'EMAIL'
 
 interface SendPayload {
@@ -38,7 +36,6 @@ export interface NotificationLog {
   status: string
   providerId: string | null
   errorReason: string | null
-  rsvp: string | null
   createdAt: string
 }
 
@@ -55,19 +52,6 @@ export interface AutoRules {
   roundCompleted: boolean
   boardingReminder: boolean
   emailReport: boolean
-}
-
-export type RsvpIntent = 'WILL_BOARD' | 'WONT_BOARD'
-
-/** C5 — thống kê ý định lên xe qua các cuộc gọi thoại của một round. */
-export interface VoiceIntentSummary {
-  total: number
-  answered: number
-  noAnswer: number
-  pending: number
-  failed: number
-  willBoard: number
-  wontBoard: number
 }
 
 export interface EmailEligibility {
@@ -101,28 +85,11 @@ export const notificationApi = baseApi.injectEndpoints({
       query: (body) => ({ url: '/notification-config/auto-rules', method: 'PUT', body }),
       invalidatesTags: ['NotificationConfig'],
     }),
-    getVoiceIntent: builder.query<VoiceIntentSummary, { tripId: string; roundId: string }>({
-      query: ({ tripId, roundId }) => ({
-        url: `/trips/${tripId}/rounds/${roundId}/notify/intent`,
-      }),
-      providesTags: ['Notification'],
-    }),
     getEmailEligibility: builder.query<EmailEligibility, { tripId: string; roundId: string }>({
       query: ({ tripId, roundId }) => ({
         url: `/trips/${tripId}/rounds/${roundId}/notify/email-recipients`,
       }),
       providesTags: ['Notification'],
-    }),
-    simulateRsvp: builder.mutation<
-      NotificationLog,
-      { tripId: string; roundId: string; logId: string; rsvp: RsvpIntent }
-    >({
-      query: ({ tripId, roundId, ...body }) => ({
-        url: `/trips/${tripId}/rounds/${roundId}/notify/rsvp`,
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: ['Notification'],
     }),
   }),
 })
@@ -132,7 +99,5 @@ export const {
   useGetNotificationHistoryQuery,
   useGetAutoRulesQuery,
   useUpdateAutoRulesMutation,
-  useGetVoiceIntentQuery,
   useGetEmailEligibilityQuery,
-  useSimulateRsvpMutation,
 } = notificationApi

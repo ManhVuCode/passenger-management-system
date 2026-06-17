@@ -104,23 +104,15 @@ describe('Notifications (e2e)', () => {
       expect(res.body.sent).toBe(1)
     })
 
-    it('TEAMS → 201, devMode: true', async () => {
-      const res = await request(app.getHttpServer())
-        .post(`/trips/${tripId}/rounds/${roundId}/notify`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({ channel: 'TEAMS', message: 'Bus departing in 5 minutes' })
-      expect(res.status).toBe(201)
-      expect(res.body.devMode).toBe(true)
-    })
-
-    it('BROADCAST → 201, devMode: true, emits WebSocket event', async () => {
+    it('BROADCAST → 201, devMode: false (WebSocket always fires), emits WebSocket event', async () => {
       const res = await request(app.getHttpServer())
         .post(`/trips/${tripId}/rounds/${roundId}/notify`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ channel: 'BROADCAST', message: 'All passengers board now' })
       expect(res.status).toBe(201)
       expect(res.body.channel).toBe('BROADCAST')
-      expect(res.body.devMode).toBe(true)
+      // Broadcast luôn gửi thật qua WebSocket (không phụ thuộc provider key) → không bao giờ dev-mode.
+      expect(res.body.devMode).toBe(false)
     })
 
     it('Invalid channel → 400', async () => {

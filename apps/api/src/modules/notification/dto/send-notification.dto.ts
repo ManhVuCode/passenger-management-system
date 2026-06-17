@@ -2,11 +2,9 @@ import { IsEnum, IsString, IsOptional, IsArray, IsUUID, IsNotEmpty } from 'class
 
 export enum NotificationChannel {
   SMS = 'SMS',
-  TEAMS = 'TEAMS',
   BROADCAST = 'BROADCAST', // bí danh cũ của IN_APP (NotificationPanel hiện có)
   IN_APP = 'IN_APP', // cảnh báo WebSocket trong ứng dụng gửi tới tài xế
   TELEGRAM = 'TELEGRAM',
-  VOICE = 'VOICE',
   EMAIL = 'EMAIL', // gửi email cho hành khách (chỉ những người có địa chỉ email)
 }
 

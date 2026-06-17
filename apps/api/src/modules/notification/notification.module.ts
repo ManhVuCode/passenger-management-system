@@ -12,8 +12,6 @@ import { TemplateService } from './templates/template.service'
 import { ProviderRegistry } from './providers/provider.registry'
 import { MockProvider } from './providers/mock.provider'
 import { SmsProvider } from './providers/sms.provider'
-import { TeamsProvider } from './providers/teams.provider'
-import { VoiceProvider } from './providers/voice.provider'
 import { TelegramProvider } from './providers/telegram.provider'
 import { EmailProvider } from './providers/email.provider'
 import { GatewayModule } from '../../gateway/gateway.module'
@@ -32,8 +30,6 @@ import { NOTIFICATION_QUEUE } from '../queue/queue.module'
     ProviderRegistry,
     MockProvider,
     SmsProvider,
-    TeamsProvider,
-    VoiceProvider,
     TelegramProvider,
     EmailProvider,
   ],

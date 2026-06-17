@@ -14,12 +14,6 @@ export type NotificationStatus =
   | 'DELIVERED'
   | 'FAILED'
   | 'BOUNCED'
-  | 'NO_ANSWER'
-
-/** Phản hồi của hành khách ghi nhận qua nhấn phím 1 trên IVR voice (hoặc sau này là nút Telegram) —
- *  CHỈ LÀ Ý ĐỊNH. Lưu trên NotificationLog.rsvp; KHÔNG BAO GIỜ ghi vào một
- *  AttendanceRecord (vốn là JOIN | ABSENT | CANCELLED, do BusManager/Admin đặt). */
-export type RsvpIntent = 'WILL_BOARD' | 'WONT_BOARD'
 
 /** Payload mang theo trên một job gửi đã vào hàng đợi. `payload.to` là contact THẬT
  * (dòng NotificationLog chỉ lưu dạng đã che bớt). */
@@ -36,7 +30,7 @@ export interface SendJobData {
   }
 }
 
-/** Định dạng số điện thoại chấp nhận cho người nhận SMS/voice. */
+/** Định dạng số điện thoại chấp nhận cho người nhận SMS. */
 export const PHONE_RE = /^\+?[0-9]{9,15}$/
 
 /** Định dạng email chấp nhận cho người nhận kênh EMAIL — kiểm tra thô, đủ chặn rác. */

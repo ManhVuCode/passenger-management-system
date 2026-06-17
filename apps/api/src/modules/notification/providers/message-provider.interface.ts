@@ -1,4 +1,4 @@
-import type { NotificationStatus, RsvpIntent } from '../notification.types'
+import type { NotificationStatus } from '../notification.types'
 
 /** Kết quả của một lần thử gửi bởi provider của một kênh. */
 export interface SendResult {
@@ -6,12 +6,9 @@ export interface SendResult {
   providerId?: string
   error?: string
   costMicro?: number
-  /** Ghi đè trạng thái kết thúc tùy chọn (ví dụ NO_ANSWER của một cuộc gọi voice). Ưu tiên hơn
-   *  ánh xạ mặc định success→SENT / failure→FAILED trong NotificationSender. */
+  /** Ghi đè trạng thái kết thúc tùy chọn. Ưu tiên hơn ánh xạ mặc định
+   *  success→SENT / failure→FAILED trong NotificationSender. */
   status?: NotificationStatus
-  /** Ý định IVR ghi nhận tùy chọn (nhấn phím 1 voice). Chỉ ghi trên NotificationLog.rsvp
-   *  — KHÔNG BAO GIỜ ghi vào một AttendanceRecord. */
-  rsvp?: RsvpIntent
 }
 
 /** Tệp đính kèm cho kênh EMAIL (vd báo cáo .xlsx). `contentBase64` là nội dung tệp đã mã hóa base64. */
@@ -32,6 +29,6 @@ export interface MessagePayload {
 
 /** Interface theo mẫu Strategy: một adapter cho mỗi kênh gửi. */
 export interface IMessageProvider {
-  readonly channel: string // 'SMS' | 'TELEGRAM' | 'VOICE' | 'TEAMS' (kênh gửi)
+  readonly channel: string // 'SMS' | 'TELEGRAM' | 'EMAIL' (kênh gửi)
   send(payload: MessagePayload): Promise<SendResult>
 }

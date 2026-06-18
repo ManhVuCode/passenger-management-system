@@ -13,6 +13,25 @@ export class TelegramApiService {
     return `https://api.telegram.org/bot${token}`
   }
 
+  /**
+   * Xác thực token và lấy thông tin bot (đặc biệt là @username để dựng link/QR đăng ký).
+   * Trả về null nếu token sai hoặc không gọi được — bên gọi dùng để báo "token không hợp lệ".
+   */
+  async getMe(token: string): Promise<{ id: number; username: string; firstName: string } | null> {
+    try {
+      const res = await fetch(`${this.base(token)}/getMe`)
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean
+        result?: { id: number; username: string; first_name: string }
+      }
+      if (!json.ok || !json.result?.username) return null
+      return { id: json.result.id, username: json.result.username, firstName: json.result.first_name }
+    } catch (e) {
+      this.logger.warn(`getMe failed: ${(e as Error).message}`)
+      return null
+    }
+  }
+
   /** Long-polling: lấy các update mới kể từ offset. Trả về [] nếu lỗi/timeout. */
   async getUpdates(token: string, offset: number, timeoutSec = 30, signal?: AbortSignal): Promise<TgUpdate[]> {
     const res = await fetch(`${this.base(token)}/getUpdates?offset=${offset}&timeout=${timeoutSec}`, { signal })

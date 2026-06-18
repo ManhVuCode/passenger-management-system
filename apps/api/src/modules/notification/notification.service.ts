@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectQueue } from '@nestjs/bullmq'
 import { Queue } from 'bullmq'
@@ -6,6 +6,8 @@ import * as XLSX from 'xlsx'
 import { Prisma, type NotificationLog } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { AttendanceGateway } from '../../gateway/attendance.gateway'
+import { TelegramApiService } from '../telegram/telegram-api.service'
+import { TelegramPollerService } from '../telegram/telegram-poller.service'
 import { SendNotificationDto, NotificationChannel } from './dto/send-notification.dto'
 import { ProviderRegistry } from './providers/provider.registry'
 import { NotificationSender } from './notification.sender'
@@ -37,6 +39,13 @@ export interface DispatchResult {
   skipped: number
 }
 
+/** Trạng thái bot Telegram của tenant cho UI (không bao giờ chứa token thô). */
+export interface TelegramConfigView {
+  configured: boolean
+  botUsername: string | null
+  registrationLink: string | null
+}
+
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name)
@@ -48,6 +57,8 @@ export class NotificationService {
     private registry: ProviderRegistry,
     private sender: NotificationSender,
     private templates: TemplateService,
+    private telegramApi: TelegramApiService,
+    private poller: TelegramPollerService,
     @InjectQueue(NOTIFICATION_QUEUE) private queue: Queue,
   ) {}
 
@@ -310,7 +321,6 @@ export class NotificationService {
   }): Promise<DispatchResult> {
     const { tripId, roundId, tenantId, trigger, templateKey } = params
     const locale = params.locale ?? 'vi'
-    const channel = NotificationChannel.SMS
 
     const round = await this.prisma.round.findFirst({
       where: { id: roundId, tripId, tenantId },
@@ -328,6 +338,7 @@ export class NotificationService {
             phone: true,
             email: true,
             telegramChatId: true,
+            channelPref: true,
             contactOptOut: true,
           },
         },
@@ -339,7 +350,11 @@ export class NotificationService {
     let skipped = 0
     for (const rpa of rpas) {
       const p = rpa.tripPassengerAssignment
-      const contact = p.phone
+      // B6 — định tuyến theo sở thích hành khách: ưu tiên Telegram khi khách chọn
+      // channelPref=TELEGRAM và đã liên kết chat id; còn lại dùng SMS (kênh mặc định).
+      const useTelegram = p.channelPref === 'TELEGRAM' && !!p.telegramChatId
+      const channel = useTelegram ? NotificationChannel.TELEGRAM : NotificationChannel.SMS
+      const contact = useTelegram ? p.telegramChatId! : p.phone
 
       if (params.dedupe && (await this.alreadySentToday(tenantId, roundId, p.id, trigger))) {
         continue
@@ -617,6 +632,48 @@ export class NotificationService {
       update: { autoRules: next as unknown as Prisma.InputJsonValue },
     })
     return resolveAutoRules(config.autoRules)
+  }
+
+  /** D1 — trạng thái bot Telegram của tenant + link đăng ký (không trả token thô). */
+  async getTelegramConfig(tenantId: string): Promise<TelegramConfigView> {
+    const cfg = await this.prisma.tenantNotificationConfig.findUnique({
+      where: { tenantId },
+      select: { telegramBotToken: true, telegramBotUsername: true },
+    })
+    const botUsername = cfg?.telegramBotUsername ?? null
+    return {
+      configured: !!cfg?.telegramBotToken,
+      botUsername,
+      registrationLink: botUsername ? `https://t.me/${botUsername}` : null,
+    }
+  }
+
+  /**
+   * D1 — lưu bot token cho tenant: xác thực qua getMe (lấy luôn @username để dựng link/QR),
+   * upsert vào TenantNotificationConfig rồi bật poller NGAY (không cần restart API).
+   * Token sai → 400.
+   */
+  async setTelegramConfig(tenantId: string, botToken: string): Promise<TelegramConfigView> {
+    const token = botToken.trim()
+    const me = await this.telegramApi.getMe(token)
+    if (!me) throw new BadRequestException('Telegram bot token không hợp lệ')
+    await this.prisma.tenantNotificationConfig.upsert({
+      where: { tenantId },
+      create: { tenantId, telegramBotToken: token, telegramBotUsername: me.username },
+      update: { telegramBotToken: token, telegramBotUsername: me.username },
+    })
+    this.poller.startForTenant(tenantId, token)
+    return this.getTelegramConfig(tenantId)
+  }
+
+  /** D1 — gỡ bot token của tenant + dừng poller. Kênh Telegram trở về MOCK. */
+  async clearTelegramConfig(tenantId: string): Promise<TelegramConfigView> {
+    await this.prisma.tenantNotificationConfig.updateMany({
+      where: { tenantId },
+      data: { telegramBotToken: null, telegramBotUsername: null },
+    })
+    this.poller.stopForTenant(tenantId)
+    return this.getTelegramConfig(tenantId)
   }
 
   private async resolveRecipients(

@@ -15,10 +15,11 @@ import { SmsProvider } from './providers/sms.provider'
 import { TelegramProvider } from './providers/telegram.provider'
 import { EmailProvider } from './providers/email.provider'
 import { GatewayModule } from '../../gateway/gateway.module'
+import { TelegramModule } from '../telegram/telegram.module'
 import { NOTIFICATION_QUEUE } from '../queue/queue.module'
 
 @Module({
-  imports: [GatewayModule, BullModule.registerQueue({ name: NOTIFICATION_QUEUE })],
+  imports: [GatewayModule, TelegramModule, BullModule.registerQueue({ name: NOTIFICATION_QUEUE })],
   controllers: [NotificationController, NotificationHistoryController, NotificationConfigController],
   providers: [
     NotificationService,

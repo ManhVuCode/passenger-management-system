@@ -10,6 +10,6 @@ import { TelegramPollerService } from './telegram-poller.service'
  */
 @Module({
   providers: [TelegramApiService, TelegramService, TelegramPollerService],
-  exports: [TelegramApiService],
+  exports: [TelegramApiService, TelegramPollerService],
 })
 export class TelegramModule {}

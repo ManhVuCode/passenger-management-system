@@ -60,6 +60,12 @@ export interface EmailEligibility {
   withoutEmail: number
 }
 
+export interface TelegramConfig {
+  configured: boolean
+  botUsername: string | null
+  registrationLink: string | null
+}
+
 export const notificationApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     sendNotification: builder.mutation<NotificationResult, SendPayload>({
@@ -91,6 +97,18 @@ export const notificationApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Notification'],
     }),
+    getTelegramConfig: builder.query<TelegramConfig, void>({
+      query: () => ({ url: '/notification-config/telegram' }),
+      providesTags: ['NotificationConfig'],
+    }),
+    setTelegramConfig: builder.mutation<TelegramConfig, { botToken: string }>({
+      query: (body) => ({ url: '/notification-config/telegram', method: 'PUT', body }),
+      invalidatesTags: ['NotificationConfig'],
+    }),
+    clearTelegramConfig: builder.mutation<TelegramConfig, void>({
+      query: () => ({ url: '/notification-config/telegram', method: 'DELETE' }),
+      invalidatesTags: ['NotificationConfig'],
+    }),
   }),
 })
 
@@ -100,4 +118,7 @@ export const {
   useGetAutoRulesQuery,
   useUpdateAutoRulesMutation,
   useGetEmailEligibilityQuery,
+  useGetTelegramConfigQuery,
+  useSetTelegramConfigMutation,
+  useClearTelegramConfigMutation,
 } = notificationApi

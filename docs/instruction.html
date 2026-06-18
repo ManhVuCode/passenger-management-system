@@ -43,6 +43,8 @@
           <li><a href="#reset">13. Dọn dẹp / reset dữ liệu demo</a></li>
           <li><a href="#teams-note">14. Gửi tự động qua Teams có hợp lý?</a></li>
           <li><a href="#chua-lam">15. Trạng thái các tính năng</a></li>
+          <li class="toc-group">Triển khai — Deploy</li>
+          <li><a href="#deploy-vercel">16. Deploy lên Vercel + Railway</a></li>
         </ul>
       </nav>
     </aside>
@@ -528,7 +530,106 @@ eval $PSQL "\"delete from \\\"TenantNotificationConfig\\\";\""</code></pre>
       <blockquote>Mọi nhà cung cấp thật đều đứng sau lớp <code>MessageProvider</code> và mặc định ở chế độ MOCK,
       nên có thể bật từng tenant lên “live” mà không đổi mã nghiệp vụ. Không commit khoá API — chỉ dùng biến môi trường / secret ref.</blockquote>
 
-      <footer class="page-footer">MPMS · Hướng dẫn kiểm thử Phase A · B · C · D · Chatbot · cập nhật 2026-06-04</footer>
+      <!-- ===================== DEPLOY ===================== -->
+      <h2 id="deploy-vercel">16. Deploy lên Vercel (web + pwa) + Railway (api)</h2>
+      <div class="page-meta" style="margin-bottom:12px">
+        <span class="badge badge-sky">Vercel · apps/web + apps/pwa</span>
+        <span class="badge badge-amber">Railway · apps/api + Postgres + Redis</span>
+        <span class="badge badge-gray">Branch deploy: main (= develop)</span>
+      </div>
+
+      <blockquote><strong>Vercel KHÔNG chạy được toàn bộ dự án.</strong> Vercel là nền tảng
+      <strong>serverless / static</strong> — hợp với 2 frontend Vite (build tĩnh), nhưng <em>không</em> chạy được
+      NestJS API, vì API cần một tiến trình <strong>chạy nền liên tục</strong>: WebSocket thời gian thực
+      (<code>/attendance</code>), hàng đợi <strong>BullMQ</strong>, <strong>cron</strong> (<code>@nestjs/schedule</code>),
+      kèm <strong>PostgreSQL + Redis</strong>. ⟹ <strong>web + pwa lên Vercel</strong>, còn
+      <strong>api + Postgres + Redis lên Railway</strong> (hoặc Render). Frontend chỉ cần biết URL của API.</blockquote>
+
+      <h3>16-0. Đã chuẩn bị sẵn trong repo</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>File</th><th>Vai trò khi deploy</th></tr></thead>
+        <tbody>
+          <tr><td><code>apps/web/vercel.json</code></td><td>Build <code>@pms/shared</code> trước rồi build web; <em>rewrite</em> mọi route → <code>index.html</code> (tránh 404 khi F5 ở route con)</td></tr>
+          <tr><td><code>apps/pwa/vercel.json</code></td><td>Tương tự cho PWA</td></tr>
+          <tr><td><code>apps/api/src/main.ts</code></td><td>CORS đọc từ biến <code>CORS_ORIGINS</code> (mặc định <code>localhost</code>) — để cho phép tên miền Vercel gọi API. Thiếu bước này frontend sẽ bị <strong>CORS chặn</strong>.</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 id="deploy-api">16-A. Deploy API + Postgres + Redis lên Railway (làm TRƯỚC)</h3>
+      <p>Frontend cần URL API nên API phải có trước.</p>
+      <ol>
+        <li>Vào <strong>railway.app</strong> → <strong>New Project → Deploy from GitHub repo</strong> → chọn
+          <code>passenger-management-system</code>, branch <code>main</code>.</li>
+        <li>Trong project, bấm <strong>+ New</strong> → thêm <strong>PostgreSQL</strong> và <strong>Redis</strong>
+          (Railway tự sinh biến <code>DATABASE_URL</code>, <code>REDIS_URL</code>).</li>
+        <li>Mở service API → <strong>Settings → Build &amp; Deploy</strong>, đặt:</li>
+      </ol>
+      <pre><code># Build Command
+pnpm install --frozen-lockfile \
+  &amp;&amp; pnpm --filter @pms/shared build \
+  &amp;&amp; pnpm --filter api exec prisma generate \
+  &amp;&amp; pnpm --filter api build
+
+# Start Command  (chạy migration rồi khởi động server)
+pnpm --filter api exec prisma migrate deploy &amp;&amp; pnpm --filter api start:prod</code></pre>
+      <p>Tab <strong>Variables</strong> của service API:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Biến</th><th>Giá trị</th></tr></thead>
+        <tbody>
+          <tr><td><code>DATABASE_URL</code></td><td><code>${{Postgres.DATABASE_URL}}</code> (bắt buộc)</td></tr>
+          <tr><td><code>REDIS_URL</code></td><td><code>${{Redis.REDIS_URL}}</code> (BullMQ; thiếu thì gửi inline, nên có)</td></tr>
+          <tr><td><code>JWT_SECRET</code></td><td>chuỗi ngẫu nhiên dài</td></tr>
+          <tr><td><code>JWT_EXPIRES_IN</code></td><td><code>7d</code></td></tr>
+          <tr><td><code>NODE_ENV</code></td><td><code>production</code></td></tr>
+          <tr><td><code>CORS_ORIGINS</code></td><td>điền sau khi có URL Vercel (mục 16-D)</td></tr>
+        </tbody>
+      </table></div>
+      <blockquote><code>PORT</code> do Railway tự inject — code đã đọc <code>process.env.PORT</code>. WebSocket socket.io
+      chạy ngay trên host API (Railway hỗ trợ sẵn). Sau khi deploy, bấm <strong>Settings → Generate Domain</strong> để có
+      URL kiểu <code>https://your-api.up.railway.app</code> — <strong>ghi lại</strong>. Mở
+      <code>/api/docs</code> để kiểm tra Swagger.</blockquote>
+      <p>Seed tài khoản đăng nhập (chạy 1 lần qua Railway shell):
+        <code>pnpm --filter api exec ts-node prisma/seed.ts</code>.
+        <em>(Lưu ý: <code>demo-seed.ts</code> chỉ chạy local, không nằm trên repo.)</em></p>
+
+      <h3 id="deploy-web">16-B. Deploy <code>apps/web</code> (Admin) lên Vercel</h3>
+      <ol>
+        <li><strong>vercel.com → Add New → Project</strong> → import repo GitHub.</li>
+        <li><strong>Root Directory</strong>: chọn <code>apps/web</code> (Vercel tự nhận Vite; <code>vercel.json</code> đã lo
+          build <code>shared</code> trước + SPA rewrite, không cần sửa Build/Output).</li>
+        <li><strong>Environment Variables</strong>:
+          <code>VITE_API_URL=https://your-api.up.railway.app</code> ·
+          <code>VITE_PWA_URL=https://your-pwa.vercel.app</code> (điền sau khi có URL PWA).</li>
+        <li><strong>Deploy</strong> → được URL <code>https://your-web.vercel.app</code> (ghi lại).</li>
+      </ol>
+
+      <h3 id="deploy-pwa">16-C. Deploy <code>apps/pwa</code> (Tài xế) lên Vercel</h3>
+      <p>Làm y hệt 16-B nhưng <strong>Root Directory</strong> = <code>apps/pwa</code>, và env:</p>
+      <pre><code>VITE_API_URL = https://your-api.up.railway.app
+VITE_WEB_URL = https://your-web.vercel.app</code></pre>
+      <p>Deploy → được URL <code>https://your-pwa.vercel.app</code>.</p>
+
+      <h3 id="deploy-wire">16-D. Nối CORS + link chéo (bước dễ quên nhất)</h3>
+      <ol>
+        <li>Quay lại <strong>Railway → API → Variables</strong>, set
+          <code>CORS_ORIGINS = https://your-web.vercel.app,https://your-pwa.vercel.app</code> → Railway redeploy.
+          Thiếu bước này = đăng nhập bị <strong>CORS chặn</strong>.</li>
+        <li>Vào <strong>Vercel project web</strong> → sửa <code>VITE_PWA_URL</code> = URL PWA thật →
+          <strong>Redeploy</strong> (biến <code>VITE_*</code> chỉ áp dụng lúc build, đổi xong phải build lại).</li>
+      </ol>
+
+      <h3>16-E. Checklist nghiệm thu</h3>
+      <ul>
+        <li><code>https://your-api.up.railway.app/api/docs</code> mở được Swagger.</li>
+        <li>Đăng nhập trên web thành công (tab Network không có lỗi CORS).</li>
+        <li>Live Dashboard cập nhật realtime (socket.io tới <code>VITE_API_URL/attendance</code>).</li>
+        <li>PWA cài được “Add to Home Screen” và điểm danh được.</li>
+        <li>Login web → handoff sang PWA (và ngược lại) đúng URL.</li>
+      </ul>
+      <blockquote>Vercel/Railway deploy <strong>từ GitHub</strong>: mỗi lần push lên <code>main</code> sẽ tự build lại.
+      Vì nhánh <code>main</code> nay đồng nhất với <code>develop</code>, cứ merge <code>develop → main</code> là lên production.</blockquote>
+
+      <footer class="page-footer">MPMS · Hướng dẫn kiểm thử Phase A · B · C · D · Chatbot + Deploy · cập nhật 2026-06-18</footer>
     </main>
   </div>
 

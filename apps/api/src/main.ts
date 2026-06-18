@@ -12,8 +12,15 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter())
   app.useGlobalInterceptors(new ResponseInterceptor())
 
+  const corsOrigins = (
+    process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://localhost:5174'
+  )
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean)
+
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    origin: corsOrigins,
     credentials: true,
   })
 

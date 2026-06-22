@@ -22,3 +22,6 @@ docs/*diagram*.html
 docs/sprint-*.md
 docs/feature-plan-comms-automation-voice.*
 docs/ui-redesign-notes.*
+
+# Demo seed — chỉ chạy local, TUYỆT ĐỐI không commit (dữ liệu demo, không thuộc repo)
+apps/api/prisma/demo-seed.ts

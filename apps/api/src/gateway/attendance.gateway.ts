@@ -30,8 +30,15 @@ export interface RoundStatusUpdatePayload {
   status: string
 }
 
+// Cùng nguồn với CORS của HTTP (main.ts): đọc CORS_ORIGINS để frontend trên Vercel
+// bắt tay được WebSocket realtime. Thiếu biến này thì mặc định localhost cho dev.
+const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://localhost:5174')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
+
 @WebSocketGateway({
-  cors: { origin: ['http://localhost:5173', 'http://localhost:5174'], credentials: true },
+  cors: { origin: corsOrigins, credentials: true },
   namespace: '/attendance',
 })
 export class AttendanceGateway implements OnGatewayConnection, OnGatewayDisconnect {

@@ -324,12 +324,57 @@ eval $PSQL "\"delete from \\\"TenantNotificationConfig\\\";\""</code></pre>
         <span class="badge badge-gray">Branch deploy: main (= develop)</span>
       </div>
 
-      <blockquote><strong>Vercel KHÔNG chạy được toàn bộ dự án.</strong> Vercel là nền tảng
-      <strong>serverless / static</strong> — hợp với 2 frontend Vite (build tĩnh), nhưng <em>không</em> chạy được
-      NestJS API, vì API cần một tiến trình <strong>chạy nền liên tục</strong>: WebSocket thời gian thực
-      (<code>/attendance</code>), hàng đợi <strong>BullMQ</strong>, <strong>cron</strong> (<code>@nestjs/schedule</code>),
-      kèm <strong>PostgreSQL + Redis</strong>. ⟹ <strong>web + pwa lên Vercel</strong>, còn
-      <strong>api + Postgres + Redis lên Railway</strong> (hoặc Render). Frontend chỉ cần biết URL của API.</blockquote>
+      <blockquote><strong>Hai phương án cho API.</strong> Vercel là nền tảng <strong>serverless / static</strong> —
+      hợp hoàn hảo với 2 frontend Vite (build tĩnh). Với NestJS API:
+      <br>• <strong>(A) Khuyến nghị — mục 11-A…E:</strong> API + Postgres + Redis lên <strong>Railway</strong> (tiến trình chạy
+      nền liên tục) → giữ đủ WebSocket realtime (<code>/attendance</code>), hàng đợi BullMQ, cron nhắc giờ, bot Telegram.
+      <br>• <strong>(B) Cả BE lên Vercel — mục 11-F:</strong> chạy được REST API dạng serverless, nhưng realtime + tác vụ
+      nền <strong>cần đổi kiến trúc</strong> (xem giới hạn ở 11-F). Frontend chỉ cần biết URL của API.</blockquote>
+
+      <!-- ===================== Redis vs Supabase ===================== -->
+      <h3 id="redis-supabase">11-0a. Có thực sự cần Redis? (Supabase có thay được không?)</h3>
+      <blockquote><strong>Supabase ≠ Redis — hai thứ khác việc.</strong> Supabase chính là <strong>PostgreSQL</strong>
+      (biến <code>DATABASE_URL</code>, thay cho Postgres local). Redis là <strong>hàng đợi job (BullMQ)</strong> để gửi
+      notification <strong>bất đồng bộ + retry</strong>. Có Supabase rồi <em>vẫn không</em> gánh được việc của Redis.</blockquote>
+      <p>Vậy câu hỏi đúng là <em>“có cần hàng đợi bất đồng bộ không?”</em> → <strong>Không bắt buộc.</strong> Code đã có sẵn
+      fallback trong <code>notification.service.ts</code> (<code>enqueueOrInline</code>):</p>
+      <pre><code>try {
+  await this.queue.add('send-notification', job, { attempts: 3, ... })  // có Redis → vào hàng đợi
+} catch {
+  await this.sender.deliver(job)   // không có Redis → gửi thẳng (inline) ngay trong request
+}</code></pre>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Nơi chạy BE</th><th>Redis?</th><th>Vì sao</th></tr></thead>
+        <tbody>
+          <tr><td>Railway / Render (tiến trình chạy nền)</td><td><span class="badge badge-emerald">Nên có</span></td><td>Có worker thật rút job → được hàng đợi + retry 3 lần. Dùng Upstash (<code>rediss://</code>) hoặc Redis của Railway.</td></tr>
+          <tr><td>Vercel (serverless)</td><td><span class="badge badge-amber">Bỏ trống</span></td><td>Không có worker nền rút job → đặt Redis thì job nằm chờ mãi. Để trống → gửi inline (mất retry nhưng vẫn gửi được).</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>Kết luận:</strong> Redis là <em>tùy chọn</em>. Quy mô đồ án nhỏ (vài chục thông báo/chuyến) nên gửi inline cũng
+      không khác biệt thực tế. Nếu BE chạy Railway/Render thì giữ <code>REDIS_URL</code> (Upstash) để có retry; nếu cả BE lên
+      Vercel thì để trống.</p>
+
+      <h4>Lưu ý quan trọng khi dùng Supabase làm <code>DATABASE_URL</code></h4>
+      <blockquote>Chuỗi <strong>pooler</strong> của Supabase (cổng <code>6543</code> + <code>?pgbouncer=true</code>) tốt cho
+      <strong>runtime</strong>, nhưng <code>prisma migrate</code> sẽ <strong>lỗi</strong> với pooler. Migration cần một
+      <strong>kết nối trực tiếp</strong> (cổng <code>5432</code>).</blockquote>
+      <ol>
+        <li><code>schema.prisma</code> đã được thêm <code>directUrl</code> để migration đi đường riêng:
+          <pre><code>datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")   // pooler 6543 — runtime
+  directUrl = env("DIRECT_URL")     // 5432 — prisma migrate
+}</code></pre>
+        </li>
+        <li>Đặt 2 biến (lấy ở Supabase → <em>Project Settings → Database → Connection string</em>):
+          <pre><code># runtime (Transaction pooler, 6543)
+DATABASE_URL="postgresql://postgres.&lt;ref&gt;:&lt;mật-khẩu&gt;@aws-...pooler.supabase.com:6543/postgres?pgbouncer=true"
+# migrate (Session pooler / Direct, 5432)
+DIRECT_URL="postgresql://postgres.&lt;ref&gt;:&lt;mật-khẩu&gt;@aws-...pooler.supabase.com:5432/postgres"</code></pre>
+        </li>
+        <li>Redis có TLS (Upstash <code>rediss://</code>): <code>QueueModule</code> đã được cập nhật để tự bật <code>tls</code>
+          + đọc <code>username</code> khi URL bắt đầu bằng <code>rediss://</code>.</li>
+      </ol>
 
       <h3>11-0. Đã chuẩn bị sẵn trong repo</h3>
       <div class="table-wrap"><table>
@@ -414,6 +459,109 @@ VITE_WEB_URL = https://your-web.vercel.app</code></pre>
       </ul>
       <blockquote>Vercel/Railway deploy <strong>từ GitHub</strong>: mỗi lần push lên <code>main</code> sẽ tự build lại.
       Vì nhánh <code>main</code> nay đồng nhất với <code>develop</code>, cứ merge <code>develop → main</code> là lên production.</blockquote>
+
+      <!-- ===================== 11-F: BE on Vercel ===================== -->
+      <h3 id="deploy-be-vercel">11-F. Đưa luôn cả BE lên Vercel (serverless) — được, nhưng có giới hạn</h3>
+      <div class="page-meta" style="margin-bottom:12px">
+        <span class="badge badge-emerald">REST API: chạy được</span>
+        <span class="badge badge-amber">Realtime / nền: cần đổi kiến trúc</span>
+      </div>
+      <blockquote>Vercel chạy <strong>serverless</strong> (hàm ngắn theo từng request, <strong>không có tiến trình
+      chạy nền</strong>, <strong>không giữ WebSocket</strong>). ⟹ REST API thuần của NestJS chạy được; nhưng 4 thứ cần
+      tiến trình sống lâu — <strong>WebSocket realtime, worker BullMQ, cron, bot Telegram polling</strong> — sẽ
+      <strong>không chạy</strong> nếu không đổi kiến trúc. Cần đủ tính năng thì phương án 11-A…E (Railway) đơn giản hơn nhiều.</blockquote>
+
+      <div class="table-wrap"><table>
+        <thead><tr><th>Tính năng</th><th>Trên Vercel serverless</th><th>Cách xử lý</th></tr></thead>
+        <tbody>
+          <tr><td>REST API (auth, trips, điểm danh, notify…)</td><td><span class="badge badge-emerald">Chạy</span></td><td>Bọc Nest trong 1 hàm serverless (bên dưới)</td></tr>
+          <tr><td>Dashboard realtime (WebSocket <code>/attendance</code>)</td><td><span class="badge badge-amber">❌ không hỗ trợ WS</span></td><td>Bỏ realtime / poll định kỳ / dùng Pusher · Ably · Supabase Realtime</td></tr>
+          <tr><td>Hàng đợi BullMQ + worker</td><td><span class="badge badge-amber">❌ worker nền không chạy</span></td><td>Dựa vào fallback <code>enqueueOrInline</code> (gửi ngay trong request) hoặc Upstash QStash</td></tr>
+          <tr><td>Cron nhắc giờ lên xe (<code>@Cron</code>)</td><td><span class="badge badge-amber">❌ không chạy</span></td><td>Thay bằng <strong>Vercel Cron</strong> gọi 1 endpoint</td></tr>
+          <tr><td>Bot Telegram (long-polling)</td><td><span class="badge badge-amber">❌ không chạy bền</span></td><td>Chuyển sang <strong>Telegram webhook</strong> + 1 route nhận update</td></tr>
+        </tbody>
+      </table></div>
+
+      <h4>① Prisma — thêm binary cho runtime của Vercel</h4>
+      <p>Trong <code>apps/api/prisma/schema.prisma</code>, khối <code>generator client</code>:</p>
+      <pre><code>generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]   // runtime của Vercel
+}</code></pre>
+
+      <h4>② Hàm serverless bọc Nest — tạo <code>apps/api/api/index.ts</code></h4>
+      <pre><code>import 'reflect-metadata'
+import { NestFactory } from '@nestjs/core'
+import { ExpressAdapter } from '@nestjs/platform-express'
+import express from 'express'
+import { ValidationPipe } from '@nestjs/common'
+import { AppModule } from '../src/app.module'
+import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter'
+import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor'
+
+const server = express()
+let ready: Promise&lt;void&gt; | null = null
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(server))
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }))
+  app.useGlobalFilters(new AllExceptionsFilter())
+  app.useGlobalInterceptors(new ResponseInterceptor())
+  app.enableCors({
+    origin: (process.env.CORS_ORIGINS ?? '').split(',').map((s) =&gt; s.trim()).filter(Boolean),
+    credentials: true,
+  })
+  await app.init()                  // KHÔNG dùng app.listen() trên serverless
+}
+
+export default async function handler(req: any, res: any) {
+  if (!ready) ready = bootstrap()   // tạo Nest 1 lần, tái dùng khi hàm còn "ấm"
+  await ready
+  server(req, res)
+}</code></pre>
+
+      <h4>③ <code>apps/api/vercel.json</code> + project Vercel thứ 3</h4>
+      <pre><code>{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd ../.. &amp;&amp; pnpm --filter @pms/shared build &amp;&amp; pnpm --filter api exec prisma generate",
+  "framework": null,
+  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
+}</code></pre>
+      <p>Tạo <strong>project Vercel thứ 3</strong> (ngoài web &amp; pwa) với <strong>Root Directory = <code>apps/api</code></strong>.</p>
+
+      <h4>④ Biến môi trường (project API trên Vercel)</h4>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Biến</th><th>Giá trị / ghi chú</th></tr></thead>
+        <tbody>
+          <tr><td><code>DATABASE_URL</code></td><td>Postgres có quản lý: <strong>Vercel Postgres</strong> / Neon / Supabase (bắt buộc)</td></tr>
+          <tr><td><code>JWT_SECRET</code>, <code>JWT_EXPIRES_IN</code></td><td>như thường</td></tr>
+          <tr><td><code>CORS_ORIGINS</code></td><td>URL của web + pwa trên Vercel</td></tr>
+          <tr><td><code>REDIS_URL</code></td><td><em>Bỏ trống</em> → notify gửi inline trong request (đủ cho demo). Đặt Redis (Upstash) mà không có worker thì job nằm chờ — đừng đặt trừ khi dùng QStash.</td></tr>
+          <tr><td><code>DISABLE_TELEGRAM_POLLER</code></td><td><code>1</code> — tắt long-polling (xem ⑥)</td></tr>
+        </tbody>
+      </table></div>
+
+      <h4>⑤ Migration (chạy 1 lần từ máy/CI — serverless không tự migrate)</h4>
+      <pre><code>DATABASE_URL="&lt;url-prod&gt;" pnpm --filter api exec prisma migrate deploy</code></pre>
+
+      <h4>⑥ Thay đổi code cần làm cho các tính năng "nền"</h4>
+      <ul>
+        <li><strong>Realtime dashboard:</strong> WebSocket không chạy trên Vercel. Hoặc chấp nhận (Dashboard cập nhật khi tải
+          lại trang), hoặc cắm dịch vụ realtime (Pusher/Ably), hoặc giữ riêng phần realtime ở Railway.</li>
+        <li><strong>Nhắc giờ lên xe:</strong> thêm vào <code>vercel.json</code>
+          <code>"crons": [{ "path": "/notification-config/boarding-reminder", "schedule": "*/5 * * * *" }]</code>
+          + một endpoint (bảo vệ bằng secret của Vercel Cron) gọi <code>BoardingReminderScheduler.run()</code>; bỏ <code>@Cron</code>.</li>
+        <li><strong>Bot Telegram:</strong> guard <code>TelegramPollerService.onModuleInit</code> bằng
+          <code>DISABLE_TELEGRAM_POLLER</code>, rồi <code>setWebhook</code> tới
+          <code>https://&lt;api&gt;.vercel.app/telegram/webhook</code> + thêm route <code>POST /telegram/webhook</code>
+          gọi <code>bot.handleUpdate</code>. (Webhook hợp serverless hơn polling.)</li>
+        <li><strong>Notify:</strong> không đặt <code>REDIS_URL</code> để ép gửi <strong>inline</strong> — mất retry/backoff của
+          BullMQ nhưng SMS/Telegram/Email vẫn gửi được ngay trong request.</li>
+      </ul>
+
+      <blockquote><strong>Tóm lại:</strong> đưa cả BE lên Vercel <em>khả thi cho REST</em> nhưng đánh đổi realtime và phải
+      viết thêm webhook/cron. Còn <strong>Railway/Render</strong> (11-A) giữ nguyên mọi tính năng mà không phải sửa kiến
+      trúc — với app này (realtime + queue + cron + bot polling) đó là lựa chọn đơn giản và đủ tính năng hơn.</blockquote>
 
       <footer class="page-footer">MPMS · Hướng dẫn kiểm thử Phase A · B · D (Telegram) + Deploy · cập nhật 2026-06-18</footer>
     </main>

@@ -23,7 +23,10 @@ export const NOTIFICATION_QUEUE = 'notification'
           connection: {
             host: url.hostname,
             port: Number(url.port) || 6379,
+            ...(url.username ? { username: url.username } : {}),
             ...(url.password ? { password: url.password } : {}),
+            // rediss:// (Upstash & các Redis có TLS) bắt buộc bật TLS, nếu không sẽ rớt kết nối.
+            ...(url.protocol === 'rediss:' ? { tls: {} } : {}),
           },
         }
       },

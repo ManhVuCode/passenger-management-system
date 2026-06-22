@@ -3,8 +3,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Runtime: chuỗi pooler (Supabase 6543 + pgbouncer) hoặc Postgres thường.
+  url       = env("DATABASE_URL")
+  // Migrate: cần kết nối trực tiếp (5432, không pgbouncer). Local thì trùng DATABASE_URL.
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {

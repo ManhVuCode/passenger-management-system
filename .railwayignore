@@ -1,0 +1,8 @@
+node_modules
+.git
+apps/web
+apps/pwa
+docs
+*.log
+**/.vercel
+**/dist

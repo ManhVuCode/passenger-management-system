@@ -1,4 +1,5 @@
 import Papa from 'papaparse'
+import * as XLSX from 'xlsx'
 
 export interface SheetRow {
   name: string
@@ -7,6 +8,13 @@ export interface SheetRow {
   type?: string
   hotelRoom?: string
   note?: string
+}
+
+export interface ImportResult {
+  rows: SheetRow[]
+  skippedColumns: string[]
+  errors: string[]
+  detectedMapping: Record<string, string>
 }
 
 const COLUMN_MAP: Record<string, keyof SheetRow> = {
@@ -66,12 +74,7 @@ const SKIP_COLUMNS = new Set([
   'l5',
 ])
 
-export async function importFromSheetUrl(sheetUrl: string): Promise<{
-  rows: SheetRow[]
-  skippedColumns: string[]
-  errors: string[]
-  detectedMapping: Record<string, string>
-}> {
+export async function importFromSheetUrl(sheetUrl: string): Promise<ImportResult> {
   const match = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)
   if (!match) throw new Error('Invalid Google Sheets URL')
   const sheetId = match[1]
@@ -102,7 +105,36 @@ export async function importFromSheetUrl(sheetUrl: string): Promise<{
     throw new Error('Failed to parse CSV: ' + parsed.errors[0].message)
   }
 
-  const headers = parsed.meta.fields ?? []
+  return mapRecords(parsed.meta.fields ?? [], parsed.data)
+}
+
+/**
+ * Nhập hành khách từ một tệp Excel (.xlsx/.xls) do người dùng tải lên.
+ * Phân tích hoàn toàn ở trình duyệt bằng SheetJS — dùng chung bộ ánh xạ cột
+ * và quy tắc kiểm tra với luồng đồng bộ Google Sheet, nên kết quả trùng định dạng.
+ */
+export async function importFromXlsxFile(file: File): Promise<ImportResult> {
+  let wb: XLSX.WorkBook
+  try {
+    const buf = await file.arrayBuffer()
+    wb = XLSX.read(buf, { type: 'array' })
+  } catch {
+    throw new Error('Cannot read the file. Please make sure it is a valid .xlsx/.xls workbook.')
+  }
+  const sheetName = wb.SheetNames[0]
+  if (!sheetName) throw new Error('The workbook has no sheets')
+  const records = XLSX.utils.sheet_to_json<Record<string, string>>(wb.Sheets[sheetName], {
+    defval: '',
+    raw: false,
+  })
+  if (records.length === 0) throw new Error('The first sheet has no data rows')
+  const headers = Object.keys(records[0])
+  return mapRecords(headers, records)
+}
+
+/** Ánh xạ cột + kiểm tra dùng chung cho cả CSV (Google Sheet) lẫn Excel. */
+function mapRecords(rawHeaders: string[], data: Record<string, string>[]): ImportResult {
+  const headers = rawHeaders.filter(Boolean)
   const detectedMapping: Record<string, string> = {}
   const skippedColumns: string[] = []
 
@@ -124,18 +156,18 @@ export async function importFromSheetUrl(sheetUrl: string): Promise<{
 
   const hasName = [...colToField.values()].includes('name')
   const hasPhone = [...colToField.values()].includes('phone')
-  if (!hasName) throw new Error('Sheet must have a "Họ và tên" or "name" column')
-  if (!hasPhone) throw new Error('Sheet must have a "Tel" or "phone" column')
+  if (!hasName) throw new Error('The file must have a "Họ và tên" or "name" column')
+  if (!hasPhone) throw new Error('The file must have a "Tel" or "phone" column')
 
   const rows: SheetRow[] = []
   const errors: string[] = []
 
-  for (let i = 0; i < parsed.data.length; i++) {
-    const raw = parsed.data[i]
+  for (let i = 0; i < data.length; i++) {
+    const raw = data[i]
     const row: Partial<SheetRow> = {}
 
     for (const [col, field] of colToField) {
-      const val = raw[col]?.trim() ?? ''
+      const val = (raw[col] ?? '').toString().trim()
       if (val) row[field] = val
     }
 

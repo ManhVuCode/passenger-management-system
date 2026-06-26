@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { useTranslation } from 'react-i18next'
@@ -10,7 +10,7 @@ import {
   useBulkCreatePassengersMutation,
 } from './passengerApi'
 import { useGetAllRoundAllocationsQuery } from '../allocation/allocationApi'
-import { importFromSheetUrl, type SheetRow } from './sheetImporter'
+import { importFromSheetUrl, importFromXlsxFile, type ImportResult } from './sheetImporter'
 import { Button } from '../../components/ui/button'
 import { Badge, type BadgeVariant } from '../../components/ui/badge'
 import { ConfirmDialog } from '../../components/ui/confirm-dialog'
@@ -40,6 +40,7 @@ import {
   Bell,
   BellOff,
   FileSpreadsheet,
+  FileUp,
   UserPlus,
   Link2,
   Loader2,
@@ -89,12 +90,8 @@ export default function PassengerListPage() {
   const [editEmail, setEditEmail] = useState('')
   const [sheetUrl, setSheetUrl] = useState('')
   const [importing, setImporting] = useState(false)
-  const [importPreview, setImportPreview] = useState<{
-    rows: SheetRow[]
-    skippedColumns: string[]
-    errors: string[]
-    detectedMapping: Record<string, string>
-  } | null>(null)
+  const [importPreview, setImportPreview] = useState<ImportResult | null>(null)
+  const xlsxInputRef = useRef<HTMLInputElement>(null)
   const [importError, setImportError] = useState('')
   const [bulkText, setBulkText] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -145,6 +142,25 @@ export default function PassengerListPage() {
     setImporting(true)
     try {
       const result = await importFromSheetUrl(sheetUrl)
+      setImportPreview(result)
+    } catch (err: unknown) {
+      setImportError(err instanceof Error ? err.message : 'Import failed')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  // Nhập hành khách từ tệp Excel tải lên — parse tại trình duyệt rồi hiện preview như đồng bộ sheet.
+  async function handleXlsxFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // cho phép chọn lại cùng một tệp
+    if (!file) return
+    setImportError('')
+    setImportPreview(null)
+    setTab('sheet')
+    setImporting(true)
+    try {
+      const result = await importFromXlsxFile(file)
       setImportPreview(result)
     } catch (err: unknown) {
       setImportError(err instanceof Error ? err.message : 'Import failed')
@@ -272,6 +288,21 @@ export default function PassengerListPage() {
             <Button variant="outline" className="gap-2" onClick={() => setTab('sheet')}>
               <RefreshCcw size={16} />
               {t('passengers.sheetSync')}
+            </Button>
+            <input
+              ref={xlsxInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleXlsxFile}
+            />
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => xlsxInputRef.current?.click()}
+            >
+              <FileUp size={16} />
+              {t('passengers.importXlsx')}
             </Button>
             <Button variant="outline" className="gap-2" onClick={handleXlsxExport}>
               <Download size={16} />

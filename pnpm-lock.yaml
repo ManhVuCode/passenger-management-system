@@ -343,6 +343,9 @@ importers:
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
+      xlsx:
+        specifier: 0.18.5
+        version: 0.18.5
     devDependencies:
       '@types/papaparse':
         specifier: ^5.5.2

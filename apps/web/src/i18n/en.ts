@@ -10,6 +10,9 @@ export const en = {
     operationAdmin: 'Operation Admin',
     platformAdmin: 'Platform Admin',
     tenants: 'Tenants',
+    collapseSidebar: 'Collapse sidebar',
+    expandSidebar: 'Expand sidebar',
+    openMenu: 'Open menu',
   },
 
   common: {
@@ -296,6 +299,7 @@ export const en = {
     sheetSync: 'Sheet Sync',
     sheetSyncTitle: 'Import from Google Sheets',
     exportXlsx: 'Export xlsx',
+    importXlsx: 'Import xlsx',
     noPassengers: 'No passengers yet. Add one above.',
     noPassengersFiltered: 'No passengers match your search.',
     optional: 'Optional',

@@ -12,6 +12,9 @@ export const vi: TranslationKeys = {
     operationAdmin: 'Quản trị vận hành',
     platformAdmin: 'Quản trị nền tảng',
     tenants: 'Đơn vị vận hành',
+    collapseSidebar: 'Thu gọn thanh bên',
+    expandSidebar: 'Mở rộng thanh bên',
+    openMenu: 'Mở menu',
   },
 
   common: {
@@ -298,6 +301,7 @@ export const vi: TranslationKeys = {
     sheetSync: 'Đồng bộ Sheet',
     sheetSyncTitle: 'Nhập từ Google Sheets',
     exportXlsx: 'Xuất xlsx',
+    importXlsx: 'Nhập xlsx',
     noPassengers: 'Chưa có hành khách. Thêm ở trên.',
     noPassengersFiltered: 'Không có hành khách phù hợp.',
     optional: 'Không bắt buộc',

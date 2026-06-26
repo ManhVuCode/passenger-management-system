@@ -25,3 +25,4 @@ docs/ui-redesign-notes.*
 
 # Demo seed — chỉ chạy local, TUYỆT ĐỐI không commit (dữ liệu demo, không thuộc repo)
 apps/api/prisma/demo-seed.ts
+apps/api/prisma/demo-seed-hust.ts

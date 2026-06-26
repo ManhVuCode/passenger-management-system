@@ -6,6 +6,7 @@ import { useAppDispatch } from '../../store/hooks'
 import { setCredentials } from './authSlice'
 import { buildSsoHash, consumeSsoHash } from './sso'
 import { Button } from '../../components/ui/button'
+import { LanguageToggle } from '../../components/LanguageToggle'
 import {
   Bus,
   ArrowRight,
@@ -168,6 +169,11 @@ export default function LoginPage() {
       <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-gray-50 bg-aurora p-6 lg:p-12">
         {/* Vầng sáng nhoè góc trên — hơi thở cho nền trắng */}
         <div className="pointer-events-none absolute -top-28 -right-28 h-80 w-80 rounded-full bg-primary-200/40 blur-3xl animate-aurora" />
+
+        {/* Chuyển ngôn ngữ EN–VI ngay trên trang đăng nhập */}
+        <div className="absolute right-5 top-5 z-20">
+          <LanguageToggle variant="light" />
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}

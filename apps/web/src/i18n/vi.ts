@@ -15,6 +15,12 @@ export const vi: TranslationKeys = {
     collapseSidebar: 'Thu gọn thanh bên',
     expandSidebar: 'Mở rộng thanh bên',
     openMenu: 'Mở menu',
+    settings: 'Cài đặt',
+  },
+
+  settings: {
+    title: 'Cài đặt',
+    subtitle: 'Cấu hình thông báo cấp đơn vị',
   },
 
   common: {

@@ -15,6 +15,7 @@ import {
   PanelLeftOpen,
   Menu,
   X,
+  Settings,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { LanguageToggle } from '../components/LanguageToggle'
@@ -61,6 +62,7 @@ export default function DashboardLayout() {
         { to: '/trips', labelKey: 'nav.trips', icon: MapPin, match: (p) => p.startsWith('/trips') },
         { to: '/buses', labelKey: 'nav.buses', icon: Bus, match: (p) => p.startsWith('/buses') },
         { to: '/users', labelKey: 'nav.users', icon: Users, match: (p) => p.startsWith('/users') },
+        { to: '/settings', labelKey: 'nav.settings', icon: Settings, match: (p) => p.startsWith('/settings') },
       ]
 
   // Lớp ẩn nhãn KHI thụt — chỉ áp dụng từ breakpoint lg trở lên, nên ngăn kéo mobile luôn hiện đủ nhãn.

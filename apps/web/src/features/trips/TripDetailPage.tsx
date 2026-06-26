@@ -42,7 +42,6 @@ import {
   Calendar,
   Activity,
   AlertCircle,
-  Share2,
   X,
   Plus,
   Route,
@@ -244,12 +243,6 @@ export default function TripDetailPage() {
                   />
                 </Button>
               </Link>
-              <Button variant="outline" className="group h-10 w-full justify-start gap-2.5 text-xs">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
-                  <Share2 size={13} />
-                </span>
-                {t('trips.shareLink')}
-              </Button>
             </div>
 
             {/* Tiến độ hành trình — số liệu trình bày suy ra từ trạng thái các round */}

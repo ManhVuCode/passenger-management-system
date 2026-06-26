@@ -13,6 +13,12 @@ export const en = {
     collapseSidebar: 'Collapse sidebar',
     expandSidebar: 'Expand sidebar',
     openMenu: 'Open menu',
+    settings: 'Settings',
+  },
+
+  settings: {
+    title: 'Settings',
+    subtitle: 'Tenant-level notification configuration',
   },
 
   common: {

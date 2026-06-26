@@ -462,7 +462,7 @@ function PassengerRow({ name, status }: { name: string; status?: string }) {
 
 function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }) {
   const { t } = useTranslation()
-  const { data: allocations = [] } = useGetAllocationsByRoundQuery({ tripId, roundId })
+  const { data: allocations = [], isLoading } = useGetAllocationsByRoundQuery({ tripId, roundId })
 
   const byBus = allocations.reduce<Record<string, typeof allocations>>((acc, a) => {
     const bid = a.roundBusAssignment?.busId ?? a.busId
@@ -470,6 +470,16 @@ function RoundBreakdown({ tripId, roundId }: { tripId: string; roundId: string }
     acc[bid].push(a)
     return acc
   }, {})
+
+  // Khi đang tải lần đầu (chưa có dữ liệu) thì hiện trạng thái tải, KHÔNG hiện nhầm
+  // "chưa phân bổ hành khách". isLoading chỉ đúng ở lần tải đầu nên không bị kẹt khi refetch.
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl bg-white shadow-card ring-1 ring-gray-100">
+        <EmptyState icon={Clock} title={t('common.loading')} />
+      </div>
+    )
+  }
 
   if (Object.keys(byBus).length === 0) {
     return (

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common'
 import * as XLSX from 'xlsx'
 import { PrismaService } from '../../prisma/prisma.service'
 import { CreatePassengerDto } from './dto/create-passenger.dto'
@@ -58,26 +58,56 @@ export class PassengerService {
   }
 
   async create(tripId: string, tenantId: string, dto: CreatePassengerDto) {
-    await this.verifyTrip(tripId, tenantId)
+    const trip = await this.verifyTrip(tripId, tenantId)
+    const conflicts = await this.findPhoneConflicts(tripId, tenantId, trip, [dto.phone])
+    const conflict = conflicts.get(dto.phone)
+    if (conflict) throw new ConflictException(overlapMessage(dto.phone, conflict))
     return this.prisma.tripPassengerAssignment.create({
       data: { tripId, tenantId, ...dto },
     })
   }
 
   async bulkCreate(tripId: string, tenantId: string, dto: BulkCreatePassengerDto) {
-    await this.verifyTrip(tripId, tenantId)
-    const created = await this.prisma.$transaction(
-      dto.passengers.map((p) =>
-        this.prisma.tripPassengerAssignment.create({
-          data: { tripId, tenantId, ...p },
-        }),
-      ),
+    const trip = await this.verifyTrip(tripId, tenantId)
+    // Bỏ qua (không reject cả mẻ) các dòng có SĐT trùng chuyến giao thời gian — vẫn nhập
+    // phần còn lại, rồi báo cáo danh sách bị bỏ qua để admin xử lý.
+    const conflicts = await this.findPhoneConflicts(
+      tripId,
+      tenantId,
+      trip,
+      dto.passengers.map((p) => p.phone),
     )
-    return { created: created.length, passengers: created }
+    const clean: typeof dto.passengers = []
+    const skipped: SkippedPassenger[] = []
+    for (const p of dto.passengers) {
+      const conflict = conflicts.get(p.phone)
+      if (conflict) {
+        skipped.push({ name: p.name, phone: p.phone, ...conflict })
+      } else {
+        clean.push(p)
+      }
+    }
+    const created = clean.length
+      ? await this.prisma.$transaction(
+          clean.map((p) =>
+            this.prisma.tripPassengerAssignment.create({
+              data: { tripId, tenantId, ...p },
+            }),
+          ),
+        )
+      : []
+    return { created: created.length, passengers: created, skipped }
   }
 
   async update(id: string, tenantId: string, dto: UpdatePassengerDto) {
-    await this.findOne(id, tenantId)
+    const existing = await this.findOne(id, tenantId)
+    // Chỉ kiểm tra khi SĐT thực sự đổi — tránh tự chặn chính bản ghi đang sửa.
+    if (dto.phone && dto.phone !== existing.phone) {
+      const trip = await this.verifyTrip(existing.tripId, tenantId)
+      const conflicts = await this.findPhoneConflicts(existing.tripId, tenantId, trip, [dto.phone])
+      const conflict = conflicts.get(dto.phone)
+      if (conflict) throw new ConflictException(overlapMessage(dto.phone, conflict))
+    }
     return this.prisma.tripPassengerAssignment.update({
       where: { id },
       data: dto,
@@ -158,9 +188,82 @@ export class PassengerService {
     return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }))
   }
 
+  /**
+   * Một người không thể có mặt ở hai chuyến diễn ra cùng lúc, nên cùng một SĐT KHÔNG
+   * được nằm ở hai chuyến có khoảng thời gian giao nhau (trong cùng nhà xe). Trả về map
+   * phone → chuyến đang xung đột (chỉ giữ chuyến xung đột đầu tiên cho mỗi số).
+   *
+   * Giao thời gian khi: start(chuyến khác) ≤ end(chuyến đích) VÀ end(chuyến khác) ≥ start(chuyến đích).
+   * Lưu ý: Trip.status được SUY RA lúc đọc (không lưu trong DB), nên ở đây lọc theo khoảng
+   * ngày — không lọc theo status; chuyến đã hủy vẫn tính là xung đột (chấp nhận được, thiên
+   * về phía an toàn theo yêu cầu "đảm bảo không trùng").
+   */
+  private async findPhoneConflicts(
+    tripId: string,
+    tenantId: string,
+    trip: { startDate: Date; endDate: Date },
+    phones: string[],
+  ): Promise<Map<string, PhoneConflict>> {
+    const unique = [...new Set(phones.filter(Boolean))]
+    const map = new Map<string, PhoneConflict>()
+    if (unique.length === 0) return map
+
+    const rows = await this.prisma.tripPassengerAssignment.findMany({
+      where: {
+        tenantId,
+        tripId: { not: tripId },
+        phone: { in: unique },
+        trip: {
+          startDate: { lte: trip.endDate },
+          endDate: { gte: trip.startDate },
+        },
+      },
+      select: {
+        phone: true,
+        trip: { select: { name: true, startDate: true, endDate: true } },
+      },
+    })
+
+    for (const r of rows) {
+      if (!map.has(r.phone)) {
+        map.set(r.phone, {
+          tripName: r.trip.name,
+          dateRange: fmtRange(r.trip.startDate, r.trip.endDate),
+        })
+      }
+    }
+    return map
+  }
+
   private async verifyTrip(tripId: string, tenantId: string) {
     const trip = await this.prisma.trip.findFirst({ where: { id: tripId, tenantId } })
     if (!trip) throw new NotFoundException('Trip not found')
     return trip
   }
+}
+
+/** Một chuyến đang giữ SĐT trùng, dùng để dựng thông báo xung đột. */
+export interface PhoneConflict {
+  tripName: string
+  dateRange: string
+}
+
+/** Dòng bị bỏ qua khi import hàng loạt do trùng SĐT với chuyến giao thời gian. */
+export interface SkippedPassenger extends PhoneConflict {
+  name: string
+  phone: string
+}
+
+function fmtDate(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`
+}
+
+function fmtRange(start: Date, end: Date): string {
+  return `${fmtDate(start)} – ${fmtDate(end)}`
+}
+
+/** Thông báo 409 cho thao tác thêm/sửa 1 hành khách (hiển thị trực tiếp cho admin). */
+function overlapMessage(phone: string, c: PhoneConflict): string {
+  return `SĐT ${phone} đã thuộc chuyến "${c.tripName}" (${c.dateRange}) đang giao thời gian với chuyến này. Hãy đổi SĐT hoặc gỡ khỏi chuyến kia trước khi thêm.`
 }

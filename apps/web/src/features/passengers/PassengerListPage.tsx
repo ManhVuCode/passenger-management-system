@@ -8,6 +8,7 @@ import {
   useUpdatePassengerMutation,
   useDeletePassengerMutation,
   useBulkCreatePassengersMutation,
+  type BulkSkip,
 } from './passengerApi'
 import { useGetAllRoundAllocationsQuery } from '../allocation/allocationApi'
 import { importFromSheetUrl, importFromXlsxFile, type ImportResult } from './sheetImporter'
@@ -97,6 +98,10 @@ export default function PassengerListPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState<string | null>(null)
+  // Lỗi 409 khi thêm 1 hành khách có SĐT trùng chuyến giao thời gian (chặn cứng).
+  const [addError, setAddError] = useState('')
+  // Các dòng import bị bỏ qua vì trùng SĐT — báo cáo để admin xử lý.
+  const [importSkipped, setImportSkipped] = useState<BulkSkip[]>([])
 
   const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
   const token = localStorage.getItem('accessToken') ?? ''
@@ -109,10 +114,15 @@ export default function PassengerListPage() {
       setErrors({ name: nameErr, phone: phoneErr })
       return
     }
-    await createPassenger({
-      tripId: tripId!,
-      body: form,
-    })
+    setAddError('')
+    try {
+      await createPassenger({ tripId: tripId!, body: form }).unwrap()
+    } catch (err: unknown) {
+      // Chặn cứng: SĐT trùng chuyến giao thời gian → server trả 409 kèm thông báo rõ.
+      const msg = (err as { data?: { message?: string } })?.data?.message
+      setAddError(typeof msg === 'string' ? msg : t('passengers.addFailed'))
+      return
+    }
     setForm({ name: '', phone: '', email: '', idCard: '', type: '', note: '', hotelRoom: '' })
     setErrors({ name: '', phone: '' })
     setTab('list')
@@ -172,6 +182,7 @@ export default function PassengerListPage() {
   async function handleSheetImport() {
     if (!importPreview) return
     setImporting(true)
+    setImportSkipped([])
     try {
       const result = await bulkCreate({
         tripId: tripId!,
@@ -180,14 +191,24 @@ export default function PassengerListPage() {
       setImportPreview(null)
       setSheetUrl('')
       setTab('list')
-      setImportSuccess(t('passengers.importedCount', { count: result.created }))
-      setTimeout(() => setImportSuccess(null), 4000)
+      reportImport(result.created, result.skipped)
     } catch (err: unknown) {
       const msg = (err as { data?: { message?: string } })?.data?.message
       setImportError(typeof msg === 'string' ? msg : 'Bulk import failed')
     } finally {
       setImporting(false)
     }
+  }
+
+  /** Báo kết quả import: toast số đã nhập, và giữ lại danh sách bị bỏ qua (nếu có). */
+  function reportImport(created: number, skipped: BulkSkip[]) {
+    setImportSkipped(skipped)
+    setImportSuccess(
+      skipped.length
+        ? t('passengers.importedWithSkipped', { count: created, skipped: skipped.length })
+        : t('passengers.importedCount', { count: created }),
+    )
+    setTimeout(() => setImportSuccess(null), 4000)
   }
 
   async function handleBulkPaste(e: React.FormEvent) {
@@ -207,9 +228,11 @@ export default function PassengerListPage() {
       .filter((p) => p.name && p.phone)
 
     if (parsed.length === 0) return
-    await bulkCreate({ tripId: tripId!, passengers: parsed }).unwrap()
+    setImportSkipped([])
+    const result = await bulkCreate({ tripId: tripId!, passengers: parsed }).unwrap()
     setBulkText('')
     setTab('list')
+    reportImport(result.created, result.skipped)
   }
 
   async function handleXlsxExport() {
@@ -560,6 +583,21 @@ export default function PassengerListPage() {
                   onSubmit={handleAddPassenger}
                   className="mb-6 grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2"
                 >
+                  <AnimatePresence>
+                    {addError && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
+                        role="alert"
+                        className="flex items-start gap-2.5 rounded-xl border border-danger-100 bg-danger-50 p-3 text-sm text-danger-600 sm:col-span-2"
+                      >
+                        <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+                        {addError}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <FormField label={`${t('passengers.fullName')} *`}>
                     <FormInput
                       icon={User}
@@ -597,6 +635,7 @@ export default function PassengerListPage() {
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^\d]/g, '')
                         setForm({ ...form, phone: val })
+                        setAddError('')
                         setErrors((prev) => ({
                           ...prev,
                           phone:
@@ -744,6 +783,44 @@ export default function PassengerListPage() {
               <CheckCircle2 size={15} />
             </span>
             <p className="text-sm font-medium text-success-700">{importSuccess}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {importSkipped.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            role="alert"
+            className="mb-4 rounded-xl border border-warning-200 bg-warning-50 p-3.5"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-warning-700">
+                <AlertTriangle size={13} className="shrink-0" />
+                {t('passengers.skippedOverlapTitle', { count: importSkipped.length })}
+              </p>
+              <button
+                onClick={() => setImportSkipped([])}
+                aria-label={t('common.close')}
+                className="cursor-pointer rounded-lg p-1 text-warning-600 transition-colors duration-150 hover:bg-warning-100"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <ul className="mt-1.5 space-y-0.5 text-xs text-[#92400e]">
+              {importSkipped.slice(0, 8).map((s, i) => (
+                <li key={i}>
+                  • <span className="font-medium">{s.name}</span> ({s.phone}) — {s.tripName} (
+                  {s.dateRange})
+                </li>
+              ))}
+              {importSkipped.length > 8 && (
+                <li>{t('passengers.andMoreLines', { count: importSkipped.length - 8 })}</li>
+              )}
+            </ul>
           </motion.div>
         )}
       </AnimatePresence>

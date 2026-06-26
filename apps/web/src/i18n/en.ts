@@ -326,6 +326,12 @@ export const en = {
     searchPlaceholder: 'Search by name, phone or ID…',
     noNotes: 'No notes',
     importedCount: 'Imported {{count}} passengers',
+    importedWithSkipped: 'Imported {{count}} · skipped {{skipped}} (duplicate phone on an overlapping trip)',
+    addFailed: 'Could not add passenger. Please try again.',
+    skippedOverlapTitle_one:
+      '{{count}} passenger skipped — phone already on an overlapping trip:',
+    skippedOverlapTitle_other:
+      '{{count}} passengers skipped — phone already on an overlapping trip:',
     deletePassengerTitle: 'Remove Passenger',
     deletePassengerConfirm: '{{name}} will be removed from this trip.',
     hotelRoom: 'Hotel Room',

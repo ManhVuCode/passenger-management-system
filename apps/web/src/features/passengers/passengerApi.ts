@@ -14,6 +14,14 @@ interface CreatePassengerPayload {
   contactOptOut?: boolean
 }
 
+/** Một dòng bị bỏ qua khi import vì SĐT đã thuộc một chuyến giao thời gian. */
+export interface BulkSkip {
+  name: string
+  phone: string
+  tripName: string
+  dateRange: string
+}
+
 export const passengerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getPassengers: builder.query<Passenger[], string>({
@@ -25,7 +33,7 @@ export const passengerApi = baseApi.injectEndpoints({
       invalidatesTags: (_r, _e, { tripId }) => [{ type: 'Passenger', id: tripId }],
     }),
     bulkCreatePassengers: builder.mutation<
-      { created: number; passengers: Passenger[] },
+      { created: number; passengers: Passenger[]; skipped: BulkSkip[] },
       { tripId: string; passengers: CreatePassengerPayload[] }
     >({
       query: ({ tripId, passengers }) => ({

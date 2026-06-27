@@ -22,8 +22,6 @@ import {
 import { useAppSelector } from '../../store/hooks'
 import NotificationPanel from '../notifications/NotificationPanel'
 import NotificationHistory from '../notifications/NotificationHistory'
-import NotificationRules from '../notifications/NotificationRules'
-import TelegramConfig from '../notifications/TelegramConfig'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
 import { Input } from '../../components/ui/input'
@@ -514,11 +512,6 @@ export default function TripDetailPage() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-
-      <div className="mt-10 grid gap-6 lg:grid-cols-2">
-        <NotificationRules />
-        <TelegramConfig />
       </div>
 
       <div className="mt-10">

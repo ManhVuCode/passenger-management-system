@@ -129,7 +129,7 @@ export const vi: TranslationKeys = {
     detail: 'Chi tiết',
     quickActions: 'Thao tác nhanh',
     managePassengers: 'Quản lý hành khách',
-    liveDashboard: 'Bảng điều khiển trực tiếp',
+    liveDashboard: 'Điểm danh trực tiếp',
     shareLink: 'Chia sẻ liên kết',
     tripNote: 'Ghi chú chuyến đi',
     failedCreate: 'Tạo chuyến đi thất bại',
@@ -400,6 +400,7 @@ export const vi: TranslationKeys = {
     waitingUpdates: 'Chờ cập nhật…',
     totalLabel: 'Tổng',
     markedStatus: 'Đã ghi nhận {{status}}',
+    roundCancelledNotice: 'Chặng này đã hủy — không thể điểm danh.',
   },
 
   notifications: {

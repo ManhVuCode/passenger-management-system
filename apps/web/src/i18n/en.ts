@@ -127,7 +127,7 @@ export const en = {
     detail: 'Detail',
     quickActions: 'Quick Actions',
     managePassengers: 'Manage Passengers',
-    liveDashboard: 'Live Dashboard',
+    liveDashboard: 'Live Attendance',
     shareLink: 'Share Link',
     tripNote: 'Trip Note',
     failedCreate: 'Failed to create trip',
@@ -400,6 +400,7 @@ export const en = {
     waitingUpdates: 'Waiting for updates…',
     totalLabel: 'Total',
     markedStatus: 'Marked {{status}}',
+    roundCancelledNotice: 'This round is cancelled — attendance is locked.',
   },
 
   notifications: {

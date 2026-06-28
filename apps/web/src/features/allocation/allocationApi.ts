@@ -67,6 +67,52 @@ export const allocationApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_r, _e, { roundId }) => [{ type: 'Allocation', id: roundId }],
     }),
+    // Điểm danh trực tiếp từ màn Live Attendance của admin. Dùng chung endpoint với tài
+    // xế (POST .../buses/:busId/attendance) — backend cho ADMIN điểm danh mọi xe và upsert
+    // nên áp được cả hành khách chưa có bản ghi (pending → JOIN/ABSENT) lẫn ghi đè.
+    markAttendance: builder.mutation<
+      { marked: number; status: string },
+      {
+        tripId: string
+        roundId: string
+        busId: string
+        roundPassengerAssignmentIds: string[]
+        status: 'JOIN' | 'ABSENT'
+        note?: string
+      }
+    >({
+      query: ({ tripId, roundId, busId, roundPassengerAssignmentIds, status, note }) => ({
+        url: `/trips/${tripId}/rounds/${roundId}/buses/${busId}/attendance`,
+        method: 'POST',
+        body: { roundPassengerAssignmentIds, status, ...(note && { note }) },
+      }),
+      // Cập nhật lạc quan: lật trạng thái ngay để bấm có phản hồi tức thì như màn tài xế;
+      // hoàn tác nếu server từ chối, rồi invalidate để đồng bộ với sự thật từ server.
+      async onQueryStarted(
+        { tripId, roundId, roundPassengerAssignmentIds, status },
+        { dispatch, queryFulfilled },
+      ) {
+        const patch = dispatch(
+          allocationApi.util.updateQueryData(
+            'getAllocationsByRound',
+            { tripId, roundId },
+            (draft) => {
+              for (const a of draft) {
+                if (!roundPassengerAssignmentIds.includes(a.id)) continue
+                if (a.attendanceRecord) a.attendanceRecord.status = status
+                else a.attendanceRecord = { id: `optimistic-${a.id}`, status }
+              }
+            },
+          ),
+        )
+        try {
+          await queryFulfilled
+        } catch {
+          patch.undo()
+        }
+      },
+      invalidatesTags: (_r, _e, { roundId }) => [{ type: 'Allocation', id: roundId }],
+    }),
     getRoundBuses: builder.query<
       {
         busId: string
@@ -132,6 +178,7 @@ export const {
   useMovePassengerMutation,
   useRemoveAllocationMutation,
   useOverrideAttendanceMutation,
+  useMarkAttendanceMutation,
   useGetRoundBusesQuery,
   useAssignBusToRoundMutation,
   useAssignBusManagerMutation,

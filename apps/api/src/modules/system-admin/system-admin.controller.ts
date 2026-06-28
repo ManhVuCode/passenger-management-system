@@ -18,6 +18,7 @@ import { CreateTenantDto } from './dto/create-tenant.dto'
 import { UpdateTenantDto } from './dto/update-tenant.dto'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
+import { ResetPasswordDto } from './dto/reset-password.dto'
 
 @Controller('system/tenants')
 @Roles(Role.SYSTEM_ADMIN)
@@ -50,7 +51,7 @@ export class SystemAdminController {
 
   @Get(':id/users')
   listUsers(@Param('id') id: string) {
-    return this.systemAdminService.listUsers(id)
+    return this.systemAdminService.listUsers(id, undefined, true)
   }
 
   @Post(':id/users')
@@ -65,6 +66,15 @@ export class SystemAdminController {
     @Body() dto: UpdateUserDto,
   ) {
     return this.systemAdminService.updateUser(tenantId, userId, dto)
+  }
+
+  @Patch(':id/users/:userId/reset-password')
+  resetUserPassword(
+    @Param('id') tenantId: string,
+    @Param('userId') userId: string,
+    @Body() dto: ResetPasswordDto,
+  ) {
+    return this.systemAdminService.resetUserPassword(tenantId, userId, dto.password)
   }
 
   @Delete(':id/users/:userId')

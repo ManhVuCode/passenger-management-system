@@ -1,7 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import * as bcrypt from 'bcrypt'
 import { Role } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
+import { encryptPassword, decryptPassword } from '../../common/crypto/password-crypto'
 
 @Injectable()
 export class SystemAdminService {
@@ -38,17 +39,29 @@ export class SystemAdminService {
     return this.prisma.tenant.update({ where: { id }, data })
   }
 
-  async listUsers(tenantId: string, roleFilter?: string) {
+  async listUsers(tenantId: string, roleFilter?: string, includePassword = false) {
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } })
     if (!tenant) throw new NotFoundException('Tenant not found')
-    return this.prisma.user.findMany({
+    const users = await this.prisma.user.findMany({
       where: {
         tenantId,
         ...(roleFilter && { role: roleFilter as Role }),
       },
-      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        role: true,
+        createdAt: true,
+        passwordEnc: true,
+      },
       orderBy: { name: 'asc' },
     })
+    // Chỉ SystemAdmin được xem mật khẩu (giải mã 2 chiều); đường khác bỏ cột này.
+    return users.map(({ passwordEnc, ...rest }) =>
+      includePassword ? { ...rest, password: decryptPassword(passwordEnc) } : rest,
+    )
   }
 
   async createUser(
@@ -73,6 +86,7 @@ export class SystemAdminService {
         name: data.name,
         role: data.role,
         passwordHash,
+        passwordEnc: encryptPassword(data.password),
         ...(data.phone && { phone: data.phone }),
       },
       select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
@@ -102,6 +116,20 @@ export class SystemAdminService {
       },
       select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
     })
+  }
+
+  async resetUserPassword(tenantId: string, userId: string, newPassword: string) {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, tenantId } })
+    if (!user) throw new NotFoundException('User not found')
+    if (newPassword.length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters')
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 10)
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash, passwordEnc: encryptPassword(newPassword) },
+    })
+    return { success: true }
   }
 
   async removeUser(userId: string) {

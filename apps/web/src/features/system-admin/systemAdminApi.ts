@@ -18,6 +18,8 @@ export interface UserRow {
   phone?: string | null
   role: 'ADMIN' | 'BUS_MANAGER' | 'SYSTEM_ADMIN'
   createdAt: string
+  // SystemAdmin xem được (giải mã 2 chiều); null nếu chưa từng đặt qua hệ thống.
+  password?: string | null
 }
 
 export interface CreateTenantPayload {
@@ -82,6 +84,17 @@ export const systemAdminApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_r, _e, { tenantId }) => [{ type: 'TenantUser', id: tenantId }, 'Tenant'],
     }),
+    resetTenantUserPassword: builder.mutation<
+      { success: boolean },
+      { tenantId: string; userId: string; password: string }
+    >({
+      query: ({ tenantId, userId, password }) => ({
+        url: `/system/tenants/${tenantId}/users/${userId}/reset-password`,
+        method: 'PATCH',
+        body: { password },
+      }),
+      invalidatesTags: (_r, _e, { tenantId }) => [{ type: 'TenantUser', id: tenantId }],
+    }),
     removeTenantUser: builder.mutation<void, { tenantId: string; userId: string }>({
       query: ({ tenantId, userId }) => ({
         url: `/system/tenants/${tenantId}/users/${userId}`,
@@ -99,5 +112,6 @@ export const {
   useGetTenantUsersQuery,
   useCreateTenantUserMutation,
   useUpdateTenantUserMutation,
+  useResetTenantUserPasswordMutation,
   useRemoveTenantUserMutation,
 } = systemAdminApi

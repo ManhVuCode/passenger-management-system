@@ -58,7 +58,10 @@ export default function DashboardLayout() {
   const isDriver = role === 'BUS_MANAGER'
 
   const navItems: NavItem[] = isSystemAdmin
-    ? [{ to: '/system', labelKey: 'nav.tenants', icon: Shield, match: (p) => p === '/' || p.startsWith('/system') }]
+    ? [
+        { to: '/system', labelKey: 'nav.tenants', icon: Shield, match: (p) => p === '/' || p.startsWith('/system') },
+        { to: '/settings', labelKey: 'nav.settings', icon: Settings, match: (p) => p.startsWith('/settings') },
+      ]
     : isDriver
       ? [
           { to: '/me', labelKey: 'nav.myRounds', icon: RouteIcon, match: (p) => p === '/' || p.startsWith('/me') },

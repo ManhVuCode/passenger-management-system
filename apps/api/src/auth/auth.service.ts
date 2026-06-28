@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service'
 import * as bcrypt from 'bcrypt'
 import { LoginDto } from './dto/login.dto'
 import { LoginResponseDto, JwtPayload } from '@pms/shared'
+import { encryptPassword } from '../common/crypto/password-crypto'
 
 @Injectable()
 export class AuthService {
@@ -54,7 +55,10 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException('Current password is incorrect')
     if (newPassword.length < 6) throw new BadRequestException('Password must be at least 6 characters')
     const passwordHash = await bcrypt.hash(newPassword, 10)
-    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } })
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash, passwordEnc: encryptPassword(newPassword) },
+    })
     return { message: 'Password changed successfully' }
   }
 }

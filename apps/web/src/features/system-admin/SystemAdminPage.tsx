@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   Edit2,
+  KeyRound,
   Loader2,
   PauseCircle,
   PlayCircle,
@@ -35,6 +36,7 @@ import {
   useGetTenantUsersQuery,
   useCreateTenantUserMutation,
   useUpdateTenantUserMutation,
+  useResetTenantUserPasswordMutation,
   useRemoveTenantUserMutation,
   type TenantRow,
   type UserRow,
@@ -565,6 +567,9 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
   const [editUser, setEditUser] = useState<UserRow | null>(null)
   const [removeUser] = useRemoveTenantUserMutation()
   const [updateUser, { isLoading: updating }] = useUpdateTenantUserMutation()
+  const [resetPassword, { isLoading: resetting }] = useResetTenantUserPasswordMutation()
+  const [resetUser, setResetUser] = useState<UserRow | null>(null)
+  const [newPass, setNewPass] = useState('')
 
   async function handleRemove(u: UserRow) {
     if (!confirm(t('systemAdmin.confirmRemoveUser', { name: u.name, email: u.email }))) return
@@ -613,6 +618,11 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
       render: (u) => <RoleBadge role={u.role} />,
     },
     {
+      key: 'password',
+      header: t('systemAdmin.passwordColumn'),
+      render: (u) => <span className="font-mono text-xs text-gray-700">{u.password || '—'}</span>,
+    },
+    {
       key: 'joined',
       header: t('systemAdmin.joinedColumn'),
       sortValue: (u) => u.createdAt,
@@ -634,6 +644,16 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
             aria-label={t('common.edit')}
           >
             <Edit2 size={15} />
+          </button>
+          <button
+            onClick={() => {
+              setResetUser(u)
+              setNewPass('')
+            }}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition-colors duration-150 hover:bg-warning-50 hover:text-warning-600"
+            aria-label={t('systemAdmin.resetPassword')}
+          >
+            <KeyRound size={15} />
           </button>
           <button
             onClick={() => handleRemove(u)}
@@ -786,6 +806,69 @@ function TenantUsersView({ tenant, onBack }: { tenant: TenantRow; onBack: () => 
                 onCancel={() => setEditUser(null)}
                 isLoading={updating}
               />
+            </motion.div>
+          </>
+        )}
+        {resetUser && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setResetUser(null)}
+              className="fixed inset-0 z-[60] bg-navy-950/45 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              role="dialog"
+              aria-modal="true"
+              className="fixed left-1/2 top-1/2 z-[70] w-[400px] max-w-[calc(100vw-24px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-float"
+            >
+              <h2 className="mb-1 font-display text-lg font-bold text-navy-900">
+                {t('systemAdmin.resetPassword')}
+              </h2>
+              <p className="mb-4 text-sm text-gray-500">
+                {t('systemAdmin.resetPasswordFor', { name: resetUser.name })}
+              </p>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  if (newPass.length < 6) return
+                  await resetPassword({
+                    tenantId: tenant.id,
+                    userId: resetUser.id,
+                    password: newPass,
+                  }).unwrap()
+                  setResetUser(null)
+                  setNewPass('')
+                }}
+                className="space-y-3"
+              >
+                <input
+                  type="text"
+                  value={newPass}
+                  onChange={(e) => setNewPass(e.target.value)}
+                  placeholder={t('systemAdmin.newPasswordPlaceholder')}
+                  autoFocus
+                  className="h-11 w-full rounded-xl border border-gray-200 px-4 font-medium text-navy-900 focus:border-primary-400 focus:outline-none focus:ring-4 focus:ring-primary-500/10"
+                />
+                <div className="flex gap-3 pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setResetUser(null)}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                  <Button type="submit" disabled={resetting || newPass.length < 6} className="flex-1">
+                    {resetting ? '…' : t('systemAdmin.resetPassword')}
+                  </Button>
+                </div>
+              </form>
             </motion.div>
           </>
         )}

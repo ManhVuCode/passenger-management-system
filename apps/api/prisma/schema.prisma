@@ -61,6 +61,9 @@ model User {
   tenantId     String
   email        String   @unique
   passwordHash String
+  // Bản mã hoá 2 chiều của mật khẩu (AES-256-GCM) để SystemAdmin xem lại được — yêu cầu
+  // nghiệp vụ. Chỉ set khi tạo/đổi/reset qua hệ thống; tài khoản cũ để trống tới khi reset.
+  passwordEnc  String?
   name         String
   phone        String?
   role         Role

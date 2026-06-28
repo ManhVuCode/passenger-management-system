@@ -441,7 +441,7 @@ export const en = {
     emailNone: 'No passenger in this round has an email.',
     broadcastDefault: 'Please board the bus. Departure in 5 minutes.',
     broadcasting: 'Sending…',
-    broadcastSent: 'Alert sent to {{count}} passenger(s)',
+    broadcastSent: 'Driver alert sent',
     broadcastFailed: 'Could not send the alert',
     historyTitle: 'Notification History',
     historyEmpty: 'No notifications have been sent yet',

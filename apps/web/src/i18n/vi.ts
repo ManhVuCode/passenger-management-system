@@ -441,7 +441,7 @@ export const vi: TranslationKeys = {
     emailNone: 'Không hành khách nào trong chặng có email.',
     broadcastDefault: 'Mời quý khách lên xe. Xe khởi hành sau 5 phút.',
     broadcasting: 'Đang gửi…',
-    broadcastSent: 'Đã gửi cảnh báo đến {{count}} hành khách',
+    broadcastSent: 'Đã gửi cảnh báo tới tài xế',
     broadcastFailed: 'Không gửi được cảnh báo',
     historyTitle: 'Lịch sử thông báo',
     historyEmpty: 'Chưa có thông báo nào được gửi',

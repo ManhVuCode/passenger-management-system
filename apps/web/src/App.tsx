@@ -11,6 +11,8 @@ import DashboardPage from './features/dashboard/DashboardPage'
 import SystemAdminPage from './features/system-admin/SystemAdminPage'
 import UserManagementPage from './features/users/UserManagementPage'
 import SettingsPage from './features/settings/SettingsPage'
+import MyRoundsPage from './features/me/MyRoundsPage'
+import DriverAttendancePage from './features/me/DriverAttendancePage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useAppSelector((s) => s.auth.accessToken)
@@ -21,6 +23,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function IndexRoute() {
   const role = useAppSelector((s) => s.auth.role)
   if (role === 'SYSTEM_ADMIN') return <Navigate to="/system" replace />
+  if (role === 'BUS_MANAGER') return <Navigate to="/me" replace />
   return <DashboardPage />
 }
 
@@ -37,6 +40,8 @@ export default function App() {
         }
       >
         <Route index element={<IndexRoute />} />
+        <Route path="me" element={<MyRoundsPage />} />
+        <Route path="me/:tripId/:roundId/:busId" element={<DriverAttendancePage />} />
         <Route path="trips" element={<TripListPage />} />
         <Route path="trips/:tripId" element={<TripDetailPage />} />
         <Route path="trips/:tripId/dashboard" element={<LiveDashboardPage />} />

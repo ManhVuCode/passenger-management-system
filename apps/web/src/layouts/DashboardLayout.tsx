@@ -11,6 +11,7 @@ import {
   Users,
   Shield,
   LayoutDashboard,
+  Route as RouteIcon,
   PanelLeftClose,
   PanelLeftOpen,
   Menu,
@@ -54,16 +55,24 @@ export default function DashboardLayout() {
   }
 
   const isSystemAdmin = role === 'SYSTEM_ADMIN'
+  const isDriver = role === 'BUS_MANAGER'
 
   const navItems: NavItem[] = isSystemAdmin
     ? [{ to: '/system', labelKey: 'nav.tenants', icon: Shield, match: (p) => p === '/' || p.startsWith('/system') }]
-    : [
-        { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, match: (p) => p === '/' },
-        { to: '/trips', labelKey: 'nav.trips', icon: MapPin, match: (p) => p.startsWith('/trips') },
-        { to: '/buses', labelKey: 'nav.buses', icon: Bus, match: (p) => p.startsWith('/buses') },
-        { to: '/users', labelKey: 'nav.users', icon: Users, match: (p) => p.startsWith('/users') },
-        { to: '/settings', labelKey: 'nav.settings', icon: Settings, match: (p) => p.startsWith('/settings') },
-      ]
+    : isDriver
+      ? [
+          { to: '/me', labelKey: 'nav.myRounds', icon: RouteIcon, match: (p) => p === '/' || p.startsWith('/me') },
+          { to: '/trips', labelKey: 'nav.trips', icon: MapPin, match: (p) => p.startsWith('/trips') },
+          { to: '/buses', labelKey: 'nav.buses', icon: Bus, match: (p) => p.startsWith('/buses') },
+          { to: '/settings', labelKey: 'nav.settings', icon: Settings, match: (p) => p.startsWith('/settings') },
+        ]
+      : [
+          { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, match: (p) => p === '/' },
+          { to: '/trips', labelKey: 'nav.trips', icon: MapPin, match: (p) => p.startsWith('/trips') },
+          { to: '/buses', labelKey: 'nav.buses', icon: Bus, match: (p) => p.startsWith('/buses') },
+          { to: '/users', labelKey: 'nav.users', icon: Users, match: (p) => p.startsWith('/users') },
+          { to: '/settings', labelKey: 'nav.settings', icon: Settings, match: (p) => p.startsWith('/settings') },
+        ]
 
   // Lớp ẩn nhãn KHI thụt — chỉ áp dụng từ breakpoint lg trở lên, nên ngăn kéo mobile luôn hiện đủ nhãn.
   const hideOnCollapse = collapsed ? 'lg:hidden' : ''

@@ -115,6 +115,8 @@ export default function TripDetailPage() {
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null)
   const [showAddRound, setShowAddRound] = useState(false)
   const [editingRound, setEditingRound] = useState<Round | null>(null)
+  // Tài xế xem được trang nhưng không có các thao tác tạo/sửa chặng (quản lý ở "Chuyến của tôi").
+  const isDriver = useAppSelector((s) => s.auth.role) === 'BUS_MANAGER'
   const [createRound] = useCreateRoundMutation()
   const [updateRoundStatus] = useUpdateRoundStatusMutation()
   const [updateRound] = useUpdateRoundMutation()
@@ -291,9 +293,11 @@ export default function TripDetailPage() {
                 {t('rounds.title')}
               </h2>
             </div>
-            <Button size="sm" className="gap-2" onClick={() => setShowAddRound(true)}>
-              <Plus size={14} /> {t('rounds.addRound')}
-            </Button>
+            {!isDriver && (
+              <Button size="sm" className="gap-2" onClick={() => setShowAddRound(true)}>
+                <Plus size={14} /> {t('rounds.addRound')}
+              </Button>
+            )}
           </div>
 
           {rounds.length === 0 ? (
@@ -302,9 +306,11 @@ export default function TripDetailPage() {
                 icon={MapPin}
                 title={t('rounds.noRounds')}
                 action={
-                  <Button size="sm" className="gap-2" onClick={() => setShowAddRound(true)}>
-                    <Plus size={14} /> {t('rounds.addRound')}
-                  </Button>
+                  isDriver ? undefined : (
+                    <Button size="sm" className="gap-2" onClick={() => setShowAddRound(true)}>
+                      <Plus size={14} /> {t('rounds.addRound')}
+                    </Button>
+                  )
                 }
               />
             </div>
@@ -416,7 +422,7 @@ export default function TripDetailPage() {
 
                       {/* Hàng hành động trạng thái — mở/đóng mượt theo lựa chọn */}
                       <AnimatePresence initial={false}>
-                        {selectedRoundId === round.id && (
+                        {selectedRoundId === round.id && !isDriver && (
                           <motion.div
                             key="round-actions"
                             initial={{ height: 0, opacity: 0 }}

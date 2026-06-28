@@ -3,6 +3,7 @@ import type { TranslationKeys } from './en'
 export const vi: TranslationKeys = {
   nav: {
     dashboard: 'Tổng quan',
+    myRounds: 'Chuyến của tôi',
     trips: 'Chuyến đi',
     buses: 'Đội xe',
     users: 'Quản lý người dùng',
@@ -382,6 +383,14 @@ export const vi: TranslationKeys = {
     dismiss: 'Bỏ qua',
   },
 
+  me: {
+    title: 'Chuyến của tôi',
+    subtitle: 'Các chặng được phân công cho bạn — bấm để điểm danh.',
+    noRounds: 'Bạn chưa được phân công chặng nào.',
+    roundDoneNotice: 'Chặng đã hoàn thành — không thể điểm danh.',
+    broadcastAlert: 'Thông báo từ điều phối viên',
+    gotIt: 'Đã hiểu',
+  },
   attendance: {
     summary: '✓ {{join}} đã lên · ✗ {{absent}} vắng · ? {{pending}} chờ',
     join: 'Đã lên xe',

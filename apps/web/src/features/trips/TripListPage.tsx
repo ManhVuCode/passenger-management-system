@@ -8,6 +8,7 @@ import {
   useDeleteTripMutation,
 } from './tripsApi'
 import { getTripHighlight, type TripHighlight } from './tripUtils'
+import { useAppSelector } from '../../store/hooks'
 import { TripStatus } from '@pms/shared'
 import { Button } from '../../components/ui/button'
 import { Badge, type BadgeVariant } from '../../components/ui/badge'
@@ -41,6 +42,7 @@ export default function TripListPage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { data: trips = [], isLoading } = useGetTripsQuery()
+  const isDriver = useAppSelector((s) => s.auth.role) === 'BUS_MANAGER'
   const [createTrip, { isLoading: creating }] = useCreateTripMutation()
   const [deleteTrip] = useDeleteTripMutation()
   const [showForm, setShowForm] = useState(false)
@@ -183,10 +185,12 @@ export default function TripListPage() {
             : t('trips.subtitle', { count: trips.length })
         }
         actions={
-          <Button className="gap-2 px-6 shadow-glow" size="lg" onClick={() => setShowForm(true)}>
-            <Plus size={20} />
-            {t('trips.newTrip')}
-          </Button>
+          isDriver ? undefined : (
+            <Button className="gap-2 px-6 shadow-glow" size="lg" onClick={() => setShowForm(true)}>
+              <Plus size={20} />
+              {t('trips.newTrip')}
+            </Button>
+          )
         }
       />
 
@@ -286,7 +290,7 @@ export default function TripListPage() {
             icon={Inbox}
             title={trips.length === 0 ? t('trips.noTrips') : t('trips.noTripsFiltered')}
             action={
-              trips.length === 0 ? (
+              trips.length === 0 && !isDriver ? (
                 <Button size="sm" className="gap-1.5" onClick={() => setShowForm(true)}>
                   <Plus size={15} />
                   {t('trips.newTrip')}

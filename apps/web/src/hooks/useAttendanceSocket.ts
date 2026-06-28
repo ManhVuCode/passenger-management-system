@@ -23,12 +23,14 @@ interface UseAttendanceSocketOptions {
   tripId: string | undefined
   onAttendanceUpdate?: (data: AttendanceUpdate) => void
   onRoundStatusUpdate?: (data: RoundStatusUpdate) => void
+  onBroadcastAlert?: (message: string) => void
 }
 
 export function useAttendanceSocket({
   tripId,
   onAttendanceUpdate,
   onRoundStatusUpdate,
+  onBroadcastAlert,
 }: UseAttendanceSocketOptions) {
   const token = useAppSelector((s) => s.auth.accessToken)
   const socketRef = useRef<Socket | null>(null)
@@ -62,6 +64,11 @@ export function useAttendanceSocket({
       onRoundStatusUpdate?.(data)
     })
 
+    // Cảnh báo của admin gửi tới tài xế đang ở trong phòng của chuyến.
+    socket.on('broadcast:call', (data: { message: string }) => {
+      onBroadcastAlert?.(data.message)
+    })
+
     socket.on('connect_error', (err) => {
       console.warn('WebSocket connection error:', err.message)
       setIsConnected(false)
@@ -72,7 +79,7 @@ export function useAttendanceSocket({
       socket.disconnect()
       setIsConnected(false)
     }
-  }, [tripId, token, onAttendanceUpdate, onRoundStatusUpdate])
+  }, [tripId, token, onAttendanceUpdate, onRoundStatusUpdate, onBroadcastAlert])
 
   return { socket: socketRef, isConnected }
 }

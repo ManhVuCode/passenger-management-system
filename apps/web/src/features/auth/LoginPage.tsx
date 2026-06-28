@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { useAppDispatch } from '../../store/hooks'
 import { setCredentials } from './authSlice'
-import { buildSsoHash, consumeSsoHash } from './sso'
+import { consumeSsoHash } from './sso'
 import { Button } from '../../components/ui/button'
 import { LanguageToggle } from '../../components/LanguageToggle'
 import {
@@ -18,8 +18,6 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react'
-
-const PWA_URL = import.meta.env.VITE_PWA_URL ?? 'http://localhost:5174'
 
 const HERO_IMG =
   'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1600&q=80&auto=format&fit=crop'
@@ -39,7 +37,10 @@ export default function LoginPage() {
     const sso = consumeSsoHash()
     if (sso) {
       dispatch(setCredentials(sso))
-      navigate(sso.role === 'SYSTEM_ADMIN' ? '/system' : '/', { replace: true })
+      navigate(
+        sso.role === 'SYSTEM_ADMIN' ? '/system' : sso.role === 'BUS_MANAGER' ? '/me' : '/',
+        { replace: true },
+      )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -60,13 +61,10 @@ export default function LoginPage() {
       }
       const json = await res.json()
       const data = json && typeof json === 'object' && 'data' in json ? json.data : json
-      // Tài xế đăng nhập ở trang chung → chuyển phiên sang PWA tài xế
-      if (data.role === 'BUS_MANAGER') {
-        window.location.replace(`${PWA_URL}/login${buildSsoHash(data)}`)
-        return
-      }
       dispatch(setCredentials(data))
-      navigate(data.role === 'SYSTEM_ADMIN' ? '/system' : '/')
+      navigate(
+        data.role === 'SYSTEM_ADMIN' ? '/system' : data.role === 'BUS_MANAGER' ? '/me' : '/',
+      )
     } catch {
       setError(t('auth.connectionError'))
     } finally {

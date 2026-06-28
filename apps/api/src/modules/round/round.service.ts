@@ -48,6 +48,10 @@ export class RoundService {
     })
     if (existing) throw new BadRequestException(`Sequence ${dto.sequence} already exists in this trip`)
 
+    const scheduledDep = dto.scheduledDep ? new Date(dto.scheduledDep) : null
+    const scheduledArr = dto.scheduledArr ? new Date(dto.scheduledArr) : null
+    await this.assertValidRoundTimes(trip, tripId, null, scheduledDep, scheduledArr)
+
     return this.prisma.round.create({
       data: {
         tripId,
@@ -56,8 +60,8 @@ export class RoundService {
         sequence: dto.sequence,
         departurePoint: dto.departurePoint || null,
         arrivalPoint: dto.arrivalPoint || null,
-        scheduledDep: dto.scheduledDep ? new Date(dto.scheduledDep) : null,
-        scheduledArr: dto.scheduledArr ? new Date(dto.scheduledArr) : null,
+        scheduledDep,
+        scheduledArr,
         status: RoundStatus.PLANNED,
       },
     })
@@ -87,6 +91,23 @@ export class RoundService {
       data.scheduledDep = dto.scheduledDep ? new Date(dto.scheduledDep) : null
     if (dto.scheduledArr !== undefined)
       data.scheduledArr = dto.scheduledArr ? new Date(dto.scheduledArr) : null
+
+    if (dto.scheduledDep !== undefined || dto.scheduledArr !== undefined) {
+      const trip = await this.prisma.trip.findFirst({ where: { id: round.tripId, tenantId } })
+      const newDep =
+        dto.scheduledDep !== undefined
+          ? dto.scheduledDep
+            ? new Date(dto.scheduledDep)
+            : null
+          : round.scheduledDep
+      const newArr =
+        dto.scheduledArr !== undefined
+          ? dto.scheduledArr
+            ? new Date(dto.scheduledArr)
+            : null
+          : round.scheduledArr
+      if (trip) await this.assertValidRoundTimes(trip, round.tripId, id, newDep, newArr)
+    }
 
     const from = round.status as RoundStatus
     const to = dto.status as RoundStatus | undefined
@@ -179,6 +200,44 @@ export class RoundService {
       throw new BadRequestException(
         `Cannot transition round from ${current} to ${next}`,
       )
+    }
+  }
+
+  /** Kiểm tra thời gian chặng (chỉ khi có nhập giờ): dep ≤ arr, nằm trong [startDate, endDate]
+   *  của chuyến, và KHÔNG trùng khoảng thời gian với chặng khác cùng chuyến. */
+  private async assertValidRoundTimes(
+    trip: { startDate: Date; endDate: Date },
+    tripId: string,
+    roundId: string | null,
+    dep: Date | null,
+    arr: Date | null,
+  ) {
+    if (dep && arr && dep > arr) {
+      throw new BadRequestException('Giờ khởi hành của chặng phải trước giờ đến')
+    }
+    if (dep && dep < trip.startDate) {
+      throw new BadRequestException('Giờ khởi hành của chặng phải nằm trong khoảng thời gian chuyến đi')
+    }
+    if (arr && arr > trip.endDate) {
+      throw new BadRequestException('Giờ đến của chặng phải nằm trong khoảng thời gian chuyến đi')
+    }
+    if (dep && arr) {
+      const others = await this.prisma.round.findMany({
+        where: {
+          tripId,
+          ...(roundId ? { id: { not: roundId } } : {}),
+          scheduledDep: { not: null },
+          scheduledArr: { not: null },
+        },
+        select: { name: true, sequence: true, scheduledDep: true, scheduledArr: true },
+      })
+      for (const o of others) {
+        if (o.scheduledDep && o.scheduledArr && dep < o.scheduledArr && arr > o.scheduledDep) {
+          throw new BadRequestException(
+            `Khoảng thời gian bị trùng với chặng #${o.sequence} (${o.name})`,
+          )
+        }
+      }
     }
   }
 

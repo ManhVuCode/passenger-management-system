@@ -1,6 +1,7 @@
 export const en = {
   nav: {
     dashboard: 'Dashboard',
+    myRounds: 'My Rounds',
     trips: 'Trips',
     buses: 'Buses',
     users: 'Manage Users',
@@ -382,6 +383,14 @@ export const en = {
     dismiss: 'Dismiss',
   },
 
+  me: {
+    title: 'My Rounds',
+    subtitle: 'Rounds assigned to you — tap one to mark attendance.',
+    noRounds: 'You have no assigned rounds yet.',
+    roundDoneNotice: 'This round is completed — attendance is locked.',
+    broadcastAlert: 'Message from coordinator',
+    gotIt: 'Got it',
+  },
   attendance: {
     summary: '✓ {{join}} joined · ✗ {{absent}} absent · ? {{pending}} pending',
     join: 'Joined',

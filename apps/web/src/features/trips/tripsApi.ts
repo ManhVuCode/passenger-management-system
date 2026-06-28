@@ -13,10 +13,21 @@ interface CreateTripPayload {
 interface CreateRoundPayload {
   name: string
   sequence: number
-  departurePoint: string
-  arrivalPoint: string
-  scheduledDep: string
-  scheduledArr: string
+  // Chỉ Tên + Thứ tự bắt buộc — còn lại tuỳ chọn.
+  departurePoint?: string
+  arrivalPoint?: string
+  scheduledDep?: string
+  scheduledArr?: string
+}
+
+interface UpdateRoundPayload {
+  name?: string
+  sequence?: number
+  departurePoint?: string
+  arrivalPoint?: string
+  scheduledDep?: string
+  scheduledArr?: string
+  status?: string
 }
 
 export const tripsApi = baseApi.injectEndpoints({
@@ -60,6 +71,17 @@ export const tripsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_r, _e, { tripId }) => [{ type: 'Trip', id: tripId }],
     }),
+    updateRound: builder.mutation<
+      Round,
+      { tripId: string; roundId: string; body: UpdateRoundPayload }
+    >({
+      query: ({ tripId, roundId, body }) => ({
+        url: `/trips/${tripId}/rounds/${roundId}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: (_r, _e, { tripId }) => [{ type: 'Trip', id: tripId }],
+    }),
   }),
 })
 
@@ -71,4 +93,5 @@ export const {
   useDeleteTripMutation,
   useCreateRoundMutation,
   useUpdateRoundStatusMutation,
+  useUpdateRoundMutation,
 } = tripsApi

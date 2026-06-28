@@ -6,6 +6,7 @@ import { useGetTripQuery } from '../trips/tripsApi'
 import {
   useGetAllocationsByRoundQuery,
   useMarkAttendanceMutation,
+  useResetAttendanceMutation,
   type RoundPassengerAllocation,
 } from '../allocation/allocationApi'
 import {
@@ -384,10 +385,13 @@ function MarkRow({
 }) {
   const { t } = useTranslation()
   const reduce = useReducedMotion()
-  const [mark, { isLoading }] = useMarkAttendanceMutation()
+  const [mark, { isLoading: marking }] = useMarkAttendanceMutation()
+  const [reset, { isLoading: resetting }] = useResetAttendanceMutation()
+  const busy = marking || resetting
   const status = a.attendanceRecord?.status
   const isJoined = status === 'JOIN'
   const isAbsent = status === 'ABSENT'
+  const isPending = !status
 
   // Flash nhẹ khi trạng thái đổi (do bấm hoặc realtime).
   const prev = useRef<string | undefined>(status)
@@ -400,15 +404,16 @@ function MarkRow({
   }, [status, reduce])
 
   const busId = a.roundBusAssignment?.busId ?? a.busId
-  function handleMark(next: 'JOIN' | 'ABSENT') {
-    if (!canMark || isLoading) return
-    mark({
-      tripId,
-      roundId,
-      busId,
-      roundPassengerAssignmentIds: [a.id],
-      status: next,
-    })
+  // Bộ gạt 3 trạng thái: PENDING (xoá bản ghi → chờ), JOIN, ABSENT.
+  function handleSet(next: 'PENDING' | 'JOIN' | 'ABSENT') {
+    if (!canMark || busy) return
+    if (next === 'PENDING') {
+      if (isPending) return
+      reset({ tripId, roundId, busId, roundPassengerAssignmentIds: [a.id] })
+    } else {
+      if (status === next) return
+      mark({ tripId, roundId, busId, roundPassengerAssignmentIds: [a.id], status: next })
+    }
   }
 
   return (
@@ -454,34 +459,45 @@ function MarkRow({
         </p>
       </div>
 
-      <div className="relative flex shrink-0 items-center gap-2">
+      <div className="relative inline-flex shrink-0 overflow-hidden rounded-xl border border-gray-200">
         <button
-          onClick={() => handleMark('JOIN')}
-          disabled={!canMark || isLoading}
-          aria-pressed={isJoined}
-          aria-label={t('attendance.join')}
+          onClick={() => handleSet('PENDING')}
+          disabled={!canMark || busy}
+          aria-pressed={isPending}
+          aria-label={t('attendance.pending')}
+          title={t('attendance.pending')}
           className={cn(
-            'flex h-11 w-11 items-center justify-center rounded-2xl border-2 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50',
-            isJoined
-              ? 'border-success-600 bg-gradient-to-b from-success-500 to-success-600 text-white'
-              : 'border-gray-200 bg-white text-gray-400 hover:border-success-500/60 hover:text-success-600',
+            'flex h-10 w-11 items-center justify-center transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50',
+            isPending ? 'bg-gray-200 text-gray-700' : 'bg-white text-gray-400 hover:bg-gray-50',
           )}
         >
-          <Check size={22} strokeWidth={3} />
+          <Clock size={16} />
         </button>
         <button
-          onClick={() => handleMark('ABSENT')}
-          disabled={!canMark || isLoading}
-          aria-pressed={isAbsent}
-          aria-label={t('attendance.absent')}
+          onClick={() => handleSet('JOIN')}
+          disabled={!canMark || busy}
+          aria-pressed={isJoined}
+          aria-label={t('attendance.join')}
+          title={t('attendance.join')}
           className={cn(
-            'flex h-11 w-11 items-center justify-center rounded-2xl border-2 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50',
-            isAbsent
-              ? 'border-warning-600 bg-gradient-to-b from-warning-500 to-warning-600 text-white'
-              : 'border-gray-200 bg-white text-gray-400 hover:border-warning-500/60 hover:text-warning-600',
+            'flex h-10 w-11 items-center justify-center border-l border-gray-200 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50',
+            isJoined ? 'bg-success-600 text-white' : 'bg-white text-gray-400 hover:bg-success-50 hover:text-success-600',
           )}
         >
-          <X size={22} strokeWidth={3} />
+          <Check size={18} strokeWidth={3} />
+        </button>
+        <button
+          onClick={() => handleSet('ABSENT')}
+          disabled={!canMark || busy}
+          aria-pressed={isAbsent}
+          aria-label={t('attendance.absent')}
+          title={t('attendance.absent')}
+          className={cn(
+            'flex h-10 w-11 items-center justify-center border-l border-gray-200 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50',
+            isAbsent ? 'bg-warning-500 text-white' : 'bg-white text-gray-400 hover:bg-warning-50 hover:text-warning-600',
+          )}
+        >
+          <X size={18} strokeWidth={3} />
         </button>
       </div>
     </div>

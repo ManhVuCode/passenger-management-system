@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsInt, IsDateString, Min } from 'class-validator'
+import { IsString, IsNotEmpty, IsInt, IsDateString, Min, IsOptional } from 'class-validator'
 import { IsSimpleText } from '../../../common/validators/is-simple-text.validator'
 
 export class CreateRoundDto {
@@ -11,19 +11,22 @@ export class CreateRoundDto {
   @Min(1)
   sequence!: number
 
+  // Chỉ Tên + Thứ tự bắt buộc — các trường còn lại tuỳ chọn.
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @IsSimpleText()
-  departurePoint!: string
+  departurePoint?: string
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @IsSimpleText()
-  arrivalPoint!: string
+  arrivalPoint?: string
 
+  @IsOptional()
   @IsDateString()
-  scheduledDep!: string
+  scheduledDep?: string
 
+  @IsOptional()
   @IsDateString()
-  scheduledArr!: string
+  scheduledArr?: string
 }

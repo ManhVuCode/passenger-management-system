@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common'
 import { AttendanceService } from './attendance.service'
 import { MarkAttendanceDto } from './dto/mark-attendance.dto'
+import { ResetAttendanceDto } from './dto/reset-attendance.dto'
 import { OverrideAttendanceDto } from './dto/override-attendance.dto'
 import { RoundNoteDto } from './dto/round-note.dto'
 import { Roles } from '../../common/decorators/roles.decorator'
@@ -44,6 +45,20 @@ export class AttendanceController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.attendanceService.markAttendance(
+      tripId, roundId, busId, user.tenantId, dto, user,
+    )
+  }
+
+  @Post('buses/:busId/attendance/reset')
+  @Roles(Role.ADMIN, Role.BUS_MANAGER)
+  resetAttendance(
+    @Param('tripId') tripId: string,
+    @Param('roundId') roundId: string,
+    @Param('busId') busId: string,
+    @Body() dto: ResetAttendanceDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.attendanceService.resetAttendance(
       tripId, roundId, busId, user.tenantId, dto, user,
     )
   }

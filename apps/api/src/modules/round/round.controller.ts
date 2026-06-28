@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode, HttpStatus
 import { RoundService } from './round.service'
 import { CreateRoundDto } from './dto/create-round.dto'
 import { UpdateRoundStatusDto } from './dto/update-round-status.dto'
+import { UpdateRoundDto } from './dto/update-round.dto'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
 import { Role, JwtPayload } from '@pms/shared'
@@ -38,6 +39,16 @@ export class RoundController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.roundService.updateStatus(id, user.tenantId, dto, user)
+  }
+
+  @Patch(':id')
+  @Roles(Role.ADMIN)
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateRoundDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.roundService.update(id, user.tenantId, dto)
   }
 
   @Delete(':id')

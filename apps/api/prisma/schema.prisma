@@ -94,10 +94,10 @@ model Round {
   tenantId        String
   name            String
   sequence        Int
-  departurePoint  String
-  arrivalPoint    String
-  scheduledDep    DateTime
-  scheduledArr    DateTime
+  departurePoint  String?
+  arrivalPoint    String?
+  scheduledDep    DateTime?
+  scheduledArr    DateTime?
   status          RoundStatus @default(PLANNED)
   operationalNote String?
   createdAt       DateTime    @default(now())
@@ -161,7 +161,7 @@ model TripPassengerAssignment {
   tripId    String
   tenantId  String
   name      String
-  phone     String
+  phone     String?
   idCard    String?
   email     String?
   type      String?

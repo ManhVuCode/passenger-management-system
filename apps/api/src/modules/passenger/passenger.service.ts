@@ -59,9 +59,12 @@ export class PassengerService {
 
   async create(tripId: string, tenantId: string, dto: CreatePassengerDto) {
     const trip = await this.verifyTrip(tripId, tenantId)
-    const conflicts = await this.findPhoneConflicts(tripId, tenantId, trip, [dto.phone])
-    const conflict = conflicts.get(dto.phone)
-    if (conflict) throw new ConflictException(overlapMessage(dto.phone, conflict))
+    // SĐT tuỳ chọn — chỉ kiểm tra trùng chuyến giao thời gian khi có nhập SĐT.
+    if (dto.phone) {
+      const conflicts = await this.findPhoneConflicts(tripId, tenantId, trip, [dto.phone])
+      const conflict = conflicts.get(dto.phone)
+      if (conflict) throw new ConflictException(overlapMessage(dto.phone, conflict))
+    }
     return this.prisma.tripPassengerAssignment.create({
       data: { tripId, tenantId, ...dto },
     })
@@ -75,17 +78,32 @@ export class PassengerService {
       tripId,
       tenantId,
       trip,
-      dto.passengers.map((p) => p.phone),
+      dto.passengers.map((p) => p.phone).filter((x): x is string => !!x),
     )
+
+    // Chống trùng khi đồng bộ nhiều lần: bỏ qua hành khách đã có trong chuyến (hoặc trùng
+    // ngay trong mẻ) theo khoá (Họ tên, SĐT, CCCD).
+    const existing = await this.prisma.tripPassengerAssignment.findMany({
+      where: { tripId, tenantId },
+      select: { name: true, phone: true, idCard: true },
+    })
+    const seen = new Set(existing.map(dedupKey))
+
     const clean: typeof dto.passengers = []
     const skipped: SkippedPassenger[] = []
     for (const p of dto.passengers) {
-      const conflict = conflicts.get(p.phone)
+      const conflict = p.phone ? conflicts.get(p.phone) : undefined
       if (conflict) {
-        skipped.push({ name: p.name, phone: p.phone, ...conflict })
-      } else {
-        clean.push(p)
+        skipped.push({ name: p.name, phone: p.phone ?? '', ...conflict })
+        continue
       }
+      const key = dedupKey(p)
+      if (seen.has(key)) {
+        skipped.push({ name: p.name, phone: p.phone ?? '', tripName: DUP_IN_TRIP, dateRange: '' })
+        continue
+      }
+      seen.add(key)
+      clean.push(p)
     }
     const created = clean.length
       ? await this.prisma.$transaction(
@@ -172,17 +190,19 @@ export class PassengerService {
   async exportXlsx(tripId: string, tenantId: string): Promise<Buffer> {
     const passengers = await this.findAllByTrip(tripId, tenantId)
 
-    const rows = passengers.map((p) => ({
-      Name: p.name,
-      Phone: p.phone,
-      Email: p.email ?? '',
-      'ID Card': p.idCard ?? '',
-      Type: p.type ?? '',
-      Note: p.note ?? '',
-      Created: new Date(p.createdAt).toLocaleDateString(),
-    }))
+    // Luôn xuất hàng tiêu đề (kể cả khi 0 hành khách) để người dùng biết các cột cần điền.
+    const header = ['Name', 'Phone', 'Email', 'ID Card', 'Type', 'Note', 'Created']
+    const rows = passengers.map((p) => [
+      p.name,
+      p.phone ?? '',
+      p.email ?? '',
+      p.idCard ?? '',
+      p.type ?? '',
+      p.note ?? '',
+      new Date(p.createdAt).toLocaleDateString(),
+    ])
 
-    const ws = XLSX.utils.json_to_sheet(rows)
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows])
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Passengers')
     return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }))
@@ -225,7 +245,7 @@ export class PassengerService {
     })
 
     for (const r of rows) {
-      if (!map.has(r.phone)) {
+      if (r.phone && !map.has(r.phone)) {
         map.set(r.phone, {
           tripName: r.trip.name,
           dateRange: fmtRange(r.trip.startDate, r.trip.endDate),
@@ -240,6 +260,13 @@ export class PassengerService {
     if (!trip) throw new NotFoundException('Trip not found')
     return trip
   }
+}
+
+const DUP_IN_TRIP = 'Trùng — đã có trong chuyến'
+
+/** Khoá chống trùng hành khách trong cùng chuyến: (Họ tên, SĐT, CCCD) đã chuẩn hoá. */
+function dedupKey(p: { name?: string | null; phone?: string | null; idCard?: string | null }): string {
+  return [p.name, p.phone, p.idCard].map((v) => (v ?? '').trim().toLowerCase()).join('|')
 }
 
 /** Một chuyến đang giữ SĐT trùng, dùng để dựng thông báo xung đột. */

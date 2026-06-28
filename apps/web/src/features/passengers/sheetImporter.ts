@@ -155,9 +155,7 @@ function mapRecords(rawHeaders: string[], data: Record<string, string>[]): Impor
   }
 
   const hasName = [...colToField.values()].includes('name')
-  const hasPhone = [...colToField.values()].includes('phone')
   if (!hasName) throw new Error('The file must have a "Họ và tên" or "name" column')
-  if (!hasPhone) throw new Error('The file must have a "Tel" or "phone" column')
 
   const rows: SheetRow[] = []
   const errors: string[] = []
@@ -175,17 +173,12 @@ function mapRecords(rawHeaders: string[], data: Record<string, string>[]): Impor
       errors.push(`Row ${i + 2}: missing name`)
       continue
     }
-    if (!row.phone) {
-      errors.push(`Row ${i + 2}: missing phone`)
-      continue
+    // SĐT không bắt buộc — chỉ cần Tên. Nếu có nhập thì chuẩn hoá; sai định dạng thì bỏ trống.
+    if (row.phone) {
+      const cleanPhone = row.phone.replace(/\D/g, '')
+      if (cleanPhone.length === 10) row.phone = cleanPhone
+      else delete row.phone
     }
-
-    const cleanPhone = row.phone.replace(/\D/g, '')
-    if (cleanPhone.length !== 10) {
-      errors.push(`Row ${i + 2}: phone "${row.phone}" is not 10 digits — skipped`)
-      continue
-    }
-    row.phone = cleanPhone
 
     rows.push(row as SheetRow)
   }

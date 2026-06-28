@@ -22,6 +22,13 @@ export function validatePhone(value: string): string {
   return ''
 }
 
+/** SĐT tuỳ chọn: để trống được; nếu có nhập thì phải đúng 10 chữ số. */
+export function validateOptionalPhone(value: string): string {
+  if (!value.trim()) return ''
+  if (!PHONE_REGEX.test(value)) return PHONE_MSG
+  return ''
+}
+
 export function validateLicensePlate(value: string): string {
   if (!value.trim()) return 'License plate is required'
   if (!LICENSE_PLATE_REGEX.test(value)) return LICENSE_PLATE_MSG

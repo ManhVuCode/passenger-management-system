@@ -135,6 +135,65 @@ export class AttendanceService {
     return { marked: records.length, status: dto.status, records }
   }
 
+  /** Đưa điểm danh về trạng thái chờ (pending) bằng cách XOÁ bản ghi điểm danh — phục vụ
+   *  nút gạt 3 trạng thái PENDING/JOIN/ABSENT ở màn Live Attendance. */
+  async resetAttendance(
+    tripId: string,
+    roundId: string,
+    busId: string,
+    tenantId: string,
+    dto: { roundPassengerAssignmentIds: string[] },
+    user: JwtPayload,
+  ) {
+    if (user.role === Role.BUS_MANAGER) {
+      await this.verifyBusManagerScope(user.userId, tripId, roundId, busId)
+    }
+
+    const rba = await this.prisma.roundBusAssignment.findUnique({
+      where: { tripId_roundId_busId: { tripId, roundId, busId } },
+    })
+    if (!rba || rba.tenantId !== tenantId) {
+      throw new NotFoundException('Bus not assigned to this round')
+    }
+
+    const round = await this.prisma.round.findFirst({
+      where: { id: roundId, tripId, tenantId },
+      select: { status: true },
+    })
+    if (!round) throw new NotFoundException('Round not found')
+    if (round.status === 'CANCELLED') {
+      throw new BadRequestException('Cannot change attendance on a cancelled round')
+    }
+
+    const rpas = await this.prisma.roundPassengerAssignment.findMany({
+      where: { id: { in: dto.roundPassengerAssignmentIds }, tripId, roundId, busId },
+      include: { tripPassengerAssignment: { select: { id: true, name: true } } },
+    })
+    if (rpas.length !== dto.roundPassengerAssignmentIds.length) {
+      throw new NotFoundException('One or more passengers not found on this bus in this round')
+    }
+
+    await this.prisma.attendanceRecord.deleteMany({
+      where: { roundPassengerAssignmentId: { in: dto.roundPassengerAssignmentIds } },
+    })
+
+    const markedAtIso = new Date().toISOString()
+    for (const rpa of rpas) {
+      this.gateway.broadcastAttendanceUpdate({
+        tripId,
+        roundId,
+        busId,
+        passengerId: rpa.tripPassengerAssignment.id,
+        passengerName: rpa.tripPassengerAssignment.name,
+        status: 'PENDING',
+        markedBy: user.userId,
+        markedAt: markedAtIso,
+      })
+    }
+
+    return { reset: rpas.length }
+  }
+
   async overrideAttendance(
     attendanceRecordId: string,
     tenantId: string,

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { useTranslation } from 'react-i18next'
@@ -57,7 +57,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import { validatePhone, validateSimpleText } from '../../lib/validators'
+import { validateOptionalPhone, validateSimpleText } from '../../lib/validators'
 
 type Tab = 'list' | 'add' | 'sheet'
 
@@ -89,7 +89,7 @@ export default function PassengerListPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editNote, setEditNote] = useState('')
   const [editEmail, setEditEmail] = useState('')
-  const [sheetUrl, setSheetUrl] = useState('')
+  const [sheetUrl, setSheetUrl] = useState(() => localStorage.getItem('mpms-sheet-url:' + tripId) ?? '')
   const [importing, setImporting] = useState(false)
   const [importPreview, setImportPreview] = useState<ImportResult | null>(null)
   const xlsxInputRef = useRef<HTMLInputElement>(null)
@@ -106,10 +106,15 @@ export default function PassengerListPage() {
   const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
   const token = localStorage.getItem('accessToken') ?? ''
 
+  // Giữ lại link Google Sheet đã đồng bộ cho từng chuyến (khỏi phải nhập lại).
+  useEffect(() => {
+    if (tripId) localStorage.setItem('mpms-sheet-url:' + tripId, sheetUrl)
+  }, [sheetUrl, tripId])
+
   async function handleAddPassenger(e: React.FormEvent) {
     e.preventDefault()
     const nameErr = validateSimpleText(form.name)
-    const phoneErr = validatePhone(form.phone)
+    const phoneErr = validateOptionalPhone(form.phone)
     if (nameErr || phoneErr) {
       setErrors({ name: nameErr, phone: phoneErr })
       return
@@ -189,7 +194,6 @@ export default function PassengerListPage() {
         passengers: importPreview.rows,
       }).unwrap()
       setImportPreview(null)
-      setSheetUrl('')
       setTab('list')
       reportImport(result.created, result.skipped)
     } catch (err: unknown) {
@@ -225,7 +229,7 @@ export default function PassengerListPage() {
           ...(note && { note }),
         }
       })
-      .filter((p) => p.name && p.phone)
+      .filter((p) => p.name)
 
     if (parsed.length === 0) return
     setImportSkipped([])
@@ -255,7 +259,7 @@ export default function PassengerListPage() {
     const term = searchTerm.toLowerCase()
     return (
       p.name.toLowerCase().includes(term) ||
-      p.phone.toLowerCase().includes(term) ||
+      (p.phone?.toLowerCase().includes(term) ?? false) ||
       (p.email?.toLowerCase().includes(term) ?? false) ||
       (p.idCard?.toLowerCase().includes(term) ?? false)
     )
@@ -628,7 +632,7 @@ export default function PassengerListPage() {
                       </motion.p>
                     )}
                   </FormField>
-                  <FormField label={`${t('passengers.phone')} *`}>
+                  <FormField label={t('passengers.phone')}>
                     <FormInput
                       icon={Phone}
                       value={form.phone}
@@ -667,7 +671,6 @@ export default function PassengerListPage() {
                           </motion.span>
                         ) : undefined
                       }
-                      required
                     />
                     <div className="mt-1.5 flex items-center justify-between">
                       {errors.phone ? (
@@ -915,7 +918,7 @@ export default function PassengerListPage() {
                     </td>
                     <td className="px-5 py-3.5 text-gray-700">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-medium tabular-nums">{p.phone}</span>
+                        <span className="font-medium tabular-nums">{p.phone || '—'}</span>
                         {p.telegramChatId && (
                           <Badge variant="default" className="gap-1 pl-1.5">
                             <Send size={10} className="shrink-0" />

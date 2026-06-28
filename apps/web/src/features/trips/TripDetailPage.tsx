@@ -6,6 +6,7 @@ import {
   useGetTripQuery,
   useCreateRoundMutation,
   useUpdateRoundStatusMutation,
+  useUpdateRoundMutation,
 } from './tripsApi'
 import { useGetPassengersQuery } from '../passengers/passengerApi'
 import { useGetBusesQuery } from '../buses/busApi'
@@ -113,8 +114,10 @@ export default function TripDetailPage() {
   const { data: trip, isLoading } = useGetTripQuery(tripId!)
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null)
   const [showAddRound, setShowAddRound] = useState(false)
+  const [editingRound, setEditingRound] = useState<Round | null>(null)
   const [createRound] = useCreateRoundMutation()
   const [updateRoundStatus] = useUpdateRoundStatusMutation()
+  const [updateRound] = useUpdateRoundMutation()
 
   // Khung xương shimmer khớp bố cục thật — tránh giật layout khi dữ liệu về
   if (isLoading)
@@ -381,7 +384,7 @@ export default function TripDetailPage() {
                           <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-gray-600">
                             <MapPin size={12} className="shrink-0 text-gray-400" aria-hidden="true" />
                             <span className="truncate">
-                              {round.departurePoint} → {round.arrivalPoint}
+                              {round.departurePoint || '—'} → {round.arrivalPoint || '—'}
                             </span>
                           </div>
                         </div>
@@ -390,20 +393,26 @@ export default function TripDetailPage() {
                           label={t(`status.${round.status}`)}
                         />
                       </div>
-                      <div className="mt-4 flex items-center gap-4">
-                        <div className="flex items-center gap-1.5 text-xs font-medium tabular-nums text-gray-500">
-                          <Clock size={12} className="text-gray-400" aria-hidden="true" />
-                          {new Date(round.scheduledDep).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}{' '}
-                          —{' '}
-                          {new Date(round.scheduledArr).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                      {round.scheduledDep && (
+                        <div className="mt-4 flex items-center gap-4">
+                          <div className="flex items-center gap-1.5 text-xs font-medium tabular-nums text-gray-500">
+                            <Clock size={12} className="text-gray-400" aria-hidden="true" />
+                            {new Date(round.scheduledDep).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                            {round.scheduledArr && (
+                              <>
+                                {' '}—{' '}
+                                {new Date(round.scheduledArr).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Hàng hành động trạng thái — mở/đóng mượt theo lựa chọn */}
                       <AnimatePresence initial={false}>
@@ -463,6 +472,30 @@ export default function TripDetailPage() {
                                   {t('rounds.cancelRound')}
                                 </button>
                               )}
+                              {round.status === RoundStatus.CANCELLED && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    updateRound({
+                                      tripId: tripId!,
+                                      roundId: round.id,
+                                      body: { status: 'PLANNED' },
+                                    })
+                                  }}
+                                  className="h-9 flex-1 cursor-pointer rounded-xl bg-gradient-to-b from-primary-500 to-primary-600 text-xs font-bold text-white shadow-sm shadow-primary-500/30 transition-[filter,box-shadow,transform] duration-200 hover:brightness-105 hover:shadow-md active:scale-[0.97]"
+                                >
+                                  {t('rounds.restoreRound')}
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setEditingRound(round)
+                                }}
+                                className="h-9 cursor-pointer rounded-xl border border-gray-200 px-4 text-xs font-bold text-gray-700 transition-colors duration-200 hover:bg-gray-50"
+                              >
+                                {t('common.edit')}
+                              </button>
                             </div>
                           </motion.div>
                         )}
@@ -528,13 +561,16 @@ export default function TripDetailPage() {
 
       {/* Modal thêm round — backdrop navy mờ + panel scale-in bằng spring */}
       <AnimatePresence>
-        {showAddRound && (
+        {(showAddRound || editingRound) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[80] flex items-center justify-center bg-navy-950/45 p-6 backdrop-blur-sm"
-            onClick={() => setShowAddRound(false)}
+            onClick={() => {
+                setShowAddRound(false)
+                setEditingRound(null)
+              }}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: 16 }}
@@ -554,13 +590,18 @@ export default function TripDetailPage() {
                   </div>
                   <div>
                     <h2 className="font-display text-lg font-bold tracking-tight text-navy-900">
-                      {t('rounds.addRoundTitle')}
+                      {editingRound ? t('rounds.editRoundTitle') : t('rounds.addRoundTitle')}
                     </h2>
-                    <p className="mt-0.5 text-xs text-gray-500">{t('rounds.addRoundSubtitle')}</p>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      {editingRound ? t('rounds.editRoundSubtitle') : t('rounds.addRoundSubtitle')}
+                    </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowAddRound(false)}
+                  onClick={() => {
+                setShowAddRound(false)
+                setEditingRound(null)
+              }}
                   className="cursor-pointer rounded-full p-2 text-gray-400 transition-colors duration-150 hover:bg-gray-100 hover:text-navy-900"
                   aria-label="Close"
                 >
@@ -570,11 +611,34 @@ export default function TripDetailPage() {
 
               <AddRoundForm
                 nextSequence={rounds.length + 1}
+                mode={editingRound ? 'edit' : 'add'}
+                initial={
+                  editingRound
+                    ? {
+                        name: editingRound.name,
+                        sequence: editingRound.sequence,
+                        departurePoint: editingRound.departurePoint ?? '',
+                        arrivalPoint: editingRound.arrivalPoint ?? '',
+                        scheduledDep: toLocalInput(editingRound.scheduledDep),
+                        scheduledArr: toLocalInput(editingRound.scheduledArr),
+                        status: editingRound.status,
+                      }
+                    : undefined
+                }
                 onSubmit={async (data) => {
-                  await createRound({ tripId: tripId!, body: data }).unwrap()
+                  const body = buildRoundBody(data)
+                  if (editingRound) {
+                    await updateRound({ tripId: tripId!, roundId: editingRound.id, body }).unwrap()
+                  } else {
+                    await createRound({ tripId: tripId!, body }).unwrap()
+                  }
                   setShowAddRound(false)
+                  setEditingRound(null)
                 }}
-                onCancel={() => setShowAddRound(false)}
+                onCancel={() => {
+                  setShowAddRound(false)
+                  setEditingRound(null)
+                }}
               />
             </motion.div>
           </motion.div>
@@ -593,24 +657,68 @@ interface RoundFormValues {
   scheduledArr: string
 }
 
+/** ISO/Date → chuỗi 'yyyy-MM-ddTHH:mm' cho input datetime-local (giờ địa phương). */
+function toLocalInput(value?: string | Date | null): string {
+  if (!value) return ''
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/** Dựng payload chặng — bỏ qua trường rỗng (chỉ Tên + Thứ tự là bắt buộc). */
+function buildRoundBody(data: RoundFormValues & { status?: RoundStatus }) {
+  const body = { name: data.name.trim(), sequence: data.sequence } as {
+    name: string
+    sequence: number
+    departurePoint?: string
+    arrivalPoint?: string
+    scheduledDep?: string
+    scheduledArr?: string
+    status?: string
+  }
+  if (data.departurePoint.trim()) body.departurePoint = data.departurePoint.trim()
+  if (data.arrivalPoint.trim()) body.arrivalPoint = data.arrivalPoint.trim()
+  if (data.scheduledDep) body.scheduledDep = data.scheduledDep
+  if (data.scheduledArr) body.scheduledArr = data.scheduledArr
+  if (data.status) body.status = data.status
+  return body
+}
+
 function AddRoundForm({
   nextSequence,
+  initial,
+  mode = 'add',
   onSubmit,
   onCancel,
 }: {
   nextSequence: number
-  onSubmit: (data: RoundFormValues) => Promise<void>
+  initial?: RoundFormValues & { status?: RoundStatus }
+  mode?: 'add' | 'edit'
+  onSubmit: (data: RoundFormValues & { status?: RoundStatus }) => Promise<void>
   onCancel: () => void
 }) {
   const { t } = useTranslation()
-  const [form, setForm] = useState<RoundFormValues>({
-    name: '',
-    sequence: nextSequence,
-    departurePoint: '',
-    arrivalPoint: '',
-    scheduledDep: '',
-    scheduledArr: '',
-  })
+  const [form, setForm] = useState<RoundFormValues>(
+    initial
+      ? {
+          name: initial.name,
+          sequence: initial.sequence,
+          departurePoint: initial.departurePoint,
+          arrivalPoint: initial.arrivalPoint,
+          scheduledDep: initial.scheduledDep,
+          scheduledArr: initial.scheduledArr,
+        }
+      : {
+          name: '',
+          sequence: nextSequence,
+          departurePoint: '',
+          arrivalPoint: '',
+          scheduledDep: '',
+          scheduledArr: '',
+        },
+  )
+  const [status, setStatus] = useState<RoundStatus>(initial?.status ?? RoundStatus.PLANNED)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -624,12 +732,14 @@ function AddRoundForm({
     e.preventDefault()
     setError('')
 
-    const textFields = ['name', 'departurePoint', 'arrivalPoint'] as const
+    // Chỉ Tên bắt buộc; điểm đi/đến chỉ kiểm tra định dạng khi có nhập.
     const newErrors: Record<string, string> = {}
-    for (const field of textFields) {
-      const err = validateSimpleText(form[field])
-      if (err) newErrors[field] = err
-    }
+    const nameErr = validateSimpleText(form.name)
+    if (nameErr) newErrors.name = nameErr
+    const depErr = form.departurePoint ? validateSimpleText(form.departurePoint) : ''
+    if (depErr) newErrors.departurePoint = depErr
+    const arrErr = form.arrivalPoint ? validateSimpleText(form.arrivalPoint) : ''
+    if (arrErr) newErrors.arrivalPoint = arrErr
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -637,7 +747,7 @@ function AddRoundForm({
 
     setSubmitting(true)
     try {
-      await onSubmit(form)
+      await onSubmit({ ...form, status: mode === 'edit' ? status : undefined })
     } catch (err: unknown) {
       const msg = (err as { data?: { message?: string } })?.data?.message
       setError(typeof msg === 'string' ? msg : t('rounds.failedCreate'))
@@ -684,9 +794,8 @@ function AddRoundForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelClass}>{t('rounds.departurePoint')} *</label>
+          <label className={labelClass}>{t('rounds.departurePoint')}</label>
           <Input
-            required
             placeholder={t('rounds.departurePlaceholder')}
             value={form.departurePoint}
             onChange={(e) => {
@@ -701,9 +810,8 @@ function AddRoundForm({
           )}
         </div>
         <div className="space-y-1.5">
-          <label className={labelClass}>{t('rounds.arrivalPoint')} *</label>
+          <label className={labelClass}>{t('rounds.arrivalPoint')}</label>
           <Input
-            required
             placeholder={t('rounds.arrivalPlaceholder')}
             value={form.arrivalPoint}
             onChange={(e) => {
@@ -721,26 +829,43 @@ function AddRoundForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className={labelClass}>{t('rounds.scheduledDep')} *</label>
+          <label className={labelClass}>{t('rounds.scheduledDep')}</label>
           <Input
             type="datetime-local"
-            required
             value={form.scheduledDep}
             onChange={(e) => setForm({ ...form, scheduledDep: e.target.value })}
             className="h-11 font-medium tabular-nums"
           />
         </div>
         <div className="space-y-1.5">
-          <label className={labelClass}>{t('rounds.scheduledArr')} *</label>
+          <label className={labelClass}>{t('rounds.scheduledArr')}</label>
           <Input
             type="datetime-local"
-            required
             value={form.scheduledArr}
             onChange={(e) => setForm({ ...form, scheduledArr: e.target.value })}
             className="h-11 font-medium tabular-nums"
           />
         </div>
       </div>
+
+      {mode === 'edit' && (
+        <div className="space-y-1.5">
+          <label className={labelClass}>{t('rounds.statusLabel')}</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as RoundStatus)}
+            className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 font-medium text-navy-900 focus-visible:border-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/20"
+          >
+            {[RoundStatus.PLANNED, RoundStatus.IN_PROGRESS, RoundStatus.DONE, RoundStatus.CANCELLED].map(
+              (s) => (
+                <option key={s} value={s}>
+                  {t(`status.${s}`)}
+                </option>
+              ),
+            )}
+          </select>
+        </div>
+      )}
 
       {/* Lỗi từ API — trượt vào nhẹ để không gây giật */}
       <AnimatePresence>
@@ -763,7 +888,7 @@ function AddRoundForm({
           {t('common.cancel')}
         </Button>
         <Button type="submit" disabled={submitting} className="h-11 flex-1">
-          {submitting ? t('rounds.creating') : t('rounds.createRound')}
+          {submitting ? t('rounds.creating') : mode === 'edit' ? t('common.save') : t('rounds.createRound')}
         </Button>
       </div>
     </form>

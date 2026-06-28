@@ -8,10 +8,12 @@ export class CreatePassengerDto {
   @IsSimpleText()
   name!: string
 
-  @IsString()
-  @IsNotEmpty()
+  // SĐT KHÔNG bắt buộc — chỉ cần Tên. Nếu có nhập thì phải đúng 10 chữ số; chuỗi rỗng
+  // được chuẩn hoá về undefined để không chặn người để trống.
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value))
   @Matches(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' })
-  phone!: string
+  phone?: string
 
   @IsString()
   @IsOptional()

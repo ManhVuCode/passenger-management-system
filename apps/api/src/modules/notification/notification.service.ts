@@ -19,7 +19,7 @@ import { EMAIL_RE, PHONE_RE, TELEGRAM_ID_RE, redactContact, type NotificationTri
 interface Recipient {
   id: string
   name: string
-  phone: string
+  phone: string | null
   email: string | null
   telegramChatId: string | null
   contactOptOut: boolean
@@ -371,13 +371,13 @@ export class NotificationService {
           tripName: round.trip.name,
           roundName: round.name,
           busPlate: rpa.roundBusAssignment.bus.licensePlate,
-          departureTime: formatTime(round.scheduledDep),
+          departureTime: round.scheduledDep ? formatTime(round.scheduledDep) : '',
         },
         locale,
       )
 
       const reason = this.rejectReason(p, contact, channel)
-      if (reason) {
+      if (reason || contact === null) {
         skipped++
         await this.prisma.notificationLog.create({
           data: {
@@ -725,7 +725,7 @@ function formatTime(date: Date): string {
 type ReportRound = { id: string; name: string; sequence: number }
 type ReportRpa = {
   roundId: string
-  tripPassengerAssignment: { id: string; name: string; phone: string }
+  tripPassengerAssignment: { id: string; name: string; phone: string | null }
   attendanceRecord: { status: string } | null
 }
 
@@ -748,7 +748,7 @@ function buildAttendanceWorkbook(
   const bucketOf = (s?: string | null): Bucket =>
     s === 'JOIN' ? 'join' : s === 'ABSENT' ? 'absent' : s === 'CANCELLED' ? 'cancelled' : 'pending'
 
-  const byPassenger = new Map<string, { name: string; phone: string; perRound: Map<string, string> }>()
+  const byPassenger = new Map<string, { name: string; phone: string | null; perRound: Map<string, string> }>()
   const totals = { total: 0, join: 0, absent: 0, cancelled: 0, pending: 0 }
   const roundTotals = new Map<
     string,
@@ -777,7 +777,7 @@ function buildAttendanceWorkbook(
   }
 
   const matrixRows = [...byPassenger.values()].map((entry) => {
-    const row: Record<string, string | number> = { 'Hành khách': entry.name, SĐT: entry.phone }
+    const row: Record<string, string | number> = { 'Hành khách': entry.name, SĐT: entry.phone ?? '' }
     for (const r of rounds) row[colName(r)] = entry.perRound.get(r.id) ?? '—'
     return row
   })

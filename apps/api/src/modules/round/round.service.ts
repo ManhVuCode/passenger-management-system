@@ -8,6 +8,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter'
 import { PrismaService } from '../../prisma/prisma.service'
 import { CreateRoundDto } from './dto/create-round.dto'
 import { UpdateRoundStatusDto } from './dto/update-round-status.dto'
+import { UpdateRoundDto } from './dto/update-round.dto'
 import { RoundStatus, Role, JwtPayload } from '@pms/shared'
 import { AttendanceGateway } from '../../gateway/attendance.gateway'
 import { RoundEvents, type RoundEventPayload } from '../../common/events/round.events'
@@ -53,13 +54,62 @@ export class RoundService {
         tenantId,
         name: dto.name,
         sequence: dto.sequence,
-        departurePoint: dto.departurePoint,
-        arrivalPoint: dto.arrivalPoint,
-        scheduledDep: new Date(dto.scheduledDep),
-        scheduledArr: new Date(dto.scheduledArr),
+        departurePoint: dto.departurePoint || null,
+        arrivalPoint: dto.arrivalPoint || null,
+        scheduledDep: dto.scheduledDep ? new Date(dto.scheduledDep) : null,
+        scheduledArr: dto.scheduledArr ? new Date(dto.scheduledArr) : null,
         status: RoundStatus.PLANNED,
       },
     })
+  }
+
+  /** Sửa thông tin chặng. Admin được đổi trạng thái tự do, kể cả khôi phục chặng
+   *  lỡ bấm huỷ (CANCELLED → PLANNED) — khi đó các bản ghi điểm danh đã bị cascade-huỷ
+   *  sẽ bị xoá để hành khách quay về trạng thái "chưa điểm danh". */
+  async update(id: string, tenantId: string, dto: UpdateRoundDto) {
+    const round = await this.findOne(id, tenantId)
+
+    if (dto.sequence !== undefined && dto.sequence !== round.sequence) {
+      const existing = await this.prisma.round.findUnique({
+        where: { tripId_sequence: { tripId: round.tripId, sequence: dto.sequence } },
+      })
+      if (existing && existing.id !== id) {
+        throw new BadRequestException(`Sequence ${dto.sequence} already exists in this trip`)
+      }
+    }
+
+    const data: Record<string, unknown> = {}
+    if (dto.name !== undefined) data.name = dto.name
+    if (dto.sequence !== undefined) data.sequence = dto.sequence
+    if (dto.departurePoint !== undefined) data.departurePoint = dto.departurePoint || null
+    if (dto.arrivalPoint !== undefined) data.arrivalPoint = dto.arrivalPoint || null
+    if (dto.scheduledDep !== undefined)
+      data.scheduledDep = dto.scheduledDep ? new Date(dto.scheduledDep) : null
+    if (dto.scheduledArr !== undefined)
+      data.scheduledArr = dto.scheduledArr ? new Date(dto.scheduledArr) : null
+
+    const from = round.status as RoundStatus
+    const to = dto.status as RoundStatus | undefined
+    const statusChanged = to !== undefined && to !== from
+    if (to !== undefined) data.status = to
+
+    const updated = await this.prisma.round.update({ where: { id }, data })
+
+    if (statusChanged && to) {
+      if (to === RoundStatus.CANCELLED) {
+        await this.cascadeCancelAttendance(id)
+      } else if (from === RoundStatus.CANCELLED) {
+        await this.restoreCancelledAttendance(id)
+      }
+      this.gateway.broadcastRoundStatusUpdate({ tripId: round.tripId, roundId: id, status: to })
+      const event = this.statusEvent(to)
+      if (event) {
+        const payload: RoundEventPayload = { tenantId, tripId: round.tripId, roundId: id }
+        this.events.emit(event, payload)
+      }
+    }
+
+    return updated
   }
 
   async updateStatus(id: string, tenantId: string, dto: UpdateRoundStatusDto, user: JwtPayload) {
@@ -147,6 +197,22 @@ export class RoundService {
         roundPassengerAssignmentId: { in: rpas.map((r) => r.id) },
       },
       data: { status: 'CANCELLED' },
+    })
+  }
+
+  /** Đảo ngược cascade huỷ: xoá các bản ghi điểm danh đã bị set CANCELLED khi huỷ chặng,
+   *  để hành khách trở lại trạng thái chưa điểm danh (pending = không có bản ghi). */
+  private async restoreCancelledAttendance(roundId: string) {
+    const rpas = await this.prisma.roundPassengerAssignment.findMany({
+      where: { roundBusAssignment: { roundId } },
+      select: { id: true },
+    })
+    if (rpas.length === 0) return
+    await this.prisma.attendanceRecord.deleteMany({
+      where: {
+        roundPassengerAssignmentId: { in: rpas.map((r) => r.id) },
+        status: 'CANCELLED',
+      },
     })
   }
 

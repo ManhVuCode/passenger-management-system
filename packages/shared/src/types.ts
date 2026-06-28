@@ -35,10 +35,10 @@ export interface Round {
   tenantId: string
   name: string
   sequence: number
-  departurePoint: string
-  arrivalPoint: string
-  scheduledDep: Date
-  scheduledArr: Date
+  departurePoint: string | null
+  arrivalPoint: string | null
+  scheduledDep: Date | null
+  scheduledArr: Date | null
   status: RoundStatus
   createdAt: Date
 }
@@ -60,7 +60,7 @@ export interface TripPassengerAssignment {
   tripId: string
   tenantId: string
   name: string
-  phone: string
+  phone: string | null
   idCard?: string
   email?: string
   type?: string

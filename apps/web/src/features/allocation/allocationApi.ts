@@ -113,6 +113,39 @@ export const allocationApi = baseApi.injectEndpoints({
       },
       invalidatesTags: (_r, _e, { roundId }) => [{ type: 'Allocation', id: roundId }],
     }),
+    // Đưa điểm danh về trạng thái chờ (pending) — nút PENDING của bộ gạt 3 trạng thái.
+    resetAttendance: builder.mutation<
+      { reset: number },
+      { tripId: string; roundId: string; busId: string; roundPassengerAssignmentIds: string[] }
+    >({
+      query: ({ tripId, roundId, busId, roundPassengerAssignmentIds }) => ({
+        url: `/trips/${tripId}/rounds/${roundId}/buses/${busId}/attendance/reset`,
+        method: 'POST',
+        body: { roundPassengerAssignmentIds },
+      }),
+      async onQueryStarted(
+        { tripId, roundId, roundPassengerAssignmentIds },
+        { dispatch, queryFulfilled },
+      ) {
+        const patch = dispatch(
+          allocationApi.util.updateQueryData(
+            'getAllocationsByRound',
+            { tripId, roundId },
+            (draft) => {
+              for (const a of draft) {
+                if (roundPassengerAssignmentIds.includes(a.id)) a.attendanceRecord = null
+              }
+            },
+          ),
+        )
+        try {
+          await queryFulfilled
+        } catch {
+          patch.undo()
+        }
+      },
+      invalidatesTags: (_r, _e, { roundId }) => [{ type: 'Allocation', id: roundId }],
+    }),
     getRoundBuses: builder.query<
       {
         busId: string
@@ -179,6 +212,7 @@ export const {
   useRemoveAllocationMutation,
   useOverrideAttendanceMutation,
   useMarkAttendanceMutation,
+  useResetAttendanceMutation,
   useGetRoundBusesQuery,
   useAssignBusToRoundMutation,
   useAssignBusManagerMutation,

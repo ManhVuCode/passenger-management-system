@@ -126,15 +126,19 @@ export default function LiveDashboardPage() {
     if (!tripId || !activeRoundId) return
     setBroadcastResult(null)
     try {
-      await sendBroadcast({
+      const res = await sendBroadcast({
         tripId,
         roundId: activeRoundId,
         channel: 'IN_APP',
         message: t('notifications.broadcastDefault'),
       }).unwrap()
-      // In-app broadcast goes to drivers in the trip's WebSocket room (not passengers),
-      // so report it as a driver alert without a passenger count.
-      setBroadcastResult(t('notifications.broadcastSent'))
+      // The broadcast goes to drivers in the trip's WebSocket room; res.sent is how many
+      // drivers were online to receive it (admins watching the dashboard are excluded).
+      setBroadcastResult(
+        res.sent > 0
+          ? t('notifications.broadcastSent', { count: res.sent })
+          : t('notifications.broadcastNoDrivers'),
+      )
     } catch {
       setBroadcastResult(t('notifications.broadcastFailed'))
     }

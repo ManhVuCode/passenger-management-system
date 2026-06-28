@@ -78,7 +78,7 @@ export class NotificationService {
     switch (dto.channel) {
       case NotificationChannel.BROADCAST:
       case NotificationChannel.IN_APP:
-        return this.sendInApp(ctx, recipients, dto.channel)
+        return this.sendInApp(ctx, dto.channel)
       case NotificationChannel.SMS:
       case NotificationChannel.TELEGRAM:
         return this.sendPerRecipient(ctx, recipients, dto.channel)
@@ -92,10 +92,12 @@ export class NotificationService {
   /** In-app/broadcast = một cảnh báo WebSocket duy nhất tới các tài xế trong phòng trip. */
   private async sendInApp(
     ctx: SendContext,
-    recipients: Recipient[],
     channel: NotificationChannel,
   ): Promise<NotificationResult> {
-    this.gateway.broadcastCallAlert({ tripId: ctx.tripId, message: ctx.message })
+    const driversOnline = await this.gateway.broadcastCallAlert({
+      tripId: ctx.tripId,
+      message: ctx.message,
+    })
     await this.prisma.notificationLog.create({
       data: {
         tenantId: ctx.tenantId,
@@ -112,13 +114,15 @@ export class NotificationService {
       },
     })
     return {
-      sent: recipients.length,
+      // In-app/broadcast targets drivers in the trip room, so report the number of
+      // drivers that were online to receive it — not the round's passenger count.
+      sent: driversOnline,
       skipped: 0,
       channel,
       // Broadcast WebSocket luôn được kích hoạt bất kể key nào — không bao giờ là stub dev-mode.
       devMode: false,
-      // Không gửi theo từng người nhận ở đây; trả về tên (không bao giờ số điện thoại thô).
-      recipients: recipients.map((r) => r.name),
+      // Không gửi theo từng hành khách ở kênh này.
+      recipients: [],
     }
   }
 

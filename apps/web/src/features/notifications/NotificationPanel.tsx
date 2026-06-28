@@ -201,7 +201,12 @@ export default function NotificationPanel({
               className="flex flex-wrap items-center gap-2 rounded-xl border border-success-200 bg-success-50 px-3 py-2 text-sm text-success-700"
             >
               <CheckCircle size={14} className="shrink-0 text-success-600" />
-              {t('notifications.sentSuccess', { channel: result.channel, count: result.sent })}
+              {/* IN_APP is a driver broadcast: res.sent is drivers online, not passengers. */}
+              {result.channel === 'IN_APP'
+                ? result.sent > 0
+                  ? t('notifications.broadcastSent', { count: result.sent })
+                  : t('notifications.broadcastNoDrivers')
+                : t('notifications.sentSuccess', { channel: result.channel, count: result.sent })}
               {result.devMode && (
                 <Badge variant="secondary" className="ml-1 text-xs">
                   {t('notifications.devMode')}

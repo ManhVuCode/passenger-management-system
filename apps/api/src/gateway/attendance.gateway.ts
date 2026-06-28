@@ -127,9 +127,24 @@ export class AttendanceGateway implements OnGatewayConnection, OnGatewayDisconne
     this.server?.to(room).emit('round:status-updated', data)
   }
 
-  broadcastCallAlert(data: { tripId: string; message: string }) {
+  /** Returns how many driver (BUS_MANAGER) sockets are currently in the trip room.
+   *  Admins watching the live dashboard sit in the same room but are not the alert's
+   *  audience, so they are excluded from the count. */
+  async broadcastCallAlert(data: { tripId: string; message: string }): Promise<number> {
     const room = `trip:${data.tripId}`
     this.server?.to(room).emit('broadcast:call', data)
-    this.logger.log(`Broadcast call alert to room ${room}: ${data.message}`)
+    const sockets = (await this.server?.in(room).fetchSockets()) ?? []
+    // Count DISTINCT drivers, not sockets — one driver with two tabs/devices is still one.
+    const driverIds = new Set(
+      sockets
+        .map((s) => s.data?.user as JwtPayload | undefined)
+        .filter((u) => u?.role === 'BUS_MANAGER')
+        .map((u) => u!.userId),
+    )
+    const driversOnline = driverIds.size
+    this.logger.log(
+      `Broadcast call alert to room ${room}: ${data.message} (${driversOnline} driver(s) online)`,
+    )
+    return driversOnline
   }
 }

@@ -33,6 +33,7 @@ export const en = {
     busManagerPortal: 'BusManager Portal',
     invalidCredentials: 'Invalid email or password',
     connectionError: 'Connection error. Is the API running?',
+    backToOfficial: 'Back online? Return to the main site',
     changePassword: 'Change Password',
     currentPassword: 'Current Password',
     newPassword: 'New Password',

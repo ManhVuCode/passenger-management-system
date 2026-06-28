@@ -7,6 +7,8 @@ import { setCredentials } from './authSlice'
 import { consumeSsoHash } from './sso'
 import { Bus, Loader2, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react'
 
+const WEB_URL = import.meta.env.VITE_WEB_URL ?? 'https://web-pi-nine-58.vercel.app'
+
 // PWA có form đăng nhập riêng: ai cũng đăng nhập thẳng vào đây được (tài xế xem chuyến
 // của mình; admin cũng vào xem được). Vẫn nhận phiên SSO nếu được chuyển sang.
 export default function LoginPage() {
@@ -146,6 +148,17 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = WEB_URL
+          }}
+          className="mx-auto mt-6 flex items-center gap-1.5 text-xs font-semibold text-white/50 transition-colors hover:text-white"
+        >
+          <ArrowRight size={13} />
+          {t('auth.backToOfficial')}
+        </button>
       </div>
     </div>
   )

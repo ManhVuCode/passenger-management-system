@@ -35,6 +35,7 @@ export const vi: PWATranslationKeys = {
     busManagerPortal: 'Cổng tài xế',
     invalidCredentials: 'Email hoặc mật khẩu không đúng',
     connectionError: 'Lỗi kết nối. Kiểm tra API server.',
+    backToOfficial: 'Bạn đang online? Hãy quay về trang chính thức',
     changePassword: 'Đổi mật khẩu',
     currentPassword: 'Mật khẩu hiện tại',
     newPassword: 'Mật khẩu mới',

@@ -17,7 +17,10 @@ import {
   ShieldCheck,
   Loader2,
   AlertCircle,
+  WifiOff,
 } from 'lucide-react'
+
+const PWA_URL = import.meta.env.VITE_PWA_URL ?? 'https://pwa-sage-phi.vercel.app'
 
 const HERO_IMG =
   'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1600&q=80&auto=format&fit=crop'
@@ -324,6 +327,19 @@ export default function LoginPage() {
                 </Button>
               </motion.div>
             </form>
+          </div>
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = PWA_URL
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 transition-colors hover:text-primary-600"
+            >
+              <WifiOff size={13} />
+              {t('auth.offlineLink')}
+            </button>
           </div>
 
           <motion.p

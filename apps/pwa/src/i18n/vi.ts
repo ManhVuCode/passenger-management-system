@@ -56,6 +56,14 @@ export const vi: PWATranslationKeys = {
     emptyTitle: 'Chưa có chặng nào',
     emptyBody: 'Liên hệ Admin để được phân công',
     tapToCheckin: 'Nhấn để điểm danh',
+    adminTitle: 'Điểm danh',
+    driverSub: 'Các chặng được phân công',
+    adminSub: 'Điểm danh theo từng chặng',
+    selectTrip: 'Chọn chuyến',
+    noTrips: 'Chưa có chuyến nào',
+    noPassengers: 'Xe này chưa có hành khách.',
+    passengers: 'Hành khách ({{count}})',
+    pending: 'Chờ',
   },
 
   attendance: {

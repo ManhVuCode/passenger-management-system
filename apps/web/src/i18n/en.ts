@@ -84,6 +84,7 @@ export const en = {
     featureMultitenant: 'Multi-tenant',
     invalidCredentials: 'Invalid email or password',
     connectionError: 'Connection error. Is the API running?',
+    offlineLink: 'Offline? Open the driver app',
     changePassword: 'Change Password',
     currentPassword: 'Current Password',
     newPassword: 'New Password',

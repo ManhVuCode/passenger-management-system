@@ -86,6 +86,7 @@ export const vi: TranslationKeys = {
     featureMultitenant: 'Đa đơn vị',
     invalidCredentials: 'Email hoặc mật khẩu không đúng',
     connectionError: 'Lỗi kết nối. Kiểm tra API server.',
+    offlineLink: 'Đang offline? Mở ứng dụng tài xế',
     changePassword: 'Đổi mật khẩu',
     currentPassword: 'Mật khẩu hiện tại',
     newPassword: 'Mật khẩu mới',

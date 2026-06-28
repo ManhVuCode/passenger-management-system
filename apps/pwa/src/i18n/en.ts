@@ -54,6 +54,14 @@ export const en = {
     emptyTitle: 'No rounds yet',
     emptyBody: 'Contact your Admin to be assigned',
     tapToCheckin: 'Tap to check in',
+    adminTitle: 'Attendance',
+    driverSub: 'Your assigned rounds',
+    adminSub: 'Mark attendance by round',
+    selectTrip: 'Select a trip',
+    noTrips: 'No trips yet',
+    noPassengers: 'No passengers on this bus.',
+    passengers: 'Passengers ({{count}})',
+    pending: 'Pending',
   },
 
   attendance: {

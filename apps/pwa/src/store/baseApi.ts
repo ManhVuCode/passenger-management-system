@@ -15,7 +15,14 @@ export const baseApi = createApi({
       },
     })
 
-    const result = await rawBaseQuery(args, api, extraOptions)
+    let result = await rawBaseQuery(args, api, extraOptions)
+
+    // Giới hạn tốc độ tạm thời (HTTP 429): lùi dần rồi thử lại vài lần để một loạt
+    // query lúc tải trang không hiện thành lỗi/màn rỗng.
+    for (let attempt = 0; attempt < 4 && result.error?.status === 429; attempt++) {
+      await new Promise((r) => setTimeout(r, 400 * (attempt + 1)))
+      result = await rawBaseQuery(args, api, extraOptions)
+    }
 
     // Token hết hạn / bị thu hồi: xóa phiên để ProtectedRoute đưa về trang đăng nhập
     // chung, thay vì hiển thị màn hình "chưa được phân công" gây hiểu nhầm.

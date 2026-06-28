@@ -8,35 +8,34 @@ import { TripStatus, RoundStatus } from '@pms/shared'
 export class TripService {
   constructor(private prisma: PrismaService) {}
 
+  /** Derive trip status from round statuses IN MEMORY (no DB query) — locked rule 7. */
+  private statusFromRounds(rounds: { status: RoundStatus | string }[]): TripStatus {
+    if (rounds.length === 0) return TripStatus.PLANNED
+    const s = rounds.map((r) => r.status)
+    if (s.some((x) => x === RoundStatus.IN_PROGRESS)) return TripStatus.IN_PROGRESS
+    if (s.every((x) => x === RoundStatus.CANCELLED)) return TripStatus.CANCELLED
+    if (s.every((x) => x === RoundStatus.DONE || x === RoundStatus.CANCELLED)) return TripStatus.DONE
+    return TripStatus.PLANNED
+  }
+
+  /** Kept for any external/standalone use; fetches rounds then derives. */
   async deriveTripStatus(tripId: string): Promise<TripStatus> {
     const rounds = await this.prisma.round.findMany({
       where: { tripId },
       select: { status: true },
     })
-
-    if (rounds.length === 0) return TripStatus.PLANNED
-
-    const statuses = rounds.map((r) => r.status)
-
-    if (statuses.some((s) => s === RoundStatus.IN_PROGRESS)) return TripStatus.IN_PROGRESS
-    if (statuses.every((s) => s === RoundStatus.CANCELLED)) return TripStatus.CANCELLED
-    if (statuses.every((s) => s === RoundStatus.DONE || s === RoundStatus.CANCELLED)) return TripStatus.DONE
-    return TripStatus.PLANNED
+    return this.statusFromRounds(rounds)
   }
 
   async findAll(tenantId: string) {
+    // One query: trips + their round statuses. Status is derived in memory below,
+    // so there is NO per-trip follow-up query (previously an N+1 over deriveTripStatus).
     const trips = await this.prisma.trip.findMany({
       where: { tenantId },
       orderBy: { startDate: 'asc' },
       include: { rounds: { select: { status: true } } },
     })
-
-    return Promise.all(
-      trips.map(async (trip) => ({
-        ...trip,
-        status: await this.deriveTripStatus(trip.id),
-      })),
-    )
+    return trips.map((trip) => ({ ...trip, status: this.statusFromRounds(trip.rounds) }))
   }
 
   async findOne(id: string, tenantId: string) {
@@ -45,8 +44,8 @@ export class TripService {
       include: { rounds: { orderBy: { sequence: 'asc' } } },
     })
     if (!trip) throw new NotFoundException('Trip not found')
-
-    return { ...trip, status: await this.deriveTripStatus(id) }
+    // Derive from the rounds already included — no extra query.
+    return { ...trip, status: this.statusFromRounds(trip.rounds) }
   }
 
   async create(tenantId: string, dto: CreateTripDto) {

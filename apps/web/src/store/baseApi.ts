@@ -15,7 +15,15 @@ export const baseApi = createApi({
       },
     })
 
-    const result = await rawBaseQuery(args, api, extraOptions)
+    let result = await rawBaseQuery(args, api, extraOptions)
+
+    // Giới hạn tốc độ tạm thời (HTTP 429): khi mở một trang, client bắn nhiều query
+    // cùng lúc và có thể chạm trần rate-limit. Lùi dần rồi thử lại vài lần để dữ liệu
+    // tự hồi phục thay vì hiện trạng thái rỗng.
+    for (let attempt = 0; attempt < 4 && result.error?.status === 429; attempt++) {
+      await new Promise((r) => setTimeout(r, 400 * (attempt + 1)))
+      result = await rawBaseQuery(args, api, extraOptions)
+    }
 
     // Phiên đăng nhập hết hạn hoặc bị thu hồi (token không hợp lệ / tenant bị đình chỉ): xóa trạng thái xác thực
     // để ProtectedRoute chuyển hướng về /login thay vì để lại các trang bị lỗi.

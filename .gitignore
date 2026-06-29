@@ -28,3 +28,4 @@ docs/ui-redesign-notes.*
 apps/api/prisma/demo-seed.ts
 apps/api/prisma/demo-seed-hust.ts
 apps/api/prisma/backfill-password-enc.ts
+apps/api/prisma/reset-demo-passwords.ts

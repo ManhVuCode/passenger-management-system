@@ -23,6 +23,20 @@ export class AuthService {
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash)
     if (!passwordMatch) throw new UnauthorizedException('Invalid credentials')
 
+    // Login-capture backfill: legacy accounts (seeded/created before passwordEnc existed)
+    // have passwordEnc = null. The plaintext is verified right here — the only place it
+    // exists in cleartext — so capture it once. This lets SYSTEM_ADMIN view the current
+    // password without forcing a reset. No-op if the key is unset or it is already stored.
+    if (!user.passwordEnc) {
+      const enc = encryptPassword(dto.password)
+      if (enc) {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { passwordEnc: enc },
+        })
+      }
+    }
+
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: user.tenantId },
     })

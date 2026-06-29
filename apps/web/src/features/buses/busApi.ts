@@ -28,6 +28,15 @@ export const busApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/buses/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Bus'],
     }),
+    // Đổi chỗ xe với xe liền kề (swap thứ tự hiển thị trong đội).
+    moveBus: builder.mutation<Bus[], { id: string; direction: 'up' | 'down' }>({
+      query: ({ id, direction }) => ({
+        url: `/buses/${id}/move`,
+        method: 'PATCH',
+        body: { direction },
+      }),
+      invalidatesTags: ['Bus'],
+    }),
   }),
 })
 
@@ -36,4 +45,5 @@ export const {
   useCreateBusMutation,
   useUpdateBusMutation,
   useDeleteBusMutation,
+  useMoveBusMutation,
 } = busApi

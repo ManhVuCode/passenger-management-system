@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode, HttpStatus
 import { BusService } from './bus.service'
 import { CreateBusDto } from './dto/create-bus.dto'
 import { UpdateBusDto } from './dto/update-bus.dto'
+import { MoveBusDto } from './dto/move-bus.dto'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { CurrentUser } from '../../common/decorators/current-user.decorator'
 import { Role, JwtPayload } from '@pms/shared'
@@ -30,6 +31,12 @@ export class BusController {
   @Roles(Role.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateBusDto, @CurrentUser() user: JwtPayload) {
     return this.busService.update(id, user.tenantId, dto)
+  }
+
+  @Patch(':id/move')
+  @Roles(Role.ADMIN)
+  move(@Param('id') id: string, @Body() dto: MoveBusDto, @CurrentUser() user: JwtPayload) {
+    return this.busService.move(id, user.tenantId, dto.direction)
   }
 
   @Delete(':id')

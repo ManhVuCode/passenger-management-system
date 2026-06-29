@@ -297,7 +297,13 @@ function AdminRoundBuses({
 
   return (
     <div className="space-y-4 px-4 pb-6">
-      {Object.entries(byBus).map(([busId, rows]) => {
+      {Object.entries(byBus)
+        .sort(
+          ([, a], [, b]) =>
+            (a[0]?.roundBusAssignment?.bus?.order ?? 0) -
+            (b[0]?.roundBusAssignment?.bus?.order ?? 0),
+        )
+        .map(([busId, rows]) => {
         const bus = rows[0]?.roundBusAssignment?.bus
         return (
           <div key={busId} className="rounded-2xl bg-white shadow-card ring-1 ring-gray-100">

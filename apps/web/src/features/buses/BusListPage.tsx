@@ -6,6 +6,7 @@ import {
   useCreateBusMutation,
   useUpdateBusMutation,
   useDeleteBusMutation,
+  useMoveBusMutation,
 } from './busApi'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -24,6 +25,8 @@ import {
   Bus as BusIcon,
   Camera,
   Loader2,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { PhotoUploadInput } from './PhotoUploadInput'
@@ -45,6 +48,7 @@ export default function BusListPage() {
   const [createBus, { isLoading: creating }] = useCreateBusMutation()
   const [updateBus, { isLoading: updating }] = useUpdateBusMutation()
   const [deleteBus] = useDeleteBusMutation()
+  const [moveBus] = useMoveBusMutation()
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [editingBus, setEditingBus] = useState<Bus | null>(null)
   const [form, setForm] = useState(DEFAULT_FORM)
@@ -242,8 +246,12 @@ export default function BusListPage() {
                 >
                   <BusCard
                     bus={bus}
+                    index={i}
+                    total={buses.length}
                     onDelete={() => deleteBus(bus.id)}
                     onEdit={() => openEdit(bus)}
+                    onMoveUp={() => moveBus({ id: bus.id, direction: 'up' })}
+                    onMoveDown={() => moveBus({ id: bus.id, direction: 'down' })}
                   />
                 </motion.div>
               ))}
@@ -504,11 +512,15 @@ function BusPlaceholderSvg({ className }: { className?: string }) {
 
 interface BusCardProps {
   bus: Bus
+  index: number
+  total: number
   onDelete: () => void
   onEdit: () => void
+  onMoveUp: () => void
+  onMoveDown: () => void
 }
 
-function BusCard({ bus, onDelete, onEdit }: BusCardProps) {
+function BusCard({ bus, index, total, onDelete, onEdit, onMoveUp, onMoveDown }: BusCardProps) {
   const { t } = useTranslation()
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -588,6 +600,10 @@ function BusCard({ bus, onDelete, onEdit }: BusCardProps) {
           <div className="min-w-0">
             <h3 className="truncate font-display text-base font-bold text-navy-900">{bus.name}</h3>
             <div className="mt-2 flex flex-wrap items-center gap-2">
+              {/* Thứ tự xe trong đội — Admin có thể đổi chỗ bằng nút lên/xuống */}
+              <span className="inline-flex items-center rounded-full bg-navy-50 px-2.5 py-1 text-[11px] font-bold text-navy-700 ring-1 ring-navy-100">
+                {t('buses.position', { n: index + 1 })}
+              </span>
               {/* Biển số kiểu tấm biển xe thật: nền navy, chữ mono */}
               <span className="inline-flex items-center rounded-md bg-navy-900 px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wider text-white shadow-sm ring-1 ring-navy-700">
                 {bus.licensePlate}
@@ -599,6 +615,25 @@ function BusCard({ bus, onDelete, onEdit }: BusCardProps) {
             </div>
           </div>
           <div className="flex shrink-0 gap-1.5">
+            {/* Đổi chỗ xe trong đội (swap với xe liền kề) */}
+            <div className="flex flex-col gap-1">
+              <button
+                onClick={onMoveUp}
+                disabled={index === 0}
+                aria-label={t('buses.moveUp')}
+                className="flex h-[17px] w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-100 bg-white text-gray-500 shadow-sm transition-colors duration-200 hover:border-primary-200 hover:bg-primary-50 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+              >
+                <ChevronUp size={14} />
+              </button>
+              <button
+                onClick={onMoveDown}
+                disabled={index === total - 1}
+                aria-label={t('buses.moveDown')}
+                className="flex h-[17px] w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-100 bg-white text-gray-500 shadow-sm transition-colors duration-200 hover:border-primary-200 hover:bg-primary-50 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+              >
+                <ChevronDown size={14} />
+              </button>
+            </div>
             <button
               onClick={onEdit}
               aria-label={t('common.edit')}

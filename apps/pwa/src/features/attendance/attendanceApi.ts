@@ -77,7 +77,7 @@ export interface RoundAllocation {
     type?: string | null
     note?: string | null
   }
-  roundBusAssignment?: { busId: string; bus: { name: string; licensePlate: string } }
+  roundBusAssignment?: { busId: string; bus: { name: string; licensePlate: string; order?: number } }
   attendanceRecord?: { id: string; status: string } | null
 }
 

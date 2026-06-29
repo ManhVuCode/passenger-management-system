@@ -118,6 +118,7 @@ model Bus {
   licensePlate String   @unique
   name         String
   capacity     Int
+  order        Int      @default(0) // thứ tự hiển thị xe trong đội (đổi chỗ kiểu swap)
   photoFront   String
   photoSide    String
   photoRear    String

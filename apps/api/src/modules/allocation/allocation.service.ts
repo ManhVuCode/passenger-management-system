@@ -88,7 +88,7 @@ export class AllocationService {
           select: { id: true, name: true, phone: true, type: true, note: true },
         },
         roundBusAssignment: {
-          select: { busId: true, bus: { select: { name: true, licensePlate: true } } },
+          select: { busId: true, bus: { select: { name: true, licensePlate: true, order: true } } },
         },
         attendanceRecord: {
           select: { id: true, status: true },

@@ -281,7 +281,13 @@ function RoundAttendance({
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      {Object.entries(byBus).map(([busId, rows], i) => (
+      {Object.entries(byBus)
+        .sort(
+          ([, a], [, b]) =>
+            (a[0]?.roundBusAssignment?.bus?.order ?? 0) -
+            (b[0]?.roundBusAssignment?.bus?.order ?? 0),
+        )
+        .map(([busId, rows], i) => (
         <BusSection
           key={busId}
           busId={busId}

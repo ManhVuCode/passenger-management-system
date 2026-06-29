@@ -5,7 +5,7 @@ export interface RoundPassengerAllocation {
   tripPassengerAssignmentId: string
   busId: string
   tripPassengerAssignment: { id: string; name: string; phone: string; type?: string; note?: string }
-  roundBusAssignment?: { busId: string; bus: { name: string; licensePlate: string } }
+  roundBusAssignment?: { busId: string; bus: { name: string; licensePlate: string; order?: number } }
   attendanceRecord?: { id: string; status: string } | null
 }
 

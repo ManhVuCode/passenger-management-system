@@ -10,7 +10,7 @@ export class BusService {
   async findAll(tenantId: string) {
     return this.prisma.bus.findMany({
       where: { tenantId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     })
   }
 
@@ -31,15 +31,45 @@ export class BusService {
     })
     if (existing) throw new ConflictException('License plate already registered')
 
+    // Xe mới xếp cuối đội: order = max hiện có + 1.
+    const max = await this.prisma.bus.aggregate({
+      where: { tenantId },
+      _max: { order: true },
+    })
+
     return this.prisma.bus.create({
       data: {
         tenantId,
+        order: (max._max.order ?? 0) + 1,
         ...dto,
         photoFront: dto.photoFront ?? '',
         photoSide: dto.photoSide ?? '',
         photoRear: dto.photoRear ?? '',
       },
     })
+  }
+
+  /**
+   * Đổi chỗ một xe với xe liền kề theo thứ tự hiển thị (swap order).
+   * 'up' = đổi với xe đứng ngay trước; 'down' = đổi với xe đứng ngay sau.
+   * Xe ở đầu/cuối thì không đổi gì. Trả về danh sách đã sắp xếp lại.
+   */
+  async move(id: string, tenantId: string, direction: 'up' | 'down') {
+    const bus = await this.findOne(id, tenantId)
+    const neighbor = await this.prisma.bus.findFirst({
+      where: {
+        tenantId,
+        order: direction === 'up' ? { lt: bus.order } : { gt: bus.order },
+      },
+      orderBy: { order: direction === 'up' ? 'desc' : 'asc' },
+    })
+    if (neighbor) {
+      await this.prisma.$transaction([
+        this.prisma.bus.update({ where: { id: bus.id }, data: { order: neighbor.order } }),
+        this.prisma.bus.update({ where: { id: neighbor.id }, data: { order: bus.order } }),
+      ])
+    }
+    return this.findAll(tenantId)
   }
 
   async update(id: string, tenantId: string, dto: UpdateBusDto) {

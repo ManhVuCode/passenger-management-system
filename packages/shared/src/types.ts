@@ -49,6 +49,7 @@ export interface Bus {
   licensePlate: string
   name: string
   capacity: number
+  order: number
   photoFront: string
   photoSide: string
   photoRear: string

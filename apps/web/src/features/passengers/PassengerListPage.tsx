@@ -89,7 +89,7 @@ export default function PassengerListPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editNote, setEditNote] = useState('')
   const [editEmail, setEditEmail] = useState('')
-  const [sheetUrl, setSheetUrl] = useState(() => localStorage.getItem('mpms-sheet-url:' + tripId) ?? '')
+  const [sheetUrl, setSheetUrl] = useState('')
   const [importing, setImporting] = useState(false)
   const [importPreview, setImportPreview] = useState<ImportResult | null>(null)
   const xlsxInputRef = useRef<HTMLInputElement>(null)
@@ -106,10 +106,13 @@ export default function PassengerListPage() {
   const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
   const token = localStorage.getItem('accessToken') ?? ''
 
-  // Giữ lại link Google Sheet đã đồng bộ cho từng chuyến (khỏi phải nhập lại).
+  // Nạp lại link Google Sheet đã lưu của ĐÚNG chuyến hiện tại — chạy cả khi mount lẫn khi
+  // đổi chuyến (route /trips/:tripId/passengers tái dùng cùng component, chỉ đổi tripId).
+  // Việc LƯU được làm trực tiếp ở onChange của ô nhập (không qua effect), nên điều hướng
+  // giữa các chuyến không bao giờ ghi đè link của chuyến khác.
   useEffect(() => {
-    if (tripId) localStorage.setItem('mpms-sheet-url:' + tripId, sheetUrl)
-  }, [sheetUrl, tripId])
+    setSheetUrl(tripId ? (localStorage.getItem('mpms-sheet-url:' + tripId) ?? '') : '')
+  }, [tripId])
 
   async function handleAddPassenger(e: React.FormEvent) {
     e.preventDefault()
@@ -194,7 +197,8 @@ export default function PassengerListPage() {
         passengers: importPreview.rows,
       }).unwrap()
       setImportPreview(null)
-      setTab('list')
+      // Ở lại tab Sheet Sync để link đã nhập vẫn hiển thị (không nhảy đi mất sau khi import).
+      setTab('sheet')
       reportImport(result.created, result.skipped)
     } catch (err: unknown) {
       const msg = (err as { data?: { message?: string } })?.data?.message
@@ -377,7 +381,11 @@ export default function PassengerListPage() {
                     />
                     <Input
                       value={sheetUrl}
-                      onChange={(e) => setSheetUrl(e.target.value)}
+                      onChange={(e) => {
+                        setSheetUrl(e.target.value)
+                        // Lưu ngay theo từng chuyến — link không mất sau khi import / tải lại.
+                        if (tripId) localStorage.setItem('mpms-sheet-url:' + tripId, e.target.value)
+                      }}
                       placeholder="https://docs.google.com/spreadsheets/d/..."
                       required
                       className="pl-10"

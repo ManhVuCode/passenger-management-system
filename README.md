@@ -3,9 +3,20 @@
 Thesis: "Develop a website for tracking passenger attendance on tourist buses"
 *(Luận văn: Xây dựng website theo dõi điểm danh hành khách trên xe du lịch)*
 
-**Stack:** NestJS · React · PostgreSQL · Socket.io · PWA
-**Tests:** 57 E2E passing across 7 suites
-**Sprints:** 1–7 complete · 8–9 planned
+**Stack:** NestJS · React · PostgreSQL · Redis (BullMQ) · Socket.IO · PWA
+**Tests:** 85 E2E across 9 suites + 31 unit specs (116 cases)
+**Sprints:** 1–9 all complete
+
+### 🔗 Live Demo
+
+| App | URL |
+|-----|-----|
+| Admin Web | https://web-pi-nine-58.vercel.app |
+| BusManager PWA (driver) | https://pwa-sage-phi.vercel.app |
+| API | https://mpms-api-production.up.railway.app |
+| API Docs (Swagger) | https://mpms-api-production.up.railway.app/api/docs |
+
+Demo login (every account): **`admin123`** — super admin `admin@super.com`, tenant admin `admin@demo.com`, driver `driver@demo.com`. Full list in §7.
 
 ---
 
@@ -37,14 +48,15 @@ Real-time attendance updates flow through a Socket.io gateway (`/attendance` nam
                                                   │  :5432         │
                                                   └────────────────┘
                                                   ┌────────────────┐
-                                                  │  EMQX (MQTT)   │
-                                                  │  :1883 :8083   │
+                                                  │ Redis (BullMQ) │
+                                                  │  :6379         │
                                                   └────────────────┘
 ```
 
-- **Admin Web** speaks REST + Socket.io to the API.
-- **BusManager PWA** speaks REST + Socket.io; Service Worker is scaffolded for offline-first (Sprint 9).
-- **EMQX** is provisioned in `docker-compose.yml` for forthcoming MQTT broadcast features (Sprint 8).
+- **Admin Web** speaks REST + Socket.IO to the API.
+- **BusManager PWA** speaks REST + Socket.IO and is a full **offline-first** PWA — Workbox service worker + Background Sync (Sprint 9, done).
+- **Redis** backs a **BullMQ** queue for notification delivery/retries; the hosted demo uses Upstash (`rediss://`).
+- Real-time runs over **Socket.IO** only. `docker-compose.yml` still ships an **EMQX/MQTT** broker, but it is **not used at API runtime** (legacy scaffold).
 
 ---
 
@@ -56,21 +68,23 @@ passenger-management-system/
 │   ├── api/                   # NestJS backend
 │   │   ├── prisma/            # Schema, migrations, seed
 │   │   ├── src/
-│   │   │   ├── auth/          # JWT login + passport strategy
-│   │   │   ├── common/        # Guards (Jwt, Roles, Tenant), decorators
-│   │   │   ├── gateway/       # Socket.io AttendanceGateway
-│   │   │   └── modules/       # trip, round, bus, assignment,
-│   │   │                      # passenger, allocation, attendance, me
-│   │   └── test/              # 7 E2E suites
+│   │   │   ├── auth/          # JWT login + change-password
+│   │   │   ├── common/        # Guards (Jwt, Roles, Tenant), crypto, decorators
+│   │   │   ├── gateway/       # Socket.IO AttendanceGateway (/attendance)
+│   │   │   └── modules/       # trip, round, bus, assignment, passenger,
+│   │   │                      # allocation, attendance, me, users,
+│   │   │                      # system-admin, notification, notification-config
+│   │   └── test/              # 9 E2E suites (85) + unit specs (31)
 │   ├── web/                   # Admin Web App (React + Vite)
-│   │   └── src/features/      # auth, trips, buses, passengers,
-│   │                          # allocation, dashboard
+│   │   └── src/features/      # auth, trips, buses, passengers, allocation,
+│   │                          # dashboard, notifications, settings,
+│   │                          # system-admin, users, me
 │   └── pwa/                   # BusManager PWA (React + Vite + vite-plugin-pwa)
 │       └── src/features/      # auth, home, attendance
 ├── packages/
 │   └── shared/                # Shared TypeScript types + enums
 ├── docs/                      # Diagrams (ERD, UC, Activity, Sequence, ...)
-├── docker-compose.yml         # PostgreSQL + EMQX
+├── docker-compose.yml         # PostgreSQL + Redis + EMQX (legacy)
 ├── pnpm-workspace.yaml
 └── CLAUDE.md                  # Project rules, sprint roadmap, conventions
 ```
@@ -86,7 +100,7 @@ passenger-management-system/
 | Docker + Docker Compose | latest | — |
 | Git | 2.30+ | — |
 
-> Vietnamese note: máy host cần cài Node, pnpm, Docker; PostgreSQL và EMQX đều chạy bằng Docker — không cần cài thêm.
+> Vietnamese note: máy host cần cài Node, pnpm, Docker; PostgreSQL, Redis và EMQX đều chạy bằng Docker — không cần cài thêm.
 
 ---
 
@@ -101,7 +115,7 @@ git checkout develop
 # 2. Install all dependencies
 pnpm install
 
-# 3. Start Docker services (PostgreSQL + MQTT broker)
+# 3. Start Docker services (PostgreSQL + Redis + EMQX)
 docker compose up -d
 
 # 4. Set up environment variables
@@ -121,7 +135,7 @@ Once running:
 | App | URL | Description |
 |-----|-----|-------------|
 | API | http://localhost:3000 | NestJS REST API |
-| API Docs | http://localhost:3000/api/docs | Swagger / OpenAPI (planned) |
+| API Docs | http://localhost:3000/api/docs | Swagger / OpenAPI |
 | Admin Web | http://localhost:5173 | Admin dashboard (desktop) |
 | BusManager PWA | http://localhost:5174 | Driver mobile app |
 | WebSocket | ws://localhost:3000/attendance | Live attendance broadcast |
@@ -130,37 +144,50 @@ Once running:
 
 ## 7. Demo Credentials
 
-Seeded by `pnpm db:seed`:
+**Hosted demo** (the live URLs above) — every account uses the password **`admin123`**:
 
 | Role | Email | Password | Tenant |
 |------|-------|----------|--------|
-| Admin | admin@demo.com | password123 | demo-tours |
-| BusManager | driver@demo.com | password123 | demo-tours |
-| Admin (cross-tenant) | admin2@other.com | password123 | other-tours |
+| SystemAdmin (super admin) | admin@super.com | `admin123` | — (platform) |
+| Admin | admin@demo.com | `admin123` | demo-tours |
+| BusManager (driver) | driver@demo.com | `admin123` | demo-tours |
+| Admin (cross-tenant) | admin2@other.com | `admin123` | other-tours |
 
 The cross-tenant admin proves tenant isolation: requesting `demo-tours` resources returns HTTP 403.
+SystemAdmin can view every user's current password — reversible `PASSWORD_ENC_KEY` decryption plus login-capture — under **System → tenant → users**.
+
+> **Local seed** (`pnpm db:seed`, see `apps/api/prisma/seed.ts`) creates `sysadmin@platform.com`, `admin@demo.com`, `driver@demo.com`, and `admin2@other.com` with the password **`password123`**. The hosted demo above was later normalised to `admin123`.
 
 ---
 
 ## 8. Environment Variables
 
-### `apps/api/.env`
+### `apps/api/.env` (see `apps/api/.env.example`)
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `DATABASE_URL` | ✅ | `postgresql://dev:devpassword@localhost:5432/passenger_mgmt` | Prisma connection string |
-| `JWT_SECRET` | ✅ | `dev-secret-change-in-production` | JWT signing key |
-| `JWT_EXPIRES_IN` | ✅ | `7d` | Token expiry |
-| `PORT` | ✅ | `3000` | API port |
-| `SMS_API_KEY` | ❌ | — | SMS provider key (Sprint 8 — dev logs only) |
-| `EMAIL_PROVIDER` / `BREVO_API_KEY` / `EMAIL_FROM` | ❌ | `MOCK` | Email channel (Brevo); mock mode logs only |
+| Variable | Required | Description |
+|----------|:--------:|-------------|
+| `DATABASE_URL` | ✅ | Prisma runtime connection (Supabase pooler `:6543` in prod) |
+| `DIRECT_URL` | ✅ | Direct connection for migrations (`:5432`) |
+| `JWT_SECRET` | ✅ | JWT signing key |
+| `JWT_EXPIRES_IN` | ✅ | Token expiry (e.g. `7d`) |
+| `PORT` | ✅ | API port (default `3000`) |
+| `NODE_ENV` | ❌ | `development` / `production` |
+| `CORS_ORIGINS` | ❌ | Comma-separated allowed origins (REST + Socket.IO) |
+| `PASSWORD_ENC_KEY` | ❌ | AES key so SystemAdmin can view users' current passwords |
+| `REDIS_URL` | ❌ | BullMQ queue (`redis://…` local, `rediss://…` for Upstash TLS) |
+| `EMAIL_PROVIDER` / `BREVO_API_KEY` / `EMAIL_FROM` / `EMAIL_FROM_NAME` | ❌ | Email channel (Brevo); `MOCK` just logs |
+| `SMS_PROVIDER` / `SMS_API_KEY` / `SMS_SECRET_KEY` / `SMS_BRANDNAME` / `SMS_FROM` | ❌ | SMS channel (`MOCK` / eSMS / Twilio) — UI still marked "in development" |
+| `BROADCAST_API_KEY` | ❌ | In-app broadcast channel |
+
+> Telegram bot tokens are **not** env vars — they are stored per tenant in the database and managed via `PUT /notification-config/telegram`.
 
 ### `apps/web/.env` and `apps/pwa/.env`
 
-| Variable | Default |
-|----------|---------|
-| `VITE_API_URL` | `http://localhost:3000` |
-| `VITE_WS_URL` | `ws://localhost:8083` |
+| Variable | App | Default | Purpose |
+|----------|-----|---------|---------|
+| `VITE_API_URL` | web + pwa | `http://localhost:3000` | REST + Socket.IO base URL |
+| `VITE_PWA_URL` | web | `http://localhost:5174` | Unified-login handoff → driver PWA |
+| `VITE_WEB_URL` | pwa | `http://localhost:5173` | Unified-login handoff → admin web |
 
 ---
 
@@ -171,8 +198,9 @@ Run from the project root unless noted otherwise:
 | Command | Description |
 |---------|-------------|
 | `pnpm dev` | Start API + Admin Web + PWA in parallel |
+| `pnpm setup` | Generate Prisma client + apply migrations (`migrate deploy`) |
 | `pnpm build` | Build all packages (`shared` → `api` → `web` → `pwa`) |
-| `pnpm test` | Run API E2E test suite |
+| `pnpm test` | Run the API test suite |
 | `pnpm db:migrate` | Run Prisma migrations against the dev database |
 | `pnpm db:seed` | Seed demo tenants, users, and accounts |
 | `pnpm db:studio` | Open Prisma Studio (DB GUI on http://localhost:5555) |
@@ -207,55 +235,73 @@ Two additional invariants worth knowing:
 
 ## 11. API Overview
 
-Selected routes — see Swagger (planned) or controllers under `apps/api/src/modules/` for the full list.
+Selected routes — the full, always-current list is in **Swagger** at `/api/docs`, or the controllers under `apps/api/src/modules/`.
 
 ```
 Auth
   POST   /auth/login
+  POST   /auth/change-password
 
-Trips
-  GET    /trips
-  POST   /trips
-  GET    /trips/:id
-  PATCH  /trips/:id
+System (SystemAdmin only)
+  GET    /system/tenants
+  POST   /system/tenants
+  PATCH  /system/tenants/:id
+  GET    /system/tenants/:id/users            ?includePassword=true → current passwords
+  POST   /system/tenants/:id/users
+  PATCH  /system/tenants/:id/users/:userId
+  PATCH  /system/tenants/:id/users/:userId/reset-password
+  DELETE /system/tenants/:id/users/:userId
 
-Rounds
-  GET    /trips/:tripId/rounds
-  POST   /trips/:tripId/rounds
-  PATCH  /trips/:tripId/rounds/:id/status
+Users (Admin — own tenant)
+  GET | POST | PATCH | DELETE   /users[/:id]
+
+Trips / Rounds
+  GET | POST | PATCH | DELETE   /trips[/:id]
+  GET | POST                    /trips/:tripId/rounds
+  PATCH                         /trips/:tripId/rounds/:id/status
 
 Buses
-  GET    /buses
-  POST   /buses
+  GET | POST | PATCH | DELETE   /buses[/:id]
+  PATCH                         /buses/:id/move            (reorder — swap)
 
 Assignment
-  POST   /trips/:tripId/rounds/:roundId/buses
-  POST   /trips/:tripId/rounds/:roundId/buses/:busId/manager
+  POST | DELETE   /trips/:tripId/rounds/:roundId/buses[/:busId]
+  POST | DELETE   /trips/:tripId/rounds/:roundId/buses/:busId/manager
 
 Passengers
-  GET    /trips/:tripId/passengers
-  POST   /trips/:tripId/passengers
-  POST   /trips/:tripId/passengers/bulk
-  POST   /trips/:tripId/passengers/sheet-sync
-  GET    /trips/:tripId/passengers/export/csv
+  GET | POST | PATCH | DELETE   /trips/:tripId/passengers[/:id]
+  POST   /trips/:tripId/passengers/bulk           (xlsx/CSV rows parsed client-side)
+  POST   /trips/:tripId/passengers/sheet-sync     (Google Sheet)
+  GET    /trips/:tripId/passengers/export/xlsx
 
 Allocation
+  GET    /trips/:tripId/rounds/allocations-summary
   POST   /trips/:tripId/rounds/:roundId/buses/:busId/allocations
   PATCH  /trips/:tripId/rounds/:roundId/allocations/:id/move
 
 Attendance
+  GET    /trips/:tripId/rounds/:roundId/buses/:busId/attendance
   POST   /trips/:tripId/rounds/:roundId/buses/:busId/attendance
+  POST   /trips/:tripId/rounds/:roundId/buses/:busId/attendance/reset
   PATCH  /trips/:tripId/rounds/:roundId/attendance/:id/override
   GET    /trips/:tripId/rounds/:roundId/attendance/summary
   PATCH  /trips/:tripId/rounds/:roundId/note
 
-Me
-  GET    /me/assignments        (BusManager: see assigned rounds + bus)
+Notifications
+  POST   /trips/:tripId/rounds/:roundId/notify
+  GET    /trips/:tripId/rounds/:roundId/notify/email-recipients
+  GET    /trips/:tripId/notifications                 (history)
+  GET | PUT          /notification-config/auto-rules
+  GET | PUT | DELETE /notification-config/telegram
 
-WebSocket
+Me / Health
+  GET    /me/assignments        (BusManager: assigned rounds + bus)
+  GET    /health
+
+WebSocket (Socket.IO)
   namespace: /attendance
   client → server: join-trip, leave-trip
-  server → client: attendance:updated, round:status-updated
+  server → client: attendance:updated, round:status-updated, broadcast:call
 ```
 
 Role gating (enforced by `RolesGuard` + `@Roles()` decorator):
@@ -286,17 +332,21 @@ cd apps/api && pnpm test:e2e -- --testPathPatterns=attendance
 cd apps/api && npx jest --testPathPatterns=attendance.gateway.spec
 ```
 
-Current status: **57/57 E2E tests passing** across these 7 suites:
+Current status: **85 E2E cases across 9 suites**, plus **31 unit specs** (116 total):
 
-| Suite | Tests | Coverage |
-|-------|-------|----------|
-| auth.e2e | 6 | Login, JWT, protected routes |
-| app.e2e | 1 | Bootstrap smoke |
-| trip.e2e | — | Trip CRUD, name validation, derived status |
-| bus.e2e | — | Bus CRUD, license-plate uniqueness, photo fields |
-| passenger.e2e | — | Passenger CRUD, bulk import, sheet sync, CSV export |
-| allocation.e2e | — | Allocate, move, capacity warning, scope guards |
-| attendance.e2e | 11 | Mark, scope, override, cascade, summary, note, /me/assignments |
+| E2E Suite | Tests | Coverage |
+|-----------|:-----:|----------|
+| auth.e2e | 7 | Login, JWT, change-password, protected routes |
+| app.e2e | 3 | Bootstrap smoke + health |
+| trip.e2e | 11 | Trip CRUD, name validation, derived status |
+| bus.e2e | 9 | Bus CRUD, plate uniqueness, photos, reorder |
+| passenger.e2e | 19 | CRUD, bulk import, sheet sync, xlsx export |
+| allocation.e2e | 10 | Allocate, move, capacity warning, scope guards |
+| attendance.e2e | 12 | Mark, scope, override, cascade, summary, note |
+| notification.e2e | 7 | Send, recipients, config, history |
+| users.e2e | 7 | User CRUD + tenant scoping |
+
+Unit specs (31): `trip.service`, `assignment.service`, `attendance.service`, `attendance.gateway`, `notification.dispatcher`, `telegram.service`, `telegram.provider`, `app.controller`.
 
 ---
 
@@ -305,7 +355,8 @@ Current status: **57/57 E2E tests passing** across these 7 suites:
 | Service | Image | Ports | Purpose |
 |---------|-------|------:|---------|
 | `postgres` | `postgres:16-alpine` | 5432 | Primary database |
-| `emqx` | `emqx/emqx:5.7.0` | 1883, 8083, 18083 | MQTT broker + WS + dashboard |
+| `redis` | `redis:7-alpine` | 6379 | BullMQ queue (notification delivery/retries) |
+| `emqx` | `emqx/emqx:5.7.0` | 1883, 8083, 18083 | MQTT broker — legacy, unused at API runtime |
 
 ```bash
 docker compose up -d              # start in background
@@ -333,7 +384,8 @@ All thesis artefacts live in `docs/`:
 | `docs/state-machine-diagram.html` | State Machine Diagram |
 | `docs/deployment-diagram.html` | Deployment Diagram |
 | `docs/component-deployment-diagrams.html` | Combined Component + Deployment Diagrams |
-| `docs/sprint-1a.md` … `sprint-2.md` | Per-sprint implementation specs |
+| `docs/swagger-guide.md` | How to read/use the Swagger API docs |
+| `docs/tutorial.md` · `docs/ReadToKnow.md` | Setup walkthrough + onboarding notes |
 
 Open any `.html` file directly in a browser — no build step needed.
 
@@ -359,15 +411,33 @@ Open any `.html` file directly in a browser — no build step needed.
 
 ## 16. Production Deployment
 
-The repository ships a production stack via `docker-compose.prod.yml` — Nginx reverse proxy + NestJS API (Dockerised) + PostgreSQL + EMQX, with healthchecks and restart policies.
+### Hosted demo (current)
 
-### Prerequisites
+The live demo runs fully managed — no servers to babysit:
+
+| Component | Platform | Where it's configured |
+|-----------|----------|-----------------------|
+| Admin Web | **Vercel** | `apps/web/vercel.json` (pnpm-filtered build) → https://web-pi-nine-58.vercel.app |
+| BusManager PWA | **Vercel** | `apps/pwa/vercel.json` (pnpm-filtered build) → https://pwa-sage-phi.vercel.app |
+| API | **Railway** | `apps/api/Dockerfile` → https://mpms-api-production.up.railway.app |
+| Database | **Supabase** PostgreSQL | `DATABASE_URL` (pooler `:6543`) + `DIRECT_URL` (`:5432`) |
+| Queue cache | **Upstash** Redis | `REDIS_URL` (`rediss://…`) |
+
+- Each frontend builds the shared package first, then itself, via the `buildCommand` in its `vercel.json`.
+- Railway builds the API image from `apps/api/Dockerfile` and injects `DATABASE_URL`, `JWT_SECRET`, `PASSWORD_ENC_KEY`, `REDIS_URL`, etc. as service variables.
+- Frontends reach the API through `VITE_API_URL`; unified login hands sessions between web and PWA via `VITE_PWA_URL` / `VITE_WEB_URL`.
+
+### Self-hosted (alternative)
+
+The repository also ships a single-box stack via `docker-compose.prod.yml` — Nginx reverse proxy + NestJS API (Dockerised) + PostgreSQL + EMQX, with healthchecks and restart policies.
+
+#### Prerequisites
 
 - Docker + Docker Compose on the target server
 - Domain pointing at the server (optional but recommended)
 - TLS certificates if you want HTTPS (Let's Encrypt fits the `nginx/certs/` volume)
 
-### Deploy
+#### Deploy
 
 ```bash
 # 1. Copy the production env template and fill in real values
@@ -388,29 +458,32 @@ curl http://your-domain/health
 # → { "status": "ok", "timestamp": "...", "uptime": ... }
 ```
 
-### Topology
+#### Topology
 
 - **nginx** — terminates TLS, proxies `/api/*` and `/socket.io/` to the API. Drop certs into `nginx/certs/` and uncomment the `return 301` redirect for HTTPS-only.
 - **api** — multi-stage Node 22 alpine build (`apps/api/Dockerfile`). Healthcheck hits `GET /health`. Restarts unless explicitly stopped.
 - **postgres** — alpine image, named volume `pg_data_prod`. Healthcheck via `pg_isready`.
-- **emqx** — same image as dev, used by the WebSocket gateway when MQTT support is wired in.
+- **emqx** — same image as dev; shipped for parity but **not used at runtime** (real-time is Socket.IO on the API).
 
 ---
 
 ## 17. BusManager PWA — Offline Behaviour
 
-The PWA caches at runtime via Workbox (`apps/pwa/src/service-worker/sw.ts`):
+The PWA caches at runtime via a hand-written Workbox service worker (`apps/pwa/src/service-worker/sw.ts`, `injectManifest`):
 
-| Resource | Strategy | Cache name |
-|---|---|---|
-| App shell (JS/CSS/HTML/icons) | precache (`injectManifest`) | workbox precache |
-| `GET /me/assignments` | NetworkFirst (5 s timeout) | `assignments-cache` |
-| `GET .../rounds/:roundId/.../attendance` and `/allocations` | StaleWhileRevalidate | `attendance-cache` |
-| `GET /trips/:tripId/passengers` | StaleWhileRevalidate | `passengers-cache` |
+| Resource | Method | Strategy | Cache name |
+|---|:---:|---|---|
+| App shell (JS/CSS/HTML/icons) | — | precache (`__WB_MANIFEST`) + `NavigationRoute` | workbox precache |
+| `POST .../attendance` | POST | **NetworkFirst + BackgroundSync** | `attendance-posts` |
+| `GET .../attendance` and `/allocations` | GET | NetworkFirst (5 s timeout) | `attendance-cache` |
+| `GET /me/assignments` | GET | NetworkFirst (5 s timeout) | `assignments-cache` |
+| `GET /trips` (list/detail) | GET | NetworkFirst (5 s timeout) | `trips-cache` |
+| `GET /trips/:tripId/passengers` | GET | NetworkFirst (5 s timeout) | `passengers-cache` |
 
 When offline:
 
-- `POST .../attendance` is captured by a Workbox **BackgroundSync** queue (`attendance-sync` tag, 24-hour retention) and replayed automatically on reconnect.
+- `POST .../attendance` is captured by a Workbox **BackgroundSync** queue (`attendance-sync` tag, 24-hour retention) and replayed automatically on reconnect; the optimistic RTK Query update survives the `FETCH_ERROR`/`TIMEOUT_ERROR`, so the mark stays on screen.
+- The GET reads use **NetworkFirst with a short timeout** (not StaleWhileRevalidate), so a cached copy never briefly overwrites a just-changed status; when the network is down they fall back to the cache.
 - Both `HomePage` and `AttendancePage` show an amber banner — `useOnlineStatus()` listens to `window` `online`/`offline` events.
 
 Production users can install the PWA from Chrome's address-bar prompt; the manifest is at `dist/manifest.webmanifest` after build.

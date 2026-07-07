@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { useAppDispatch } from '../../store/hooks'
 import { setCredentials } from './authSlice'
-import { consumeSsoHash } from './sso'
 import { Button } from '../../components/ui/button'
 import { LanguageToggle } from '../../components/LanguageToggle'
 import {
@@ -34,19 +33,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  // Nhận phiên chuyển từ PWA (admin lỡ đăng nhập bên app tài xế)
-  useEffect(() => {
-    const sso = consumeSsoHash()
-    if (sso) {
-      dispatch(setCredentials(sso))
-      navigate(
-        sso.role === 'SYSTEM_ADMIN' ? '/system' : sso.role === 'BUS_MANAGER' ? '/me' : '/',
-        { replace: true },
-      )
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

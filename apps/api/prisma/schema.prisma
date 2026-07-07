@@ -224,7 +224,6 @@ model NotificationLog {
   providerId   String?
   costMicro    Int?
   errorReason  String?
-  rsvp         String? // (legacy) voice IVR intent — feature removed; column retained, no longer written
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -238,8 +237,6 @@ model TenantNotificationConfig {
   smsCredsRef   String? // secret reference — NOT the raw key
   telegramBotToken    String? // secret — per-tenant bot token (@BotFather); 1 bot / 1 tenant
   telegramBotUsername String? // bot @username, dùng để dựng link/QR đăng ký
-  voiceProvider String? // (legacy) voice provider config — feature removed; column retained
-  voiceCredsRef String? // (legacy) feature removed; column retained
   autoRules     Json? // { roundStarted: bool, roundCancelled: bool, boardingReminder: bool }
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

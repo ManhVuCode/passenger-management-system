@@ -20,6 +20,24 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/** Trang chủ theo vai trò — dùng để đá về khi truy cập route ngoài quyền. */
+function roleHome(role?: string | null) {
+  if (role === 'SYSTEM_ADMIN') return '/system'
+  if (role === 'BUS_MANAGER') return '/me'
+  return '/'
+}
+
+/**
+ * Chặn truy cập route độc quyền theo vai trò NGAY ở client (phòng thủ chiều sâu + UX):
+ * server vẫn là nguồn thực thi cuối (403), nhưng ở đây ta đá thẳng về trang chủ của vai
+ * trò thay vì render một trang sẽ 403. VD: tài xế gõ thẳng /users, /system.
+ */
+function RequireRole({ roles, children }: { roles: string[]; children: React.ReactNode }) {
+  const role = useAppSelector((s) => s.auth.role)
+  if (role && !roles.includes(role)) return <Navigate to={roleHome(role)} replace />
+  return <>{children}</>
+}
+
 function IndexRoute() {
   const role = useAppSelector((s) => s.auth.role)
   if (role === 'SYSTEM_ADMIN') return <Navigate to="/system" replace />
@@ -47,9 +65,23 @@ export default function App() {
         <Route path="trips/:tripId/dashboard" element={<LiveDashboardPage />} />
         <Route path="trips/:tripId/passengers" element={<PassengerListPage />} />
         <Route path="buses" element={<BusListPage />} />
-        <Route path="users" element={<UserManagementPage />} />
+        <Route
+          path="users"
+          element={
+            <RequireRole roles={['ADMIN']}>
+              <UserManagementPage />
+            </RequireRole>
+          }
+        />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="system" element={<SystemAdminPage />} />
+        <Route
+          path="system"
+          element={
+            <RequireRole roles={['SYSTEM_ADMIN']}>
+              <SystemAdminPage />
+            </RequireRole>
+          }
+        />
       </Route>
     </Routes>
   )

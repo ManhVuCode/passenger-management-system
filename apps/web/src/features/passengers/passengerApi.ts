@@ -58,16 +58,6 @@ export const passengerApi = baseApi.injectEndpoints({
       query: ({ id, tripId }) => ({ url: `/trips/${tripId}/passengers/${id}`, method: 'DELETE' }),
       invalidatesTags: (_r, _e, { tripId }) => [{ type: 'Passenger', id: tripId }],
     }),
-    sheetSync: builder.mutation<
-      unknown,
-      { tripId: string; mode: 'GENERATE' | 'IMPORT'; sheetUrl?: string }
-    >({
-      query: ({ tripId, ...body }) => ({
-        url: `/trips/${tripId}/passengers/sheet-sync`,
-        method: 'POST',
-        body,
-      }),
-    }),
   }),
 })
 
@@ -77,5 +67,4 @@ export const {
   useBulkCreatePassengersMutation,
   useUpdatePassengerMutation,
   useDeletePassengerMutation,
-  useSheetSyncMutation,
 } = passengerApi

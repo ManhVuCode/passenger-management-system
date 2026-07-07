@@ -4,7 +4,6 @@ import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { useAppDispatch } from '../../store/hooks'
 import { setCredentials } from './authSlice'
-import { consumeSsoHash } from './sso'
 import { Bus, Loader2, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react'
 
 const WEB_URL = import.meta.env.VITE_WEB_URL ?? 'https://web-pi-nine-58.vercel.app'
@@ -22,12 +21,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const sso = consumeSsoHash()
-    if (sso) {
-      dispatch(setCredentials(sso))
-      navigate('/', { replace: true })
-      return
-    }
     if (localStorage.getItem('accessToken')) {
       navigate('/', { replace: true })
     }

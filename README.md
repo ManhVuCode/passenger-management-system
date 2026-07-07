@@ -4,7 +4,7 @@ Thesis: "Develop a website for tracking passenger attendance on tourist buses"
 *(Luận văn: Xây dựng website theo dõi điểm danh hành khách trên xe du lịch)*
 
 **Stack:** NestJS · React · PostgreSQL · Redis (BullMQ) · Socket.IO · PWA
-**Tests:** 85 E2E across 9 suites + 31 unit specs (116 cases)
+**Tests:** 76 E2E across 9 suites + 31 unit specs (107 cases)
 **Sprints:** 1–9 all complete
 
 ### 🔗 Live Demo
@@ -74,7 +74,7 @@ passenger-management-system/
 │   │   │   └── modules/       # trip, round, bus, assignment, passenger,
 │   │   │                      # allocation, attendance, me, users,
 │   │   │                      # system-admin, notification, notification-config
-│   │   └── test/              # 9 E2E suites (85) + unit specs (31)
+│   │   └── test/              # 9 E2E suites (76) + unit specs (31)
 │   ├── web/                   # Admin Web App (React + Vite)
 │   │   └── src/features/      # auth, trips, buses, passengers, allocation,
 │   │                          # dashboard, notifications, settings,
@@ -332,19 +332,19 @@ cd apps/api && pnpm test:e2e -- --testPathPatterns=attendance
 cd apps/api && npx jest --testPathPatterns=attendance.gateway.spec
 ```
 
-Current status: **85 E2E cases across 9 suites**, plus **31 unit specs** (116 total):
+Current status: **76 E2E cases across 9 suites**, plus **31 unit specs** (107 total):
 
 | E2E Suite | Tests | Coverage |
 |-----------|:-----:|----------|
-| auth.e2e | 7 | Login, JWT, change-password, protected routes |
-| app.e2e | 3 | Bootstrap smoke + health |
-| trip.e2e | 11 | Trip CRUD, name validation, derived status |
-| bus.e2e | 9 | Bus CRUD, plate uniqueness, photos, reorder |
-| passenger.e2e | 19 | CRUD, bulk import, sheet sync, xlsx export |
-| allocation.e2e | 10 | Allocate, move, capacity warning, scope guards |
-| attendance.e2e | 12 | Mark, scope, override, cascade, summary, note |
-| notification.e2e | 7 | Send, recipients, config, history |
-| users.e2e | 7 | User CRUD + tenant scoping |
+| auth.e2e | 6 | Login, JWT, validation, protected routes |
+| app.e2e | 2 | Bootstrap smoke + health |
+| trip.e2e | 10 | Trip CRUD, name validation, derived status, round status machine |
+| bus.e2e | 8 | Bus CRUD, plate uniqueness, photos, bus↔round assignment |
+| passenger.e2e | 18 | CRUD, bulk import, sheet sync, xlsx export |
+| allocation.e2e | 9 | Allocate, move, capacity warning, scope guards |
+| attendance.e2e | 11 | Mark, scope, override, cascade, summary, note |
+| notification.e2e | 6 | Send, recipients, config, history |
+| users.e2e | 6 | User CRUD + tenant scoping |
 
 Unit specs (31): `trip.service`, `assignment.service`, `attendance.service`, `attendance.gateway`, `notification.dispatcher`, `telegram.service`, `telegram.provider`, `app.controller`.
 
